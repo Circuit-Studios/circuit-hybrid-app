@@ -1,0 +1,536 @@
+// Circuit MVP — Prisma schema
+//
+// Mirrors the domain described in CIRCUIT MVP V0:
+//   Module 1: Onboarding + project creation (phone-first signup, role-first)
+//   Module 2: AI script intelligence (script parsing → characters/scenes/depts)
+//   Module 3: Project workspace (3 stages, dept boards, schedule, health ring)
+//   Module 4: Team + Spider mode (role-scoped views; auto multi-project mode)
+//   Module 5: Conflict + alert engine (cross-project schedule clash detection)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------- Identity ----------------
+
+model User {
+  id            String   @id @default(uuid())
+  phone         String?  @unique
+  email         String?  @unique
+  firstName     String
+  lastName      String
+  defaultRole   UserRole @default(CREW) // role declared during signup
+  passwordHash  String?  // optional; phone-OTP is the default flow
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  memberships   ProjectMember[]
+  ownedProjects Project[]       @relation("ProjectOwner")
+  uploadedScripts Script[]
+  shootDays     ShootDay[]      @relation("CallTimeUser")
+  notifications Notification[]
+  authOtps      AuthOtp[]
+  pushTokens    PushToken[]
+}
+
+// One row per (user, device). A user can have an iPhone + iPad + Android tablet
+// all logged into the same account; we fan-out push to every active token.
+model PushToken {
+  id        String       @id @default(uuid())
+  userId    String
+  token     String       @unique
+  platform  PushPlatform
+  // Optional device fingerprint so the client can replace its own token after
+  // a reinstall without leaving stale entries.
+  deviceId  String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([deviceId])
+}
+
+enum PushPlatform {
+  IOS
+  ANDROID
+  WEB
+}
+
+enum UserRole {
+  DIRECTOR
+  PRODUCER
+  EXECUTIVE_PRODUCER
+  LINE_PRODUCER
+  AD
+  DOP
+  DEPT_HEAD
+  CREW
+  ACTOR
+  VENDOR
+}
+
+model AuthOtp {
+  id        String   @id @default(uuid())
+  userId    String?
+  phone     String
+  codeHash  String
+  expiresAt DateTime
+  consumed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([phone, consumed])
+  @@index([expiresAt])
+}
+
+// ---------------- Project ----------------
+
+enum ProjectStage {
+  PRE_PRODUCTION
+  PRODUCTION
+  POST_PRODUCTION
+}
+
+enum ProjectLanguage {
+  TELUGU
+  HINDI
+  TAMIL
+  MALAYALAM
+  KANNADA
+  ENGLISH
+  OTHER
+}
+
+model Project {
+  id              String          @id @default(uuid())
+  name            String
+  language        ProjectLanguage @default(TELUGU) // primary language (languages[0]); kept for AI + legacy reads
+  languages       ProjectLanguage[] @default([])
+  genre           String
+  budgetMinINR    BigInt?         // rough budget range, in paise/rupees as INR
+  budgetMaxINR    BigInt?
+  shootStartDate  DateTime?
+  shootEndDate    DateTime?
+  currentStage    ProjectStage    @default(PRE_PRODUCTION)
+  ownerUserId     String          // the Director who created it (Module 1)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  owner           User            @relation("ProjectOwner", fields: [ownerUserId], references: [id])
+  members         ProjectMember[]
+  scripts         Script[]
+  characters      Character[]
+  scenes          Scene[]
+  sceneAppearances SceneAppearance[]
+  departments     ProjectDepartment[]
+  tasks           Task[]
+  shootDays       ShootDay[]
+  conflictAlerts  ConflictAlert[]
+  budgetLines     BudgetLine[]
+
+  @@index([ownerUserId])
+}
+
+// ---------------- Team & Spider mode ----------------
+
+model ProjectMember {
+  id                  String            @id @default(uuid())
+  projectId           String
+  userId              String?           // null until they accept the invite
+  inviteePhone        String?
+  inviteeEmail        String?
+  inviteeName         String?
+  role                UserRole
+  // For DEPT_HEAD / CREW, links them to a specific department on this project.
+  projectDepartmentId String?
+  status              MembershipStatus  @default(INVITED)
+  invitedAt           DateTime          @default(now())
+  acceptedAt          DateTime?
+
+  project             Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user                User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  projectDepartment   ProjectDepartment? @relation(fields: [projectDepartmentId], references: [id], onDelete: SetNull)
+
+  shootDayCalls       ShootDayCall[]
+
+  @@unique([projectId, userId, role])
+  @@index([userId])
+  @@index([projectId])
+  @@index([inviteePhone])
+}
+
+enum MembershipStatus {
+  INVITED
+  ACTIVE
+  REMOVED
+}
+
+// ---------------- Script & AI intelligence ----------------
+
+enum ScriptAnalysisStatus {
+  PENDING
+  EXTRACTING_TEXT
+  ANALYZING_CHARACTERS
+  ANALYZING_SCENES
+  ANALYZING_COMBINATIONS
+  SUGGESTING_DEPARTMENTS
+  ESTIMATING_SHOOT_DAYS
+  DRAFTING_BUDGET
+  COMPLETED
+  FAILED
+}
+
+model Script {
+  id                String                @id @default(uuid())
+  projectId         String
+  uploadedByUserId  String
+  originalFileName  String
+  storageKey        String                // local path or S3 key
+  mimeType          String
+  sizeBytes         BigInt
+  pageCount         Int?
+  rawText           String?               @db.Text
+  language          String?               // detected language code if any
+
+  analysisStatus    ScriptAnalysisStatus  @default(PENDING)
+  analysisError     String?
+  analysisStartedAt DateTime?
+  analysisEndedAt   DateTime?
+
+  // Aggregated AI outputs (denormalised cache; canonical data lives in
+  // Character / Scene / ProjectDepartment etc.).
+  aiSummary         Json?
+
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  project           Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedBy        User                  @relation(fields: [uploadedByUserId], references: [id])
+
+  @@index([projectId])
+}
+
+enum CharacterImportance {
+  LEAD
+  SUPPORT
+  DAY_ROLE
+}
+
+model Character {
+  id                String   @id @default(uuid())
+  projectId         String
+  name              String
+  importance        CharacterImportance @default(SUPPORT)
+  estimatedScreenTimeMinutes Int?
+  estimatedShootDays Int?
+  // The real actor cast to this character (optional until casting locks).
+  castUserId        String?
+  notes             String?
+  // Edit-tracking: humans can override AI-extracted rows. We keep the
+  // boolean for fast "show EDITED badge" reads and the FK for audit.
+  isEdited          Boolean  @default(false)
+  editedByUserId    String?
+  editedAt          DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  project           Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  appearances       SceneAppearance[]
+
+  @@unique([projectId, name])
+  @@index([projectId])
+}
+
+enum SceneLocationType {
+  INTERIOR
+  EXTERIOR
+  INT_EXT
+}
+
+enum SceneTimeOfDay {
+  DAY
+  NIGHT
+  DAWN
+  DUSK
+  UNSPECIFIED
+}
+
+model Scene {
+  id              String            @id @default(uuid())
+  projectId       String
+  sceneNumber     String            // e.g. "12A"
+  heading         String?           // raw slugline from script
+  synopsis        String?
+  locationType    SceneLocationType @default(INTERIOR)
+  timeOfDay       SceneTimeOfDay    @default(UNSPECIFIED)
+  locationName    String?
+  estimatedPages  Float?            // 1/8 page increments
+  estimatedShootHours Float?
+  hasStunts       Boolean           @default(false)
+  hasVFX          Boolean           @default(false)
+  hasSong         Boolean           @default(false)
+  order           Int               // canonical order from script
+  isEdited        Boolean           @default(false)
+  editedByUserId  String?
+  editedAt        DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  project         Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  appearances     SceneAppearance[]
+  shootDayScenes  ShootDayScene[]
+
+  @@unique([projectId, sceneNumber])
+  @@index([projectId, order])
+}
+
+// Many-to-many: which characters appear in which scenes. Drives the
+// "combination scenes" optimisation (group scenes that share actors so they
+// can be shot on consecutive days).
+model SceneAppearance {
+  id           String     @id @default(uuid())
+  projectId    String
+  sceneId      String
+  characterId  String
+
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scene        Scene      @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  character    Character  @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@unique([sceneId, characterId])
+  @@index([projectId, characterId])
+}
+
+// ---------------- Departments + boards ----------------
+
+enum DepartmentKind {
+  DIRECTION
+  PRODUCTION
+  CASTING
+  DOP_CAMERA
+  ART
+  COSTUME
+  MAKEUP_HAIR
+  STUNTS
+  VFX
+  SOUND
+  MUSIC
+  LOCATION
+  EDITORIAL
+  POST_DI
+  POST_SOUND
+  OTHER
+}
+
+model ProjectDepartment {
+  id          String         @id @default(uuid())
+  projectId   String
+  kind        DepartmentKind
+  displayName String         // e.g. "Costume", "DOP / Camera"
+  required    Boolean        @default(true)
+  // 0..100 — driven by task completion against this department.
+  progress    Int            @default(0)
+  isEdited    Boolean        @default(false)
+  editedByUserId String?
+  editedAt    DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+  members     ProjectMember[]
+
+  @@unique([projectId, kind])
+  @@index([projectId])
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  BLOCKED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Task {
+  id             String       @id @default(uuid())
+  projectId      String
+  departmentId   String
+  title          String
+  description    String?
+  status         TaskStatus   @default(TODO)
+  priority       TaskPriority @default(MEDIUM)
+  dueDate        DateTime?
+  // Optional links into the script domain (drives "Prabhu Deva's dance
+  // costume needed by Day 8" auto-urgency rule).
+  characterId    String?
+  sceneId        String?
+  shootDayId     String?
+  assigneeUserId String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  project        Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  department     ProjectDepartment @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, status])
+  @@index([departmentId, status])
+}
+
+// ---------------- Schedule ----------------
+
+model ShootDay {
+  id              String   @id @default(uuid())
+  projectId       String
+  dayNumber       Int       // 1-based shoot day
+  date            DateTime
+  location        String?
+  callTimeUserId  String?   // primary AD on call (optional)
+  notes           String?
+
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  callTimeUser    User?    @relation("CallTimeUser", fields: [callTimeUserId], references: [id])
+  scenes          ShootDayScene[]
+  calls           ShootDayCall[]
+
+  @@unique([projectId, dayNumber])
+  @@unique([projectId, date])
+  @@index([date])
+}
+
+model ShootDayScene {
+  shootDayId  String
+  sceneId     String
+  order       Int     @default(0)
+
+  shootDay    ShootDay @relation(fields: [shootDayId], references: [id], onDelete: Cascade)
+  scene       Scene    @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+
+  @@id([shootDayId, sceneId])
+}
+
+model ShootDayCall {
+  id              String  @id @default(uuid())
+  shootDayId      String
+  projectMemberId String
+  callTime        DateTime?
+
+  shootDay        ShootDay      @relation(fields: [shootDayId], references: [id], onDelete: Cascade)
+  projectMember   ProjectMember @relation(fields: [projectMemberId], references: [id], onDelete: Cascade)
+
+  @@unique([shootDayId, projectMemberId])
+}
+
+// ---------------- Conflicts + alerts ----------------
+
+enum ConflictKind {
+  SCHEDULE_CLASH     // same person, two projects, same day
+  DEPT_BEHIND        // dept progress lagging vs shoot start
+  MISSING_DEPENDENCY // e.g. costume needed for scene before shoot day
+}
+
+enum ConflictSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+model ConflictAlert {
+  id           String           @id @default(uuid())
+  projectId    String
+  kind         ConflictKind
+  severity     ConflictSeverity @default(WARNING)
+  title        String
+  body         String
+  contextJson  Json?            // structured context (user ids, date, dept etc.)
+  resolved     Boolean          @default(false)
+  resolvedAt   DateTime?
+  createdAt    DateTime         @default(now())
+
+  project      Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, resolved])
+  @@index([projectId, kind])
+}
+
+// ---------------- Budget ----------------
+
+model BudgetLine {
+  id           String         @id @default(uuid())
+  projectId    String
+  department   DepartmentKind
+  label        String
+  amountINR    BigInt
+  isAIDraft    Boolean        @default(true)
+  isEdited     Boolean        @default(false)
+  editedByUserId String?
+  editedAt     DateTime?
+  notes        String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, department])
+}
+
+// ---------------- Notifications ----------------
+
+enum NotificationChannel {
+  PUSH
+  SMS
+  IN_APP
+}
+
+// Categories drive both copy and the deep-link target on tap.
+enum NotificationKind {
+  CONFLICT_ALERT
+  TASK_ASSIGNED
+  TASK_DUE_SOON
+  SHOOT_DAY_UPDATED
+  SHOOT_DAY_CALL
+  PROJECT_INVITE
+  AI_ANALYSIS_DONE
+  GENERIC
+}
+
+model Notification {
+  id        String              @id @default(uuid())
+  userId    String
+  channel   NotificationChannel @default(IN_APP)
+  kind      NotificationKind    @default(GENERIC)
+  title     String
+  body      String
+  // Where tapping the notification should land in the mobile app.
+  // e.g. "/project/abc/schedule" or "/project/abc/team"
+  deepLink  String?
+  // Optional FKs so we can join/show preview cards without parsing context.
+  projectId String?
+  contextJson Json?
+  readAt    DateTime?
+  sentAt    DateTime?
+  // Result of the Push delivery attempt (Expo ticket id or error code).
+  pushTicketId String?
+  pushError    String?
+  createdAt DateTime            @default(now())
+
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@index([projectId])
+}

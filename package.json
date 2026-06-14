@@ -1,0 +1,36 @@
+{
+  "name": "circuit-hybrid-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Circuit — Expo mobile app + Node.js API (monorepo)",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "mobile": "npm run start -w circuit-mobile",
+    "dev:mobile": "npm run start -w circuit-mobile",
+    "mobile:ios": "npm run ios -w circuit-mobile",
+    "mobile:typecheck": "npm run typecheck -w circuit-mobile",
+    "mobile:lint": "npm run lint -w circuit-mobile",
+    "mobile:test": "npm run test -w circuit-mobile",
+    "api:dev": "npm run dev -w circuit-backend",
+    "api:build": "npm run build -w circuit-backend",
+    "api:test": "npm run test -w circuit-backend",
+    "api:lint": "npm run lint -w circuit-backend",
+    "api:typecheck": "npm run typecheck -w circuit-backend",
+    "typecheck": "npm run mobile:typecheck && npm run api:typecheck",
+    "lint": "npm run mobile:lint && npm run api:lint",
+    "test": "npm run mobile:test && npm run api:test",
+    "setup:env": "npm run setup:env -w circuit-backend && cp -n apps/mobile/.env.example apps/mobile/.env 2>/dev/null || true",
+    "postinstall": "npm run prisma:generate -w circuit-backend"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "overrides": {
+    "ioredis": "5.4.1",
+    "bullmq": {
+      "ioredis": "5.4.1"
+    }
+  }
+}

@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Secrets — only .env.example is committed
+.env
+.env.development
+.env.production
+
+# Local data
+uploads/
+
+# Logs & OS
+*.log
+.DS_Store
+*.pem
+*.key
+
+# Test / coverage
+coverage/
+
+# TypeScript cache
+*.tsbuildinfo
+.tsbuildinfo
