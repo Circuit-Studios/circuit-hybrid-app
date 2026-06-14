@@ -1,0 +1,64 @@
+{
+  "expo": {
+    "name": "Circuit",
+    "slug": "circuit-mobile",
+    "scheme": "circuit",
+    "version": "0.1.0",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ECECEC"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "deploymentTarget": "16.4",
+      "bundleIdentifier": "com.circuitstudios.circuit",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Circuit uses the camera so heads of department can capture costume/set reference photos for the workspace.",
+        "NSPhotoLibraryUsageDescription": "Circuit lets you attach reference photos from your library to scenes, departments, and shoot days.",
+        "NSMicrophoneUsageDescription": "Circuit records voice memos for production notes and meeting context."
+      }
+    },
+    "android": {
+      "package": "com.circuitstudios.circuit",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ECECEC"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-document-picker",
+        {
+          "iCloudContainerEnvironment": "Production"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#F47A1F",
+          "defaultChannel": "general"
+        }
+      ],
+      "expo-asset"
+    ],
+    "notification": {
+      "iosDisplayInForeground": true
+    },
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
