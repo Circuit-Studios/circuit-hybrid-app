@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import path from 'node:path';
-import { v4 as uuid } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import { MembershipStatus, ScriptAnalysisStatus, UserRole } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { asyncHandler, badRequest, forbidden, notFound } from '../../lib/http.js';
@@ -57,7 +57,7 @@ router.post(
     // Object keys are deterministic-ish per script for clean tracing: every
     // file lives under scripts/<projectId>/<uuid><ext>. Easy to inventory.
     const ext = path.extname(req.file.originalname);
-    const objectKey = `scripts/${projectId}/${uuid()}${ext}`;
+    const objectKey = `scripts/${projectId}/${randomUUID()}${ext}`;
 
     const stored = await getStorage().put({
       key: objectKey,
