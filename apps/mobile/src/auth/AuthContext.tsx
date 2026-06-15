@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { logger } from '@/lib/logger';
 import { storage } from '@/lib/storage';
 import { setUnauthorizedHandler } from '@/api/client';
 import {
@@ -61,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const bootTimeout = setTimeout(() => {
       if (!cancelled) {
-        console.warn('[auth] boot timed out; treating as signed-out');
+        logger.warn('auth boot timed out; treating as signed-out');
         setStatus('signedOut');
       }
     }, 8000);
@@ -69,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (async () => {
       try {
         const session = await storage.loadSession().catch(err => {
-          console.warn('[auth] loadSession failed; treating as signed-out', err);
+          logger.warn('auth loadSession failed; treating as signed-out', { error: String(err) });
           return null;
         });
         if (!session) {
@@ -107,13 +108,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setStatus('signedIn');
         } catch (err) {
           if (cancelled) return;
-          console.warn('[auth] getMe failed; signing out', err);
+          logger.warn('auth getMe failed; signing out', { error: String(err) });
           await storage.clearSession().catch(() => {});
           setStatus('signedOut');
         }
       } catch (err) {
         if (cancelled) return;
-        console.warn('[auth] boot failed unexpectedly; signing out', err);
+        logger.warn('auth boot failed unexpectedly; signing out', { error: String(err) });
         setStatus('signedOut');
       }
     })();

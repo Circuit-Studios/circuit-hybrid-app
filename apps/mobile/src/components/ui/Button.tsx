@@ -8,6 +8,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { logger } from '@/lib/logger';
 import { colors, radius, shadows, spacing, typography } from '@/theme';
 
 export interface ButtonProps extends Omit<PressableProps, 'style' | 'children'> {
@@ -26,9 +27,15 @@ export function Button({
   variant = 'primary',
   style,
   fullWidth = true,
+  onPress,
   ...rest
 }: ButtonProps) {
   const isDisabled = disabled || loading;
+
+  const handlePress: NonNullable<PressableProps['onPress']> = event => {
+    logger.debug('button press', { title });
+    onPress?.(event);
+  };
 
   const label = (
     <View style={styles.inner}>
@@ -66,6 +73,7 @@ export function Button({
           style,
         ]}
         {...rest}
+        onPress={handlePress}
       >
         <LinearGradient
           colors={[colors.amberLight, colors.brand, colors.brandStrong]}
@@ -95,6 +103,7 @@ export function Button({
         style,
       ]}
       {...rest}
+      onPress={handlePress}
     >
       {label}
     </Pressable>

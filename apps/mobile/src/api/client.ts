@@ -1,15 +1,35 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import { appConfig } from '@/config/appEnv';
+import { logger, logApiRequest, logApiResponse } from '@/lib/logger';
+import { readResponseRequestId, withRequestId } from '@/lib/requestId';
 import { storage } from '@/lib/storage';
 
 const PUBLIC_AUTH_PATHS = ['/auth/login', '/auth/request-otp', '/auth/verify-otp'];
+
+interface RequestMetadata {
+  startTime: number;
+  method: string;
+  url: string;
+  requestId: string;
+}
+
+declare module 'axios' {
+  export interface InternalAxiosRequestConfig {
+    circuitMeta?: RequestMetadata;
+  }
+}
 
 export const API_BASE_URL = appConfig.apiBaseUrl;
 
 const API_TIMEOUT_MS = API_BASE_URL.includes('onrender.com') ? 120_000 : 30_000;
 
-if (__DEV__) {
-  console.log('[api] baseURL:', API_BASE_URL, 'timeoutMs:', API_TIMEOUT_MS);
+logger.info('api client ready', { baseURL: API_BASE_URL, timeoutMs: API_TIMEOUT_MS });
+
+function formatRequestUrl(config: InternalAxiosRequestConfig): string {
+  const path = config.url ?? '';
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  const base = (config.baseURL ?? '').replace(/\/$/, '');
+  return `${base}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
 let onUnauthorized: (() => void) | null = null;
@@ -33,12 +53,27 @@ export async function wakeApi(): Promise<void> {
 }
 
 api.interceptors.request.use(async config => {
+  config.headers = config.headers ?? {};
+  const { requestId, headers: idHeaders } = withRequestId();
+  for (const [key, value] of Object.entries(idHeaders)) {
+    config.headers[key] = value;
+  }
+
   const token = await storage.getToken();
   if (token) {
-    config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
     void storage.touchActivity();
   }
+
+  const method = (config.method ?? 'get').toUpperCase();
+  const url = formatRequestUrl(config);
+  config.circuitMeta = {
+    startTime: logApiRequest(method, url, requestId),
+    method,
+    url,
+    requestId,
+  };
+
   return config;
 });
 
@@ -59,9 +94,34 @@ export function shouldSignOutOn401(config: InternalAxiosRequestConfig | undefine
   return requestHadAuthHeader(config);
 }
 
+function logTrackedResponse(
+  meta: RequestMetadata,
+  status: number | string,
+  headers: Record<string, unknown> | undefined,
+): void {
+  const requestId = readResponseRequestId(headers) ?? meta.requestId;
+  logApiResponse(meta.method, meta.url, status, meta.startTime, requestId);
+}
+
 api.interceptors.response.use(
-  res => res,
+  res => {
+    if (res.config.circuitMeta) {
+      logTrackedResponse(
+        res.config.circuitMeta,
+        res.status,
+        res.headers as Record<string, unknown>,
+      );
+    }
+    return res;
+  },
   (err: AxiosError) => {
+    if (err.config?.circuitMeta) {
+      logTrackedResponse(
+        err.config.circuitMeta,
+        err.response?.status ?? err.code ?? 'ERR',
+        err.response?.headers as Record<string, unknown> | undefined,
+      );
+    }
     if (err.response?.status === 401 && shouldSignOutOn401(err.config)) {
       onUnauthorized?.();
     }

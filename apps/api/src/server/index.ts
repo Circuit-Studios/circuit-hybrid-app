@@ -5,6 +5,7 @@ import compression from 'compression';
 import { pinoHttp } from 'pino-http';
 import type { IncomingMessage } from 'node:http';
 import { createServer } from 'node:http';
+import { randomUUID } from 'node:crypto';
 import rateLimit from 'express-rate-limit';
 
 import { env, corsOrigins } from '../config/env.js';
@@ -26,13 +27,21 @@ import { initSocket } from '../realtime/socket.js';
 import { startConflictWorker, stopConflictWorker } from '../queues/conflicts.queue.js';
 import { disconnectRedis } from '../queues/redis.js';
 
+function resolveRequestId(incoming: string | string[] | undefined): string {
+  const raw = Array.isArray(incoming) ? incoming[0] : incoming;
+  if (typeof raw === 'string') {
+    const sanitized = raw.trim().replace(/[\r\n\t]/g, '').slice(0, 128);
+    if (sanitized.length > 0) return sanitized;
+  }
+  return randomUUID();
+}
+
 const app = express();
 
 // Render terminates TLS and sets X-Forwarded-For; rate-limit needs trust proxy
 // to read the client IP instead of throwing ERR_ERL_UNEXPECTED_X_FORWARDED_FOR.
-if (env.NODE_ENV === 'production') {
-  app.set('trust proxy', 1);
-}
+
+app.set('trust proxy', 1);
 
 app.disable('x-powered-by');
 app.use(helmet());
@@ -45,15 +54,57 @@ app.use(
       env.NODE_ENV === 'production' && corsOrigins.length === 0
         ? false
         : corsOrigins.length > 0
-        ? corsOrigins
-        : true,
+          ? corsOrigins
+          : true,
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
+    exposedHeaders: ['X-Request-Id'],
   }),
 );
 app.use(
   pinoHttp({
     logger,
-    autoLogging: { ignore: (req: IncomingMessage) => req.url === '/health' },
+
+    genReqId: (req, res) => {
+      const requestId = resolveRequestId(req.headers['x-request-id']);
+      res.setHeader('x-request-id', requestId);
+      return requestId;
+    },
+
+    customLogLevel: (_req, res, err) => {
+      if (err || res.statusCode >= 500) return 'error';
+      if (res.statusCode >= 400) return 'warn';
+      return 'info';
+    },
+
+    autoLogging: {
+      ignore: (req: IncomingMessage) => req.url === '/health',
+    },
+
+    customSuccessMessage: (req, res) => {
+      return `${req.method} ${req.url} ${res.statusCode}`;
+    },
+
+    customErrorMessage: (req, res) => {
+      return `${req.method} ${req.url} failed with ${res.statusCode}`;
+    },
+
+    serializers: {
+      req(req) {
+        return {
+          id: req.id,
+          method: req.method,
+          url: req.url,
+          remoteAddress: req.remoteAddress,
+          userAgent: req.headers['user-agent'],
+        };
+      },
+      res(res) {
+        return {
+          statusCode: res.statusCode,
+        };
+      },
+    },
   }),
 );
 

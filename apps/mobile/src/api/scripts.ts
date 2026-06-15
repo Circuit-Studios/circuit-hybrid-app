@@ -1,5 +1,7 @@
 import { api, API_BASE_URL } from './client';
 import type { ScriptRecord, ScriptAnalysisResponse } from './types';
+import { logApiRequest, logApiResponse } from '@/lib/logger';
+import { readResponseRequestId, withRequestId } from '@/lib/requestId';
 import { storage } from '@/lib/storage';
 
 export interface UploadScriptOptions {
@@ -24,14 +26,25 @@ export async function uploadScript(opts: UploadScriptOptions): Promise<ScriptRec
     type: opts.mimeType ?? 'application/pdf',
   } as unknown as Blob);
 
-  const res = await fetch(`${API_BASE_URL}/projects/${opts.projectId}/scripts`, {
+  const url = `${API_BASE_URL}/projects/${opts.projectId}/scripts`;
+  const { requestId, headers } = withRequestId({
+    Authorization: token ? `Bearer ${token}` : '',
+  });
+  const startTime = logApiRequest('POST', url, requestId);
+
+  const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      // Do NOT set Content-Type — fetch sets the multipart boundary for us.
-      Authorization: token ? `Bearer ${token}` : '',
-    },
+    headers,
     body: form,
   });
+
+  logApiResponse(
+    'POST',
+    url,
+    res.status,
+    startTime,
+    readResponseRequestId(Object.fromEntries(res.headers.entries())) ?? requestId,
+  );
 
   if (!res.ok) {
     const text = await res.text();
