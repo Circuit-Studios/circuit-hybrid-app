@@ -28,6 +28,12 @@ import { disconnectRedis } from '../queues/redis.js';
 
 const app = express();
 
+// Render terminates TLS and sets X-Forwarded-For; rate-limit needs trust proxy
+// to read the client IP instead of throwing ERR_ERL_UNEXPECTED_X_FORWARDED_FOR.
+if (env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 app.disable('x-powered-by');
 app.use(helmet());
 app.use(compression());

@@ -28,7 +28,7 @@ Use this as the mental model across mobile, backend, database, and OTP:
 | Environment | Mobile API URL | Backend | Database | OTP |
 |-------------|----------------|---------|----------|-----|
 | **Local** | `http://localhost:3009` | Mac backend (`npm run dev`) | Local Postgres or Supabase dev | `MOCK` |
-| **Dev / Preview** | `https://circuithybridappservices.onrender.com` | Render Free | Supabase dev/prod *(shared OK while testing)* | `MOCK` |
+| **Dev / Preview** | `https://circuit-api-dev.onrender.com` | Render Free | Supabase dev/prod *(shared OK while testing)* | `MOCK` |
 | **Production** | Custom API domain *(later)* | Render paid or stable host | Supabase prod | MSG91 / Twilio |
 
 **While testing:** dev and preview mobile builds can share the same Render backend and Supabase project.

@@ -26,7 +26,7 @@ npm run setup:env
 
 ```bash
 EXPO_PUBLIC_APP_ENV=development
-EXPO_PUBLIC_API_BASE_URL=https://circuithybridappservices.onrender.com
+EXPO_PUBLIC_API_BASE_URL=https://circuit-api-dev.onrender.com
 ```
 
 Then `npm run mobile`. No local API env needed.

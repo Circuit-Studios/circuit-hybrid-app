@@ -4,8 +4,10 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "start": "EXPO_OFFLINE=1 expo start",
-    "ios": "EXPO_OFFLINE=1 expo start --ios --localhost",
+    "start": "expo start",
+    "start:clear": "expo start -c",
+    "start:offline": "EXPO_OFFLINE=1 expo start",
+    "ios": "expo start --ios --localhost",
     "ios:tunnel": "expo start --ios --tunnel",
     "ios:first-run": "expo start --ios --localhost",
     "android": "expo run:android",

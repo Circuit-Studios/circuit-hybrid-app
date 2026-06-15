@@ -156,7 +156,7 @@ npx expo prebuild --platform android
 | Environment | Mobile (`EXPO_PUBLIC_*`) | Backend | Database | OTP |
 |-------------|--------------------------|---------|----------|-----|
 | **Local** | `EXPO_PUBLIC_APP_ENV=local`<br>`EXPO_PUBLIC_API_BASE_URL=http://localhost:3009` | Mac backend | Local Postgres or Supabase dev | `MOCK` (`111111`) |
-| **Dev / Preview** | `EXPO_PUBLIC_APP_ENV=development` or `preview`<br>`EXPO_PUBLIC_API_BASE_URL=https://circuithybridappservices.onrender.com` | Render Free | Supabase *(shared OK while testing)* | `MOCK` |
+| **Dev / Preview** | `EXPO_PUBLIC_APP_ENV=development` or `preview`<br>`EXPO_PUBLIC_API_BASE_URL=https://circuit-api-dev.onrender.com` | Render Free | Supabase *(shared OK while testing)* | `MOCK` |
 | **Production** | `EXPO_PUBLIC_APP_ENV=production`<br>Custom API URL *(later)* | Render paid / stable host | Supabase prod | MSG91 / Twilio |
 
 While testing, dev and preview can share the same Render backend. Before App Store or public users, use separate Supabase **dev** and **production** projects so test users and real users never share a database. Full cross-stack notes: [`../api/docs/DEPLOYMENT.md#recommended-environment-matrix`](../api/docs/DEPLOYMENT.md#recommended-environment-matrix).
@@ -187,7 +187,7 @@ EXPO_PUBLIC_API_BASE_URL=http://localhost:3009
 
 # or Render:
 EXPO_PUBLIC_APP_ENV=development
-EXPO_PUBLIC_API_BASE_URL=https://circuithybridappservices.onrender.com
+EXPO_PUBLIC_API_BASE_URL=https://circuit-api-dev.onrender.com
 ```
 
 For a **physical device** on the same WiFi, use your laptop's LAN IP instead of
@@ -207,11 +207,11 @@ Set these in the Expo dashboard (Project → Environment variables) or via CLI:
 
 ```bash
 # development (eas build --profile development)
-eas env:create --environment development --name EXPO_PUBLIC_API_BASE_URL --value https://circuithybridappservices.onrender.com
+eas env:create --environment development --name EXPO_PUBLIC_API_BASE_URL --value https://circuit-api-dev.onrender.com
 eas env:create --environment development --name EXPO_PUBLIC_APP_ENV --value development
 
 # preview (eas build --profile preview)
-eas env:create --environment preview --name EXPO_PUBLIC_API_BASE_URL --value https://circuithybridappservices.onrender.com
+eas env:create --environment preview --name EXPO_PUBLIC_API_BASE_URL --value https://circuit-api-dev.onrender.com
 eas env:create --environment preview --name EXPO_PUBLIC_APP_ENV --value preview
 
 # production (eas build --profile production)
