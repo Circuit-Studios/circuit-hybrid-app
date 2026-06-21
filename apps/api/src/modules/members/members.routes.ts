@@ -8,12 +8,7 @@ import { dispatchNotification } from '../../notifications/notifications.service.
 
 const router: Router = Router();
 
-// Phone format mirrors auth.routes.ts so the same string can be matched
-// against a future signup.
-const phoneSchema = z
-  .string()
-  .trim()
-  .regex(/^\+\d{8,15}$/, 'Phone must be E.164 format like +919812345678');
+import { phoneSchema } from '../auth/auth.schemas.js';
 
 const inviteMemberSchema = z
   .object({

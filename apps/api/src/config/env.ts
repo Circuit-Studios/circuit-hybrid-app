@@ -17,11 +17,11 @@ const schema = z.object({
   JWT_AUDIENCE: z.string().default('circuit-mobile'),
   JWT_EXPIRES_IN: z.string().default('7d'),
 
-  OTP_EMAIL_PROVIDER: z.enum(['MOCK', 'RESEND']).default('MOCK'),
-  EMAIL_FROM: optionalString,
+  OTP_PROVIDER: z.enum(['MOCK', 'MSG91', 'TWILIO', 'RESEND_EMAIL']).default('MOCK'),
   RESEND_API_KEY: optionalString,
+  RESEND_FROM_EMAIL: optionalString,
+  RESEND_REPLY_TO: optionalString,
 
-  OTP_PROVIDER: z.enum(['MOCK', 'MSG91', 'TWILIO']).default('MOCK'),
   MSG91_AUTH_KEY: optionalString,
   MSG91_SENDER_ID: optionalString,
   MSG91_TEMPLATE_ID: optionalString,

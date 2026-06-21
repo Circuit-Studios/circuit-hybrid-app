@@ -46,7 +46,7 @@ npm run dev          # http://localhost:3009
 
 From repo root: `npm run api:dev`
 
-**Dev OTP:** `OTP_PROVIDER=MOCK` → code **`111111`**
+**Dev OTP:** `OTP_PROVIDER=MOCK` → code **`111111`** (phone and email)
 
 ### 4. Mobile
 
@@ -89,7 +89,7 @@ Config is split by surface — see **[docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md
 |-------------|--------------------------|---------|----------|-----|
 | **Local** | `http://localhost:3009` | `npm run api:dev` | Docker Postgres | `MOCK` |
 | **Dev / Preview** | Render URL | Render Free | Supabase dev | `MOCK` |
-| **Production** | Custom API domain | Render paid | Supabase prod | MSG91 / Twilio |
+| **Production** | Custom API domain | Render paid | Supabase prod | MSG91 (phone) / Resend (email) |
 
 Details: [`apps/api/docs/DEPLOYMENT.md`](./apps/api/docs/DEPLOYMENT.md)
 
@@ -98,11 +98,12 @@ Details: [`apps/api/docs/DEPLOYMENT.md`](./apps/api/docs/DEPLOYMENT.md)
 ## Deploy API (Render)
 
 1. Push to GitHub.
-2. Render → **New** → **Blueprint** → connect this repo.
-3. Set `OPENAI_API_KEY` in the dashboard (sync: false).
-4. Migrations run during build (`build:deploy` script).
+2. Render → **New** → **Web Service** → connect this repo.
+3. Set **Root directory** to `apps/api` (or configure build/start per [`apps/api/docs/DEPLOYMENT.md`](./apps/api/docs/DEPLOYMENT.md)).
+4. Set secrets in the Render dashboard (`OPENAI_API_KEY`, `JWT_SECRET`, `DATABASE_URL`, etc.) — never commit them.
+5. Run migrations separately (`npm run prisma:deploy` in `apps/api`) — **not** in the Render build/start command unless you have explicitly chosen that workflow.
 
-Blueprint: [`render.yaml`](./render.yaml)
+For Resend email OTP, set `OTP_PROVIDER=RESEND_EMAIL`, `RESEND_API_KEY`, and `RESEND_FROM_EMAIL` (verified domain). See [docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md#resend-email-otp).
 
 ---
 
@@ -134,7 +135,6 @@ circuit-hybrid-app/
 │   ├── README.md        # Master documentation index
 │   └── ENVIRONMENT.md
 ├── .github/workflows/   # CI (mobile + API)
-├── render.yaml          # Render Blueprint
 ├── package.json         # npm workspaces root
 └── LICENSE
 ```

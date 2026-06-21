@@ -10,9 +10,12 @@ import type { UserRole } from '@/api/types';
 import { OTP_TTL_MS } from '@/lib/session';
 
 export type OtpFlowMode = 'signup' | 'login';
+export type OtpChannel = 'EMAIL' | 'PHONE';
 
 export interface OtpSession {
+  channel: OtpChannel;
   email: string;
+  phone?: string;
   mode: OtpFlowMode;
   firstName?: string;
   lastName?: string;

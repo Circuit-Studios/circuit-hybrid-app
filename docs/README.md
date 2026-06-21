@@ -18,9 +18,8 @@ circuit-hybrid-app/
 
 | Doc | Contents |
 |-----|----------|
-| [ENVIRONMENT.md](./ENVIRONMENT.md) | **Env workflows A/B/C** — `apps/mobile/.env`, `apps/api/.env.development`, Render, EAS |
+| [ENVIRONMENT.md](./ENVIRONMENT.md) | **Env workflows A/B/C** — `apps/mobile/.env`, `apps/api/.env.development`, Render, EAS, Resend OTP |
 | [../README.md](../README.md) | Monorepo quick start, scripts, CI |
-| [../render.yaml](../render.yaml) | Render Blueprint (API deploy) |
 
 ---
 

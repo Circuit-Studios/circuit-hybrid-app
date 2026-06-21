@@ -51,6 +51,19 @@ const loggerOptions: LoggerOptions = {
       '*.code',
       'body.code',
 
+      'email',
+      '*.email',
+      'body.email',
+      'body.signup.email',
+
+      'phone',
+      '*.phone',
+      'body.phone',
+      'body.signup.phone',
+
+      'target',
+      '*.target',
+
       'token',
       '*.token',
       'accessToken',
@@ -60,6 +73,7 @@ const loggerOptions: LoggerOptions = {
 
       'DATABASE_URL',
       'OPENAI_API_KEY',
+      'RESEND_API_KEY',
       'AWS_SECRET_ACCESS_KEY',
       'SUPABASE_SERVICE_ROLE_KEY',
     ],

@@ -29,7 +29,7 @@ Use this as the mental model across mobile, backend, database, and OTP:
 |-------------|----------------|---------|----------|-----|
 | **Local** | `http://localhost:3009` | Mac backend (`npm run dev`) | Local Postgres or Supabase dev | `MOCK` |
 | **Dev / Preview** | `https://circuit-api-dev.onrender.com` | Render Free | Supabase dev/prod *(shared OK while testing)* | `MOCK` |
-| **Production** | Custom API domain *(later)* | Render paid or stable host | Supabase prod | MSG91 / Twilio |
+| **Production** | Custom API domain *(later)* | Render paid or stable host | Supabase prod | MSG91 (phone) / Resend (email) |
 
 **While testing:** dev and preview mobile builds can share the same Render backend and Supabase project.
 
@@ -64,7 +64,9 @@ curl http://localhost:3009/health
 
 Or from repo root: `npm run api:dev`
 
-**Dev OTP:** `OTP_PROVIDER=MOCK` → code is always **`111111`**.
+**Dev OTP:** `OTP_PROVIDER=MOCK` → code is always **`111111`** (phone and email channels).
+
+**Email OTP (Resend):** set `OTP_PROVIDER=RESEND_EMAIL`, `RESEND_API_KEY`, and `RESEND_FROM_EMAIL` (verified domain) in the Render dashboard. Resend sends email only — not SMS. See [`../../docs/ENVIRONMENT.md`](../../docs/ENVIRONMENT.md#resend-email-otp).
 
 See [`../../docs/ENVIRONMENT.md`](../../docs/ENVIRONMENT.md) for Workflow A (mobile → Render) vs Workflow B (full local).
 
@@ -72,30 +74,36 @@ See [`../../docs/ENVIRONMENT.md`](../../docs/ENVIRONMENT.md) for Workflow A (mob
 
 ## Deploy to Render
 
-### Option A — Blueprint (recommended)
+Configure the web service in the Render dashboard (no Blueprint required).
 
 1. Push this repo to GitHub.
-2. Render Dashboard → **New** → **Blueprint** → connect repo.
-3. Render reads `render.yaml` and creates:
-   - **Web service** `circuit-api`
-   - **Postgres** `circuit-db`
-4. In the Render dashboard, set **sync: false** env vars:
-   - `OPENAI_API_KEY` (required)
-   - `REDIS_URL` (optional — add a Render Redis instance)
-   - `CORS_ORIGINS` (optional)
-5. Deploy. Migrations run during **build** (`prisma migrate deploy`), not at server start.
+2. Render Dashboard → **New** → **Web Service** → connect repo.
+3. Set **Root directory** to `apps/api` (or use monorepo build commands below).
+4. Set secrets in the dashboard (`OPENAI_API_KEY`, `JWT_SECRET`, `DATABASE_URL`, etc.) — **never commit them**.
+5. Run `prisma migrate deploy` separately when schema changes land — do **not** rely on build/start hooks unless you have explicitly configured them.
 
-### Option B — Manual web service
+### Manual web service settings
 
 | Setting | Value |
 |---------|--------|
-| **Root directory** | Repo root (monorepo — see `render.yaml`) |
-| **Runtime** | Node 20 |
-| **Build command** | `npm ci && npm run build:deploy -w circuit-backend` |
+| **Root directory** | `apps/api` (or repo root with workspace flags) |
+| **Runtime** | Node 22 |
+| **Build command** | `npm ci && npm run build -w circuit-backend` |
 | **Start command** | `npm run start -w circuit-backend` |
 | **Health check** | `/health` |
 
-Create a **Render Postgres** database and link `DATABASE_URL` in the web service environment.
+Create a **Render Postgres** database (or Supabase) and link `DATABASE_URL` in the web service environment.
+
+### Resend email OTP (Render env)
+
+| Variable | Notes |
+|----------|-------|
+| `OTP_PROVIDER` | `RESEND_EMAIL` |
+| `RESEND_API_KEY` | Resend API key |
+| `RESEND_FROM_EMAIL` | Verified sender, e.g. `Circuit <noreply@yourdomain.com>` |
+| `RESEND_REPLY_TO` | Optional |
+
+Phone OTP remains `MSG91` / `MOCK` when clients send `{ channel: "PHONE", ... }`.
 
 ---
 
@@ -137,7 +145,7 @@ CORS_ORIGINS=
 |----------|--------|
 | `NODE_ENV` | `production` |
 | `DATABASE_URL` | From Render Postgres or Supabase pooler |
-| `JWT_SECRET` | ≥ 32 chars (`render.yaml` can auto-generate) |
+| `JWT_SECRET` | ≥ 32 chars — generate a strong random value in the Render dashboard |
 | `OPENAI_API_KEY` | Required at boot |
 | `PORT` | Render sets this (usually `10000`) |
 | `OTP_PROVIDER` | `MOCK` for testing; `MSG91` for real SMS |

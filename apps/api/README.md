@@ -18,7 +18,7 @@ curl http://localhost:3009/health
 
 **Dev OTP:** with `OTP_PROVIDER=MOCK`, sign-in code is **`111111`**.
 
-**Production:** deploy to [Render](docs/DEPLOYMENT.md) using `render.yaml`. See [Environment matrix](docs/DEPLOYMENT.md#recommended-environment-matrix) for how local, preview, and production line up across mobile, backend, DB, and OTP.
+**Production:** deploy to [Render](docs/DEPLOYMENT.md). See [Environment matrix](docs/DEPLOYMENT.md#recommended-environment-matrix) for how local, preview, and production line up across mobile, backend, DB, and OTP.
 
 Mobile app: see [`../mobile/README.md`](../mobile/README.md) or the [root README](../../README.md).
 

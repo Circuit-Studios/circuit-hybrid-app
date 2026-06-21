@@ -123,7 +123,9 @@ apps/api/
 │   │   ├── auth/                    # /auth/* — OTP, JWT, /me
 │   │   │   ├── auth.routes.ts
 │   │   │   ├── otp.service.ts
-│   │   │   └── providers/msg91.provider.ts
+│   │   │   └── providers/
+│   │   │       ├── phone-otp.provider.ts    # MSG91 / MOCK (channel=PHONE)
+│   │   │       └── resend-email-otp.provider.ts  # Resend / MOCK (channel=EMAIL)
 │   │   ├── projects/                # /projects/* — create + list
 │   │   ├── scripts/                 # /projects/:id/scripts upload + analyze
 │   │   ├── members/                 # invite / accept / remove

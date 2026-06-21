@@ -1,23 +1,20 @@
-// MSG91 SMS OTP adapter. We keep the provider behind an interface so we can
-// swap in Twilio / Plivo / a vendor-of-the-week without touching otp.service.
-
+import { OtpChannel } from '@prisma/client';
 import { env } from '../../../config/env.js';
-import { logger } from '../../../lib/logger.js';
+import { logOtpDispatched, logOtpMock } from '../otp-logging.js';
 
-export interface OtpProvider {
+export interface PhoneOtpProvider {
   send(phone: string, code: string): Promise<void>;
 }
 
 const MSG91_ENDPOINT = 'https://control.msg91.com/api/v5/otp';
 
-class Msg91Provider implements OtpProvider {
+class Msg91Provider implements PhoneOtpProvider {
   async send(phone: string, code: string): Promise<void> {
     if (!env.MSG91_AUTH_KEY || !env.MSG91_TEMPLATE_ID) {
       throw new Error(
         'MSG91 provider requires MSG91_AUTH_KEY and MSG91_TEMPLATE_ID env vars',
       );
     }
-    // MSG91 expects mobile without the leading '+'.
     const mobile = phone.replace(/^\+/, '');
     const url = `${MSG91_ENDPOINT}?template_id=${encodeURIComponent(
       env.MSG91_TEMPLATE_ID,
@@ -41,42 +38,49 @@ class Msg91Provider implements OtpProvider {
     if (json.type && json.type !== 'success') {
       throw new Error(`MSG91 rejected the request: ${json.message ?? 'unknown error'}`);
     }
-    logger.info({ phone }, 'MSG91 OTP dispatched');
+    logOtpDispatched(OtpChannel.PHONE, phone, 'MSG91');
   }
 }
 
-class MockProvider implements OtpProvider {
+class MockPhoneOtpProvider implements PhoneOtpProvider {
   async send(phone: string, code: string): Promise<void> {
-    logger.info({ phone, code }, '[OTP MOCK] code generated (do not log in production!)');
+    logOtpMock(OtpChannel.PHONE, phone, code);
   }
 }
 
-class NotImplementedProvider implements OtpProvider {
+class NotImplementedPhoneProvider implements PhoneOtpProvider {
   constructor(private name: string) {}
+
   async send(phone: string, code: string): Promise<void> {
-    logger.warn(
-      { phone, provider: this.name },
-      `${this.name} OTP provider not implemented; falling back to console log`,
-    );
-    logger.info({ phone, code }, '[OTP DEV] code (placeholder until provider wired)');
+    logOtpMock(OtpChannel.PHONE, phone, code);
+    logOtpDispatched(OtpChannel.PHONE, phone, `${this.name}_PLACEHOLDER`);
   }
 }
 
-let cached: OtpProvider | null = null;
+let cached: PhoneOtpProvider | null = null;
 
-export function getOtpProvider(): OtpProvider {
+export function getPhoneOtpProvider(): PhoneOtpProvider {
   if (cached) return cached;
+
   switch (env.OTP_PROVIDER) {
     case 'MSG91':
       cached = new Msg91Provider();
       break;
     case 'TWILIO':
-      cached = new NotImplementedProvider('TWILIO');
+      cached = new NotImplementedPhoneProvider('TWILIO');
       break;
     case 'MOCK':
+    case 'RESEND_EMAIL':
     default:
-      cached = new MockProvider();
+      cached = new MockPhoneOtpProvider();
       break;
   }
   return cached;
 }
+
+export function resetPhoneOtpProviderForTests(): void {
+  cached = null;
+}
+
+/** @deprecated Use getPhoneOtpProvider */
+export const getOtpProvider = getPhoneOtpProvider;

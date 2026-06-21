@@ -89,6 +89,7 @@ export default function OtpForm() {
     setError(null);
     try {
       await verifyOtp({
+        channel: 'EMAIL',
         email: session.email,
         code: value,
         signup:
@@ -97,6 +98,7 @@ export default function OtpForm() {
                 firstName: session.firstName ?? '',
                 lastName: session.lastName ?? '',
                 role: session.role,
+                phone: session.phone,
               }
             : undefined,
       });
@@ -114,7 +116,11 @@ export default function OtpForm() {
     setResending(true);
     setError(null);
     try {
-      const { ttlSeconds } = await requestOtp(session.email, session.mode);
+      const { ttlSeconds } = await requestOtp({
+        channel: 'EMAIL',
+        email: session.email,
+        purpose: session.mode,
+      });
       extendSession(Date.now() + ttlSeconds * 1000);
       setCooldown(RESEND_COOLDOWN);
     } catch (err) {

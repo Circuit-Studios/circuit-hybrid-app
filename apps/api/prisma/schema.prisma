@@ -76,18 +76,24 @@ enum UserRole {
   VENDOR
 }
 
+enum OtpChannel {
+  PHONE
+  EMAIL
+}
+
 model AuthOtp {
-  id        String   @id @default(uuid())
+  id        String     @id @default(uuid())
   userId    String?
-  email     String
+  channel   OtpChannel @default(EMAIL)
+  target    String
   codeHash  String
   expiresAt DateTime
-  consumed  Boolean  @default(false)
-  createdAt DateTime @default(now())
+  consumed  Boolean    @default(false)
+  createdAt DateTime   @default(now())
 
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  @@index([email, consumed])
+  @@index([channel, target, consumed])
   @@index([expiresAt])
 }
 

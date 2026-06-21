@@ -95,7 +95,8 @@ CORS_ORIGINS=http://localhost:8081,http://localhost:19006
 
 - `APP_ENV` is **mobile-only** (`EXPO_PUBLIC_APP_ENV`). The API uses `NODE_ENV`.
 - Omit `REDIS_URL` completely if you are not using Redis. Blank values are treated as unset, but omitting is clearer.
-- Dev OTP code is always **`111111`** when `OTP_PROVIDER=MOCK`.
+- Dev OTP code is always **`111111`** when `OTP_PROVIDER=MOCK` (works for both phone and email channels).
+- Email OTP uses **Resend** when `OTP_PROVIDER=RESEND_EMAIL` on the deployed API (see [Resend setup](#resend-email-otp) below).
 
 **2. Point mobile at localhost**
 
@@ -124,7 +125,7 @@ npm run mobile           # second terminal
 | Layer | Config |
 |-------|--------|
 | Mobile | EAS env: `EXPO_PUBLIC_APP_ENV=production`, production API URL |
-| API | Render dashboard: unique `JWT_SECRET`, `OTP_PROVIDER=MSG91`, real `DATABASE_URL` |
+| API | Render dashboard: unique `JWT_SECRET`, `OTP_PROVIDER=MSG91` or `RESEND_EMAIL`, real `DATABASE_URL` |
 | Database | Supabase **production** project (separate from dev/test) |
 
 See [`apps/api/docs/DEPLOYMENT.md`](../apps/api/docs/DEPLOYMENT.md) for Render deploy.
@@ -137,7 +138,33 @@ See [`apps/api/docs/DEPLOYMENT.md`](../apps/api/docs/DEPLOYMENT.md) for Render d
 |------|----------------|---------|----------|-----|
 | **Local full stack** | `http://localhost:3009` | `npm run api:dev` | Docker Postgres / Supabase dev | `MOCK` |
 | **Mobile → Render** | Render URL | Render (remote) | Render / Supabase (remote) | `MOCK` |
-| **Production** | Custom domain | Render paid | Supabase prod | MSG91 / Twilio |
+| **Production** | Custom domain | Render paid | Supabase prod | MSG91 (phone) / Resend (email) |
+
+---
+
+## Resend email OTP
+
+Use when the mobile app requests OTP with `{ channel: "EMAIL", email, purpose }`.
+
+**Render dashboard** (production source of truth — do not commit secrets):
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `OTP_PROVIDER` | Yes | Set to `RESEND_EMAIL` |
+| `RESEND_API_KEY` | Yes | From [resend.com](https://resend.com) → API Keys |
+| `RESEND_FROM_EMAIL` | Yes | Must use a **verified domain**, e.g. `Circuit <noreply@yourdomain.com>` |
+| `RESEND_REPLY_TO` | No | Optional reply-to address |
+
+**Important:** Resend delivers **email only**. Phone/SMS OTP still uses `MSG91` / `TWILIO` / `MOCK` when `channel` is `PHONE`.
+
+**Local testing:** keep `OTP_PROVIDER=MOCK` — code is `111111` for both channels.
+
+**API request shape:**
+
+```json
+POST /auth/request-otp
+{ "channel": "EMAIL", "email": "you@studio.com", "purpose": "signup" }
+```
 
 ---
 

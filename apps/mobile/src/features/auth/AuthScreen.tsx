@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CircuitLogo } from '@/components/CircuitLogo';
+import { PhoneField, usePhoneFieldState } from '@/components/PhoneField';
 import { useOtpSession } from '@/auth/OtpSessionContext';
 import { useAuthSubmit } from '@/features/auth/hooks';
 import { requestOtp } from '@/api/auth';
@@ -36,6 +37,7 @@ export default function AuthScreen() {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<UserRole | null>(null);
   const [attempted, setAttempted] = useState(false);
+  const phoneField = usePhoneFieldState();
 
   const emailValid = isValidEmail(email);
   const nameValid = tab === 'signin' || fullName.trim().length >= 1;
@@ -53,10 +55,16 @@ export default function AuthScreen() {
   const startOtp = useCallback(async () => {
     const normalized = normalizeEmail(email);
     const purpose = tab === 'signup' ? 'signup' : 'login';
-    const { ttlSeconds } = await requestOtp(normalized, purpose);
+    const { ttlSeconds } = await requestOtp({
+      channel: 'EMAIL',
+      email: normalized,
+      purpose,
+    });
     const { firstName, lastName } = splitFullName(fullName);
     setSession({
+      channel: 'EMAIL',
       email: normalized,
+      phone: phoneField.e164 ?? undefined,
       mode: purpose,
       firstName: tab === 'signup' ? firstName : undefined,
       lastName: tab === 'signup' ? lastName : undefined,
@@ -64,7 +72,7 @@ export default function AuthScreen() {
       expiresAtMs: Date.now() + ttlSeconds * 1000,
     });
     router.push({ pathname: '/(auth)/otp', params: { mode: purpose } });
-  }, [email, fullName, role, router, setSession, tab]);
+  }, [email, fullName, phoneField.e164, role, router, setSession, tab]);
 
   const { submitting, error, handleSubmit } = useAuthSubmit({
     canSubmit,
@@ -127,6 +135,21 @@ export default function AuthScreen() {
           textContentType="emailAddress"
           icon="mail-outline"
         />
+
+        {tab === 'signup' ? (
+          <View style={styles.phoneBlock}>
+            <PhoneField
+              label="Phone (optional)"
+              country={phoneField.country}
+              nationalNumber={phoneField.nationalNumber}
+              onCountryChange={phoneField.setCountry}
+              onNationalNumberChange={phoneField.setNationalNumber}
+              hint="Used for crew invites — OTP is sent to your email."
+              showError={attempted && !!phoneField.nationalNumber && !phoneField.isValid}
+              error={phoneField.error ?? undefined}
+            />
+          </View>
+        ) : null}
 
         {tab === 'signup' ? (
           <View style={styles.roleBlock}>
@@ -256,6 +279,7 @@ const styles = StyleSheet.create({
   },
   fieldIcon: { marginLeft: spacing.sm },
   roleBlock: { marginBottom: spacing.lg },
+  phoneBlock: { marginBottom: spacing.lg },
   roleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   roleChip: {
     paddingHorizontal: spacing.lg,
