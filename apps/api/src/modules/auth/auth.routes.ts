@@ -9,24 +9,25 @@ import { hashPassword, verifyPassword } from './password.service.js';
 import { requestOtp, verifyOtp } from './otp.service.js';
 import { OTP_TTL_SECONDS } from './auth.constants.js';
 
-// Split into a public router (login, register, request-otp, verify-otp) and a
-// protected router (me, me/invites). The server mounts both under /auth.
 export const authPublicRouter: Router = Router();
 export const authProtectedRouter: Router = Router();
 
-const phoneSchema = z
+const emailSchema = z
   .string()
   .trim()
-  .regex(/^\+\d{8,15}$/, 'Phone must be E.164 format like +919812345678');
+  .toLowerCase()
+  .email('Enter a valid email address')
+  .max(254);
 
 const passwordSchema = z
   .string()
   .min(8, 'Password must be at least 8 characters')
-  .max(128, 'Password is too long');
+  .max(128, 'Password is too long')
+  .optional();
 
 const personNameSchema = z.object({
   firstName: z.string().trim().min(1, 'First name is required').max(60),
-  lastName: z.string().trim().min(1, 'Last name is required').max(60),
+  lastName: z.string().trim().max(60).default(''),
 });
 
 const signupPayloadSchema = personNameSchema.extend({
@@ -35,30 +36,27 @@ const signupPayloadSchema = personNameSchema.extend({
 });
 
 const requestOtpSchema = z.object({
-  phone: phoneSchema,
+  email: emailSchema,
   purpose: z.enum(['signup', 'login']).optional(),
 });
 
 const loginSchema = z.object({
-  phone: phoneSchema,
-  password: passwordSchema,
-});
-
-const registerSchema = personNameSchema.extend({
-  phone: phoneSchema,
-  password: passwordSchema,
-  role: z.nativeEnum(UserRole),
+  email: emailSchema,
+  password: z.string().min(8, 'Password must be at least 8 characters').max(128),
 });
 
 const verifyOtpSchema = z.object({
-  phone: phoneSchema,
+  email: emailSchema,
   code: z.string().regex(/^\d{6}$/, 'OTP must be 6 digits'),
   signup: signupPayloadSchema.optional(),
 });
 
-async function linkPendingInvites(phone: string, userId: string): Promise<void> {
+async function linkPendingInvites(email: string, userId: string): Promise<void> {
   await prisma.projectMember.updateMany({
-    where: { inviteePhone: phone, userId: null },
+    where: {
+      userId: null,
+      OR: [{ inviteeEmail: email }, { inviteePhone: email }],
+    },
     data: { userId },
   });
 }
@@ -66,53 +64,31 @@ async function linkPendingInvites(phone: string, userId: string): Promise<void> 
 authPublicRouter.post(
   '/login',
   asyncHandler(async (req, res) => {
-    const { phone, password } = loginSchema.parse(req.body);
-    const user = await prisma.user.findUnique({ where: { phone } });
+    const { email, password } = loginSchema.parse(req.body);
+    const user = await prisma.user.findUnique({ where: { email } });
     if (!user?.passwordHash) {
-      throw unauthorized('Invalid phone or password');
+      throw unauthorized('Invalid email or password');
     }
     const ok = await verifyPassword(password, user.passwordHash);
     if (!ok) {
-      throw unauthorized('Invalid phone or password');
+      throw unauthorized('Invalid email or password');
     }
     res.json(buildAuthResponse(user));
   }),
 );
 
 authPublicRouter.post(
-  '/register',
-  asyncHandler(async (req, res) => {
-    const input = registerSchema.parse(req.body);
-    const existing = await prisma.user.findUnique({ where: { phone: input.phone } });
-    if (existing) {
-      throw conflict('An account with this phone number already exists');
-    }
-    const passwordHash = await hashPassword(input.password);
-    const user = await prisma.user.create({
-      data: {
-        phone: input.phone,
-        firstName: input.firstName,
-        lastName: input.lastName,
-        defaultRole: input.role,
-        passwordHash,
-      },
-    });
-    await linkPendingInvites(input.phone, user.id);
-    res.status(201).json(buildAuthResponse(user));
-  }),
-);
-
-authPublicRouter.post(
   '/request-otp',
   asyncHandler(async (req, res) => {
-    const { phone, purpose } = requestOtpSchema.parse(req.body);
-    if (purpose === 'signup') {
-      const existing = await prisma.user.findUnique({ where: { phone } });
-      if (existing) {
-        throw conflict('An account with this phone number already exists');
-      }
+    const { email, purpose } = requestOtpSchema.parse(req.body);
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (purpose === 'signup' && existing) {
+      throw conflict('An account with this email already exists');
     }
-    await requestOtp(phone);
+    if (purpose === 'login' && !existing) {
+      throw notFound('No account found for this email');
+    }
+    await requestOtp(email);
     res.json({ ok: true, ttlSeconds: OTP_TTL_SECONDS });
   }),
 );
@@ -121,28 +97,30 @@ authPublicRouter.post(
   '/verify-otp',
   asyncHandler(async (req, res) => {
     const input = verifyOtpSchema.parse(req.body);
-    await verifyOtp(input.phone, input.code);
+    await verifyOtp(input.email, input.code);
 
-    let user = await prisma.user.findUnique({ where: { phone: input.phone } });
+    let user = await prisma.user.findUnique({ where: { email: input.email } });
     if (!user) {
       if (!input.signup) {
         throw badRequest(
-          'First-time login requires signup payload (firstName, lastName, role, password)',
+          'First-time sign-in requires signup payload (firstName, lastName, role)',
         );
       }
-      const passwordHash = await hashPassword(input.signup.password);
+      const passwordHash = input.signup.password
+        ? await hashPassword(input.signup.password)
+        : undefined;
       user = await prisma.user.create({
         data: {
-          phone: input.phone,
+          email: input.email,
           firstName: input.signup.firstName,
           lastName: input.signup.lastName,
           defaultRole: input.signup.role,
           passwordHash,
         },
       });
-      await linkPendingInvites(input.phone, user.id);
+      await linkPendingInvites(input.email, user.id);
     } else if (input.signup) {
-      throw conflict('An account with this phone number already exists');
+      throw conflict('An account with this email already exists');
     }
 
     res.json(buildAuthResponse(user));
@@ -180,14 +158,17 @@ authProtectedRouter.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const userId = req.user?.sub;
-    const phone = req.user?.phone;
+    const email = req.user?.email;
     if (!userId) {
       throw badRequest('Missing auth context');
     }
     const invites = await prisma.projectMember.findMany({
       where: {
         status: 'INVITED',
-        OR: [{ userId }, ...(phone ? [{ inviteePhone: phone }] : [])],
+        OR: [
+          { userId },
+          ...(email ? [{ inviteeEmail: email }] : []),
+        ],
       },
       include: {
         project: { select: { id: true, name: true, language: true, genre: true } },

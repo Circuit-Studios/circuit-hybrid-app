@@ -15,7 +15,7 @@ export default function AppLayout() {
   }
 
   if (status === 'signedOut') {
-    return <Redirect href="/(auth)/welcome" />;
+    return <Redirect href="/(auth)/splash" />;
   }
 
   return (
@@ -25,7 +25,9 @@ export default function AppLayout() {
         contentStyle: { backgroundColor: colors.bg },
         animation: 'slide_from_right',
       }}
-    />
+    >
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+    </Stack>
   );
 }
 

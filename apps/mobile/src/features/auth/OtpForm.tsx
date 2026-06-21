@@ -7,7 +7,7 @@ import { FormErrorText } from '@/components/FormErrorText';
 import { Button } from '@/components/ui/Button';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { useAuth } from '@/auth/AuthContext';
-import { useSignupSession } from '@/auth/SignupSessionContext';
+import { useOtpSession } from '@/auth/OtpSessionContext';
 import { requestOtp } from '@/api/auth';
 import { readApiError } from '@/api/client';
 import { useContentFrame } from '@/hooks/useContentFrame';
@@ -19,12 +19,11 @@ const RESEND_COOLDOWN = 30;
 export default function OtpForm() {
   const router = useRouter();
   const { verifyOtp } = useAuth();
-  const { session, clearSession, extendSession } = useSignupSession();
+  const { session, clearSession, extendSession } = useOtpSession();
   const { contentWidth, isLandscape, isCompactHeight } = useContentFrame('form');
   const scroll = isLandscape || isCompactHeight;
-  const params = useLocalSearchParams<{ mode?: 'signup' }>();
-  const isSignup = params.mode === 'signup';
-  const phone = session?.phone ?? '';
+  const params = useLocalSearchParams<{ mode?: 'signup' | 'login' }>();
+  const mode = params.mode === 'login' ? 'login' : 'signup';
 
   const inputRef = useRef<TextInput>(null);
   const [code, setCode] = useState('');
@@ -35,11 +34,13 @@ export default function OtpForm() {
   const [error, setError] = useState<string | null>(null);
 
   const boxSize = useMemo(() => getOtpBoxSize(contentWidth), [contentWidth]);
+  const email = session?.email ?? '';
 
   useEffect(() => {
-    if (!isSignup || session) return;
-    router.replace('/(auth)/signup');
-  }, [isSignup, router, session]);
+    if (!session) {
+      router.replace('/(auth)/auth');
+    }
+  }, [router, session]);
 
   useEffect(() => {
     if (!session) return;
@@ -48,7 +49,7 @@ export default function OtpForm() {
       const remainingMs = session.expiresAtMs - Date.now();
       if (remainingMs <= 0) {
         clearSession();
-        router.replace('/(auth)/signup');
+        router.replace('/(auth)/auth');
         return;
       }
       setOtpSecondsLeft(Math.ceil(remainingMs / 1000));
@@ -56,7 +57,7 @@ export default function OtpForm() {
 
     if (isSessionExpired(session.expiresAtMs)) {
       clearSession();
-      router.replace('/(auth)/signup');
+      router.replace('/(auth)/auth');
       return;
     }
 
@@ -81,21 +82,23 @@ export default function OtpForm() {
     if (isSessionExpired(session.expiresAtMs)) {
       setError('This code expired. Request a new one.');
       clearSession();
-      router.replace('/(auth)/signup');
+      router.replace('/(auth)/auth');
       return;
     }
     setSubmitting(true);
     setError(null);
     try {
       await verifyOtp({
-        phone: session.phone,
+        email: session.email,
         code: value,
-        signup: {
-          firstName: session.firstName,
-          lastName: session.lastName,
-          role: session.role,
-          password: session.password,
-        },
+        signup:
+          session.mode === 'signup' && session.role
+            ? {
+                firstName: session.firstName ?? '',
+                lastName: session.lastName ?? '',
+                role: session.role,
+              }
+            : undefined,
       });
       clearSession();
     } catch (err) {
@@ -111,7 +114,7 @@ export default function OtpForm() {
     setResending(true);
     setError(null);
     try {
-      const { ttlSeconds } = await requestOtp(session.phone, 'signup');
+      const { ttlSeconds } = await requestOtp(session.email, session.mode);
       extendSession(Date.now() + ttlSeconds * 1000);
       setCooldown(RESEND_COOLDOWN);
     } catch (err) {
@@ -139,9 +142,9 @@ export default function OtpForm() {
   return (
     <ScreenContainer scroll={scroll} constrained="form">
       <ScreenHeader
-        eyebrow="Verify your number"
+        eyebrow="Verify your email"
         title="Enter the code"
-        subtitle={`We sent a 6-digit code to ${phone}. Code expires in ${formatRemainingSession(otpSecondsLeft)}.`}
+        subtitle={`We sent a 6-digit code to ${email}. Expires in ${formatRemainingSession(otpSecondsLeft)}.`}
         showRule
         size="large"
       />
@@ -170,7 +173,7 @@ export default function OtpForm() {
           }}
           style={styles.hiddenInput}
           keyboardType="number-pad"
-          autoComplete="sms-otp"
+          autoComplete="one-time-code"
           textContentType="oneTimeCode"
           maxLength={6}
           accessibilityLabel="One-time code"
@@ -194,12 +197,12 @@ export default function OtpForm() {
 
       <View style={styles.actions}>
         <Button
-          title="Create account"
+          title={mode === 'signup' ? 'Create account' : 'Sign in'}
           disabled={code.length !== 6}
           loading={submitting}
           onPress={() => handleVerify(code)}
         />
-        <Button title="Change number" variant="ghost" onPress={handleBack} />
+        <Button title="Change email" variant="ghost" onPress={handleBack} />
       </View>
     </ScreenContainer>
   );

@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { pickerStyles as styles } from './pickerStyles';
+
+const OPTIONS_MAX_HEIGHT = 240;
 
 export type PickerOption<T extends string> = {
   value: T;
@@ -69,7 +71,7 @@ export function DropdownPicker<T extends string>(props: DropdownPickerProps<T>) 
   }
 
   return (
-    <View style={styles.dropdownWrap}>
+    <View style={[styles.dropdownWrap, open && styles.dropdownWrapOpen]}>
       <Text style={styles.label}>{label}</Text>
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
       <Pressable
@@ -78,6 +80,7 @@ export function DropdownPicker<T extends string>(props: DropdownPickerProps<T>) 
         onPress={() => setOpen(prev => !prev)}
         style={({ pressed }) => [
           styles.dropdownTrigger,
+          open && styles.dropdownTriggerOpen,
           pressed && styles.dropdownTriggerPressed,
         ]}
       >
@@ -89,37 +92,47 @@ export function DropdownPicker<T extends string>(props: DropdownPickerProps<T>) 
 
       {open ? (
         <View style={styles.dropdownList}>
-          {options.map(option => {
-            const active = isSelected(option);
-            return (
-              <Pressable
-                key={option.value}
-                onPress={() => toggleOption(option)}
-                accessibilityRole={isMultiple ? 'checkbox' : 'menuitem'}
-                accessibilityState={isMultiple ? { checked: active } : { selected: active }}
-                style={({ pressed }) => [
-                  styles.dropdownOption,
-                  active && styles.dropdownOptionActive,
-                  pressed && styles.dropdownOptionPressed,
-                ]}
-              >
-                <Text
-                  style={[styles.dropdownOptionText, active && styles.dropdownOptionTextActive]}
-                >
-                  {isMultiple ? `${active ? '✓' : ' '} ${option.label}` : option.label}
-                </Text>
-              </Pressable>
-            );
-          })}
           {isMultiple ? (
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel="Done selecting languages"
               onPress={() => setOpen(false)}
-              style={({ pressed }) => [styles.doneBtn, pressed && { opacity: 0.7 }]}
+              style={({ pressed }) => [styles.doneBtn, pressed && styles.doneBtnPressed]}
             >
-              <Text style={styles.doneBtnText}>Done</Text>
+              <Text style={styles.doneBtnText}>
+                {hasValue ? `Done (${props.value.length} selected)` : 'Done'}
+              </Text>
             </Pressable>
           ) : null}
+          <ScrollView
+            style={[styles.dropdownOptionsScroll, { maxHeight: OPTIONS_MAX_HEIGHT }]}
+            contentContainerStyle={styles.dropdownOptionsContent}
+            keyboardShouldPersistTaps="handled"
+            nestedScrollEnabled
+          >
+            {options.map(option => {
+              const active = isSelected(option);
+              return (
+                <Pressable
+                  key={option.value}
+                  onPress={() => toggleOption(option)}
+                  accessibilityRole={isMultiple ? 'checkbox' : 'menuitem'}
+                  accessibilityState={isMultiple ? { checked: active } : { selected: active }}
+                  style={({ pressed }) => [
+                    styles.dropdownOption,
+                    active && styles.dropdownOptionActive,
+                    pressed && styles.dropdownOptionPressed,
+                  ]}
+                >
+                  <Text
+                    style={[styles.dropdownOptionText, active && styles.dropdownOptionTextActive]}
+                  >
+                    {isMultiple ? `${active ? '✓' : ' '} ${option.label}` : option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
         </View>
       ) : null}
     </View>

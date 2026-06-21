@@ -45,11 +45,18 @@ export const api: AxiosInstance = axios.create({
 
 /** Best-effort ping so Render free tier is awake before a user-facing auth call. */
 export async function wakeApi(): Promise<void> {
+  if (!API_BASE_URL.includes('onrender.com')) return;
   try {
     await api.get('/health', { timeout: API_TIMEOUT_MS });
   } catch {
     // Non-fatal — the follow-up request may still succeed once the service is up.
   }
+}
+
+let authToken: string | null = null;
+
+export function setAuthToken(token: string | null): void {
+  authToken = token;
 }
 
 api.interceptors.request.use(async config => {
@@ -59,10 +66,10 @@ api.interceptors.request.use(async config => {
     config.headers[key] = value;
   }
 
-  const token = await storage.getToken();
+  const token = authToken ?? (await storage.getToken());
   if (token) {
+    authToken = token;
     config.headers.Authorization = `Bearer ${token}`;
-    void storage.touchActivity();
   }
 
   const method = (config.method ?? 'get').toUpperCase();

@@ -15,6 +15,7 @@ export const pickerStyles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   dropdownWrap: { marginBottom: spacing.lg },
+  dropdownWrapOpen: { zIndex: 20 },
   dropdownTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -27,6 +28,7 @@ export const pickerStyles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   dropdownTriggerPressed: { borderColor: colors.accent },
+  dropdownTriggerOpen: { borderColor: colors.accent },
   dropdownValue: { ...typography.body, color: colors.textPrimary, flex: 1 },
   dropdownPlaceholder: { color: colors.textMuted },
   chev: { ...typography.bodyStrong, color: colors.textSecondary, marginLeft: spacing.sm },
@@ -37,6 +39,10 @@ export const pickerStyles = StyleSheet.create({
     borderColor: colors.glassBorder,
     borderRadius: radius.md,
     overflow: 'hidden',
+  },
+  dropdownOptionsScroll: {},
+  dropdownOptionsContent: {
+    flexGrow: 0,
   },
   dropdownOption: {
     paddingHorizontal: spacing.md,
@@ -49,13 +55,15 @@ export const pickerStyles = StyleSheet.create({
   dropdownOptionText: { ...typography.body, color: colors.textPrimary },
   dropdownOptionTextActive: { ...typography.bodyStrong, color: colors.accent },
   doneBtn: {
-    alignSelf: 'flex-end',
-    margin: spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
     backgroundColor: colors.accent,
   },
+  doneBtnPressed: { opacity: 0.85 },
   doneBtnText: { ...typography.bodyStrong, color: colors.accentInk },
   row: { gap: spacing.sm, paddingVertical: spacing.xs },
   chip: {

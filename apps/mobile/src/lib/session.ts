@@ -1,7 +1,7 @@
 /** OTP signup verification window (server OTP_TTL_SECONDS). */
 export const OTP_TTL_MS = 5 * 60 * 1000;
 
-/** Sign out after this much time without user or API activity. */
+/** Sign out after this much time without user interaction (taps/gestures). */
 export const IDLE_TIMEOUT_MS = 3 * 60 * 1000;
 
 /** How often we re-check idle timeout while signed in. */

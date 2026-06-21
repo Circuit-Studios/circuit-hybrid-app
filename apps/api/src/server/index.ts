@@ -22,6 +22,7 @@ import charactersRoutes from '../modules/characters/characters.routes.js';
 import scenesRoutes from '../modules/scenes/scenes.routes.js';
 import departmentsRoutes from '../modules/departments/departments.routes.js';
 import notificationsRoutes from '../notifications/notifications.routes.js';
+import homeRoutes from '../modules/home/home.routes.js';
 import { prisma } from '../lib/prisma.js';
 import { initSocket } from '../realtime/socket.js';
 import { startConflictWorker, stopConflictWorker } from '../queues/conflicts.queue.js';
@@ -141,6 +142,7 @@ app.use('/', charactersRoutes);
 app.use('/', scenesRoutes);
 app.use('/', departmentsRoutes);
 app.use('/', notificationsRoutes);
+app.use('/', homeRoutes);
 
 app.use((req, res, next) => {
   if (res.headersSent) return next();

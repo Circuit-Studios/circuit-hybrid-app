@@ -79,7 +79,7 @@ enum UserRole {
 model AuthOtp {
   id        String   @id @default(uuid())
   userId    String?
-  phone     String
+  email     String
   codeHash  String
   expiresAt DateTime
   consumed  Boolean  @default(false)
@@ -87,7 +87,7 @@ model AuthOtp {
 
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  @@index([phone, consumed])
+  @@index([email, consumed])
   @@index([expiresAt])
 }
 
@@ -152,6 +152,9 @@ model ProjectMember {
   // For DEPT_HEAD / CREW, links them to a specific department on this project.
   projectDepartmentId String?
   status              MembershipStatus  @default(INVITED)
+  setStatus           SetStatus         @default(OFF)
+  setStatusNote       String?
+  setStatusUpdatedAt  DateTime?
   invitedAt           DateTime          @default(now())
   acceptedAt          DateTime?
 
@@ -171,6 +174,13 @@ enum MembershipStatus {
   INVITED
   ACTIVE
   REMOVED
+}
+
+enum SetStatus {
+  ON_SET
+  EN_ROUTE
+  DONE
+  OFF
 }
 
 // ---------------- Script & AI intelligence ----------------

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { MembershipStatus, UserRole } from '@prisma/client';
+import { MembershipStatus, UserRole, SetStatus } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { asyncHandler, badRequest, conflict, forbidden, notFound } from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';
@@ -141,6 +141,54 @@ router.get(
     });
 
     res.json(members);
+  }),
+);
+
+const updateSetStatusSchema = z.object({
+  setStatus: z.nativeEnum(SetStatus),
+  setStatusNote: z.string().trim().max(200).optional(),
+});
+
+// PATCH /projects/:projectId/members/:memberId/set-status
+router.patch(
+  '/projects/:projectId/members/:memberId/set-status',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const projectId = req.params.projectId!;
+    const memberId = req.params.memberId!;
+    const userId = req.user!.sub;
+    const input = updateSetStatusSchema.parse(req.body);
+
+    const me = await prisma.projectMember.findFirst({
+      where: { projectId, userId, status: MembershipStatus.ACTIVE },
+    });
+    if (!me) throw forbidden('You are not a member of this project');
+
+    const member = await prisma.projectMember.findFirst({
+      where: { id: memberId, projectId, status: MembershipStatus.ACTIVE },
+    });
+    if (!member) throw notFound('Member not found');
+
+    const isSelf = member.userId === userId;
+    const canManage = INVITER_ROLES.includes(me.role);
+    if (!isSelf && !canManage) {
+      throw forbidden('You can only update your own on-set status');
+    }
+
+    const updated = await prisma.projectMember.update({
+      where: { id: memberId },
+      data: {
+        setStatus: input.setStatus,
+        setStatusNote: input.setStatusNote,
+        setStatusUpdatedAt: new Date(),
+      },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
+        projectDepartment: { select: { id: true, displayName: true, kind: true } },
+      },
+    });
+
+    res.json(updated);
   }),
 );
 

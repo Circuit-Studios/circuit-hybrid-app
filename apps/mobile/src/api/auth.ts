@@ -3,33 +3,28 @@ import type { UserRole, VerifyOtpResponse, AuthUser } from './types';
 
 export type AuthSessionResponse = VerifyOtpResponse;
 
-export async function login(phone: string, password: string): Promise<AuthSessionResponse> {
-  const { data } = await api.post<AuthSessionResponse>('/auth/login', { phone, password });
-  return data;
-}
-
 export type OtpPurpose = 'signup' | 'login';
 
 export async function requestOtp(
-  phone: string,
+  email: string,
   purpose?: OtpPurpose,
 ): Promise<{ ok: boolean; ttlSeconds: number }> {
   await wakeApi();
   const { data } = await api.post<{ ok: boolean; ttlSeconds: number }>('/auth/request-otp', {
-    phone,
+    email,
     purpose,
   });
   return data;
 }
 
 export interface VerifyOtpInput {
-  phone: string;
+  email: string;
   code: string;
   signup?: {
     firstName: string;
     lastName: string;
     role: UserRole;
-    password: string;
+    password?: string;
   };
 }
 

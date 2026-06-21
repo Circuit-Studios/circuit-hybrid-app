@@ -1,1 +1,5 @@
-export { default } from '@/features/auth/SignupForm';
+import { Redirect } from 'expo-router';
+
+export default function SignupScreen() {
+  return <Redirect href="/(auth)/auth" />;
+}
