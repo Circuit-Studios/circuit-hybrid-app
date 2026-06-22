@@ -41,6 +41,7 @@ export interface AuthUser {
   id: string;
   phone: string | null;
   email: string | null;
+  emailVerified?: boolean;
   firstName: string;
   lastName: string;
   defaultRole: UserRole;

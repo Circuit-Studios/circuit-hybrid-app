@@ -22,6 +22,7 @@ model User {
   id            String   @id @default(uuid())
   phone         String?  @unique
   email         String?  @unique
+  emailVerified Boolean  @default(false)
   firstName     String
   lastName      String
   defaultRole   UserRole @default(CREW) // role declared during signup
@@ -95,6 +96,28 @@ model AuthOtp {
 
   @@index([channel, target, consumed])
   @@index([expiresAt])
+}
+
+enum EmailOtpPurpose {
+  SIGNUP
+  LOGIN
+  VERIFY_EMAIL
+}
+
+/// Email OTP records — plain codes are never stored; only HMAC-SHA256 hashes.
+model EmailOtp {
+  id         String          @id @default(uuid())
+  email      String
+  otpHash    String          @map("otp_hash")
+  purpose    EmailOtpPurpose @default(VERIFY_EMAIL)
+  expiresAt  DateTime        @map("expires_at")
+  attempts   Int             @default(0)
+  consumedAt DateTime?       @map("consumed_at")
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  @@index([email, purpose, consumedAt])
+  @@index([expiresAt])
+  @@map("email_otps")
 }
 
 // ---------------- Project ----------------

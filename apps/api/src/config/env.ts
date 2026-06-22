@@ -18,6 +18,8 @@ const schema = z.object({
   JWT_EXPIRES_IN: z.string().default('7d'),
 
   OTP_PROVIDER: z.enum(['MOCK', 'MSG91', 'TWILIO', 'RESEND_EMAIL']).default('MOCK'),
+  OTP_SECRET: z.string().min(32, 'OTP_SECRET must be at least 32 chars'),
+  OTP_FROM_EMAIL: optionalString,
   RESEND_API_KEY: optionalString,
   RESEND_FROM_EMAIL: optionalString,
   RESEND_REPLY_TO: optionalString,

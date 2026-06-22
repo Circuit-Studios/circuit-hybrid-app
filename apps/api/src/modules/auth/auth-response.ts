@@ -28,6 +28,7 @@ export function buildAuthResponse(user: User) {
       firstName: user.firstName,
       lastName: user.lastName,
       defaultRole: user.defaultRole,
+      emailVerified: user.emailVerified,
       createdAt: user.createdAt,
     },
   };

@@ -3,12 +3,39 @@ import type { UserRole, VerifyOtpResponse, AuthUser } from './types';
 
 export type AuthSessionResponse = VerifyOtpResponse;
 
-export type OtpPurpose = 'signup' | 'login';
+export type OtpPurpose = 'signup' | 'login' | 'verify_email';
 export type OtpChannel = 'PHONE' | 'EMAIL';
 
 export type RequestOtpInput =
   | { channel: 'EMAIL'; email: string; purpose?: OtpPurpose }
   | { channel: 'PHONE'; phone: string; purpose?: OtpPurpose };
+
+/** POST /send-otp — generic email verification (Resend). */
+export async function sendEmailVerificationOtp(
+  email: string,
+  purpose: OtpPurpose = 'verify_email',
+): Promise<{ ok: boolean; message: string; ttlSeconds: number }> {
+  await wakeApi();
+  const { data } = await api.post<{ ok: boolean; message: string; ttlSeconds: number }>(
+    '/send-otp',
+    { email, purpose },
+  );
+  return data;
+}
+
+/** POST /verify-otp — verify email OTP and mark email verified. */
+export async function verifyEmailVerificationOtp(
+  email: string,
+  otp: string,
+  purpose: OtpPurpose = 'verify_email',
+): Promise<{ ok: boolean; message: string; emailVerified: boolean }> {
+  const { data } = await api.post<{
+    ok: boolean;
+    message: string;
+    emailVerified: boolean;
+  }>('/verify-otp', { email, otp, purpose });
+  return data;
+}
 
 export async function requestOtp(
   input: RequestOtpInput,

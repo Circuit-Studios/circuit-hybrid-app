@@ -23,6 +23,7 @@ import scenesRoutes from '../modules/scenes/scenes.routes.js';
 import departmentsRoutes from '../modules/departments/departments.routes.js';
 import notificationsRoutes from '../notifications/notifications.routes.js';
 import homeRoutes from '../modules/home/home.routes.js';
+import emailOtpRoutes from '../modules/auth/email-otp.routes.js';
 import { prisma } from '../lib/prisma.js';
 import { initSocket } from '../realtime/socket.js';
 import { startConflictWorker, stopConflictWorker } from '../queues/conflicts.queue.js';
@@ -116,6 +117,13 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const emailOtpLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: env.NODE_ENV === 'production' ? 8 : 80,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.get('/health', async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -127,6 +135,7 @@ app.get('/health', async (_req, res) => {
 
 app.use('/auth', authLimiter, authPublicRouter);
 app.use('/auth', authProtectedRouter);
+app.use(emailOtpLimiter, emailOtpRoutes);
 
 app.use('/projects', projectsRoutes);
 

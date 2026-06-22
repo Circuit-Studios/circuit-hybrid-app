@@ -76,12 +76,23 @@ authPublicRouter.post(
     await assertOtpPurpose(body);
 
     if (body.channel === 'EMAIL') {
-      await requestOtp({ channel: OtpChannel.EMAIL, target: body.email });
+      await requestOtp({
+        channel: OtpChannel.EMAIL,
+        target: body.email,
+        purpose: body.purpose,
+      });
     } else {
-      await requestOtp({ channel: OtpChannel.PHONE, target: body.phone });
+      await requestOtp({
+        channel: OtpChannel.PHONE,
+        target: body.phone,
+        purpose: body.purpose,
+      });
     }
 
-    res.json({ ok: true, ttlSeconds: OTP_TTL_SECONDS });
+    res.json({
+      ok: true,
+      ttlSeconds: body.channel === 'EMAIL' ? 600 : OTP_TTL_SECONDS,
+    });
   }),
 );
 
@@ -95,6 +106,7 @@ authPublicRouter.post(
         channel: OtpChannel.EMAIL,
         target: input.email,
         code: input.code,
+        purpose: input.signup ? 'signup' : 'login',
       });
 
       let user = await prisma.user.findUnique({ where: { email: input.email } });
@@ -110,6 +122,7 @@ authPublicRouter.post(
         user = await prisma.user.create({
           data: {
             email: input.email,
+            emailVerified: true,
             phone: input.signup.phone,
             firstName: input.signup.firstName,
             lastName: input.signup.lastName,
@@ -126,11 +139,12 @@ authPublicRouter.post(
       return;
     }
 
-    await verifyOtp({
-      channel: OtpChannel.PHONE,
-      target: input.phone,
-      code: input.code,
-    });
+      await verifyOtp({
+        channel: OtpChannel.PHONE,
+        target: input.phone,
+        code: input.code,
+        purpose: input.signup ? 'signup' : 'login',
+      });
 
     let user = await prisma.user.findUnique({ where: { phone: input.phone } });
     if (!user) {
@@ -181,6 +195,7 @@ authProtectedRouter.get(
         firstName: user.firstName,
         lastName: user.lastName,
         defaultRole: user.defaultRole,
+        emailVerified: user.emailVerified,
         createdAt: user.createdAt,
       },
     });

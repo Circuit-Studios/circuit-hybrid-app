@@ -1,46 +1,37 @@
-import { randomInt } from 'node:crypto';
-import bcrypt from 'bcryptjs';
 import { OtpChannel } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { badRequest, unauthorized } from '../../lib/http.js';
-import { env } from '../../config/env.js';
 import { OTP_TTL_SECONDS } from './auth.constants.js';
 import { normalizeOtpTarget } from './otp-target.js';
-import { getEmailOtpProvider } from './providers/resend-email-otp.provider.js';
 import { getPhoneOtpProvider } from './providers/phone-otp.provider.js';
+import { generateSixDigitOtp, hashOtpCode, verifyOtpCode } from './otp-crypto.js';
+import {
+  sendEmailOtp,
+  toEmailOtpPurpose,
+  verifyEmailOtp,
+} from './email-otp.service.js';
 
 export const OTP_RESEND_COOLDOWN_SECONDS = 30;
-const DEV_FIXED_OTP = '111111';
 
 export interface RequestOtpInput {
   channel: OtpChannel;
   target: string;
+  purpose?: 'signup' | 'login';
 }
 
 export interface VerifyOtpInput {
   channel: OtpChannel;
   target: string;
   code: string;
+  purpose?: 'signup' | 'login';
 }
 
-function shouldUseDevFixedOtp(): boolean {
-  return env.NODE_ENV !== 'production' && env.OTP_PROVIDER === 'MOCK';
-}
-
-function generateOtp(): string {
-  if (shouldUseDevFixedOtp()) return DEV_FIXED_OTP;
-  return randomInt(100_000, 1_000_000).toString();
-}
-
-async function dispatchOtp(channel: OtpChannel, target: string, code: string): Promise<void> {
+export async function requestOtp({ channel, target, purpose }: RequestOtpInput): Promise<void> {
   if (channel === OtpChannel.EMAIL) {
-    await getEmailOtpProvider().send(target, code);
+    await sendEmailOtp(target, toEmailOtpPurpose(purpose));
     return;
   }
-  await getPhoneOtpProvider().send(target, code);
-}
 
-export async function requestOtp({ channel, target }: RequestOtpInput): Promise<void> {
   const normalized = normalizeOtpTarget(channel, target);
 
   const recent = await prisma.authOtp.findFirst({
@@ -56,18 +47,28 @@ export async function requestOtp({ channel, target }: RequestOtpInput): Promise<
     );
   }
 
-  const code = generateOtp();
-  const codeHash = await bcrypt.hash(code, 10);
+  const plainOtp = generateSixDigitOtp();
+  const codeHash = hashOtpCode(plainOtp);
   const expiresAt = new Date(Date.now() + OTP_TTL_SECONDS * 1000);
 
   await prisma.authOtp.create({
     data: { channel, target: normalized, codeHash, expiresAt },
   });
 
-  await dispatchOtp(channel, normalized, code);
+  await getPhoneOtpProvider().send(normalized, plainOtp);
 }
 
-export async function verifyOtp({ channel, target, code }: VerifyOtpInput): Promise<true> {
+export async function verifyOtp({
+  channel,
+  target,
+  code,
+  purpose,
+}: VerifyOtpInput): Promise<true> {
+  if (channel === OtpChannel.EMAIL) {
+    await verifyEmailOtp(target, code, toEmailOtpPurpose(purpose));
+    return true;
+  }
+
   const normalized = normalizeOtpTarget(channel, target);
   const candidate = await prisma.authOtp.findFirst({
     where: {
@@ -79,12 +80,11 @@ export async function verifyOtp({ channel, target, code }: VerifyOtpInput): Prom
     orderBy: { createdAt: 'desc' },
   });
   if (!candidate) {
-    const label = channel === OtpChannel.EMAIL ? 'email address' : 'phone number';
-    throw unauthorized(`No active OTP for this ${label}`);
+    throw unauthorized('Invalid or expired verification code.');
   }
 
-  const ok = await bcrypt.compare(code, candidate.codeHash);
-  if (!ok) throw unauthorized('Invalid OTP');
+  const ok = verifyOtpCode(code, candidate.codeHash);
+  if (!ok) throw unauthorized('Invalid or expired verification code.');
 
   await prisma.authOtp.update({
     where: { id: candidate.id },

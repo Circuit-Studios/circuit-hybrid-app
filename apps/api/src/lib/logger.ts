@@ -74,6 +74,7 @@ const loggerOptions: LoggerOptions = {
       'DATABASE_URL',
       'OPENAI_API_KEY',
       'RESEND_API_KEY',
+      'OTP_SECRET',
       'AWS_SECRET_ACCESS_KEY',
       'SUPABASE_SERVICE_ROLE_KEY',
     ],
