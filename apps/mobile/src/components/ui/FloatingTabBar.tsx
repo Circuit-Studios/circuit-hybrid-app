@@ -1,7 +1,5 @@
 import type { ReactNode } from 'react';
-import { BlurView } from 'expo-blur';
 import {
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -11,17 +9,21 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GlassLens, GlassSurface } from '@/components/GlassSurface';
 import {
   FLOATING_TAB_BAR_HEIGHT,
   FLOATING_TAB_BAR_MAX_WIDTH,
   FLOATING_TAB_BAR_WIDTH_RATIO,
-  FLOATING_TAB_ITEM_ACTIVE_WIDTH,
   FLOATING_TAB_ITEM_MIN,
 } from '@/components/ui/floatingTabBarMetrics';
 import { colors, radius, spacing, typography } from '@/theme';
 
 const ICON_INACTIVE = '#6B7280';
 const ICON_ACTIVE = '#121212';
+const ICON_SIZE_INACTIVE = 24;
+const ICON_SIZE_ACTIVE = 22;
+/** Fixed circle behind the active icon — same footprint as inactive slots. */
+const ACTIVE_LENS_SIZE = 48;
 
 export type FloatingTabItem = {
   key: string;
@@ -63,16 +65,11 @@ export function FloatingTabBar({
 
   return (
     <View pointerEvents="box-none" style={[styles.shell, { paddingBottom: bottomPad }, style]}>
-      <View style={[styles.capsule, styles.capsuleShadow, { width: barWidth }]}>
-        <BlurView
-          intensity={Platform.OS === 'ios' ? 88 : 72}
-          tint={Platform.OS === 'ios' ? 'systemChromeMaterialLight' : 'extraLight'}
-          blurMethod={Platform.OS === 'android' ? 'dimezisBlurViewSdk31Plus' : undefined}
-          style={[StyleSheet.absoluteFill, styles.blur]}
-        />
-        <View pointerEvents="none" style={styles.glassTint} />
-        <View pointerEvents="none" style={styles.specular} />
-
+      <GlassSurface
+        variant="tabBar"
+        borderRadius={radius.pill}
+        style={{ width: barWidth, height: FLOATING_TAB_BAR_HEIGHT, alignSelf: 'center' }}
+      >
         <View style={styles.row}>
           {items.map((item) => {
             const active = item.key === activeKey;
@@ -85,12 +82,9 @@ export function FloatingTabBar({
                 accessibilityState={{ selected: active }}
                 accessibilityLabel={item.accessibilityLabel}
                 onPress={item.onPress}
-                style={({ pressed }) => [
-                  styles.item,
-                  active ? styles.itemActive : styles.itemInactive,
-                  pressed && !active && styles.itemPressed,
-                ]}
+                style={({ pressed }) => [styles.slot, pressed && !active && styles.slotPressed]}
               >
+                {active ? <GlassLens style={styles.activeLens} /> : null}
                 <View style={styles.iconWell}>{icon}</View>
                 {showLabels && item.label ? (
                   <Text
@@ -104,17 +98,20 @@ export function FloatingTabBar({
             );
           })}
         </View>
-      </View>
+      </GlassSurface>
     </View>
   );
 }
 
-/** Default near-black icon color for tab items. */
+/** Near-black / muted icon colors for the dock. */
 export function floatingTabIconColor(active: boolean): string {
   return active ? ICON_ACTIVE : ICON_INACTIVE;
 }
 
-const CAPSULE_RADIUS = radius.pill;
+/** Filled glyphs read larger — nudge active size down for optical balance. */
+export function floatingTabIconSize(active: boolean): number {
+  return active ? ICON_SIZE_ACTIVE : ICON_SIZE_INACTIVE;
+}
 
 const styles = StyleSheet.create({
   shell: {
@@ -124,89 +121,40 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: 'center',
   },
-  capsule: {
-    minHeight: FLOATING_TAB_BAR_HEIGHT,
-    borderRadius: CAPSULE_RADIUS,
-    overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.62)',
-  },
-  capsuleShadow: Platform.select({
-    ios: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 14 },
-      shadowOpacity: 0.14,
-      shadowRadius: 28,
-    },
-    android: { elevation: 12 },
-    default: {},
-  }),
-  blur: {
-    borderRadius: CAPSULE_RADIUS,
-  },
-  glassTint: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: CAPSULE_RADIUS,
-  },
-  specular: {
-    position: 'absolute',
-    top: 0,
-    left: spacing.lg,
-    right: spacing.lg,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-evenly',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-    gap: spacing.xs,
+    justifyContent: 'center',
+    height: FLOATING_TAB_BAR_HEIGHT,
+    paddingHorizontal: spacing.md,
   },
-  item: {
-    minHeight: FLOATING_TAB_ITEM_MIN,
-    borderRadius: radius.pill,
+  slot: {
+    flex: 1,
+    height: ACTIVE_LENS_SIZE,
+    minWidth: FLOATING_TAB_ITEM_MIN,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
   },
-  itemInactive: {
-    minWidth: FLOATING_TAB_ITEM_MIN,
-    paddingHorizontal: spacing.sm,
+  activeLens: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: ACTIVE_LENS_SIZE / 2,
   },
-  itemActive: {
-    minWidth: FLOATING_TAB_ITEM_ACTIVE_WIDTH,
-    paddingHorizontal: spacing.md,
-    backgroundColor: 'rgba(255,255,255,0.58)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.72)',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06,
-        shadowRadius: 4,
-      },
-      android: { elevation: 1 },
-      default: {},
-    }),
-  },
-  itemPressed: {
-    opacity: 0.75,
+  slotPressed: {
+    opacity: 0.72,
   },
   iconWell: {
-    width: 28,
-    height: 28,
+    width: ACTIVE_LENS_SIZE,
+    height: ACTIVE_LENS_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   label: {
     ...typography.caption,
     fontSize: 10,
     color: colors.textMuted,
     marginTop: 2,
+    zIndex: 1,
   },
   labelActive: {
     color: colors.textPrimary,

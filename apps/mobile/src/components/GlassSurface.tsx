@@ -58,7 +58,7 @@ const PRESETS: Record<GlassVariant, GlassPreset> = {
     overlay: 'rgba(255,255,255,0.06)',
     border: 'rgba(255,255,255,0.58)',
     specular: 'rgba(255,255,255,0.92)',
-    fallback: 'rgba(255,255,255,0.38)',
+    fallback: 'rgba(255,255,255,0.82)',
     floating: true,
   },
 };
@@ -115,7 +115,10 @@ export function GlassSurface({
           pointerEvents="none"
           style={[
             StyleSheet.absoluteFill,
-            { borderRadius: cornerRadius, backgroundColor: 'rgba(255,255,255,0.22)' },
+            {
+              borderRadius: cornerRadius,
+              backgroundColor: 'rgba(255,255,255,0.45)',
+            },
           ]}
         />
       ) : null}
@@ -159,7 +162,8 @@ export function GlassLens({ style }: GlassLensProps) {
 
 const styles = StyleSheet.create({
   floatingWrap: {
-    width: '100%',
+    alignSelf: 'center',
+    alignItems: 'center',
   },
   tabBarShadow: Platform.select({
     ios: {
@@ -195,11 +199,12 @@ const styles = StyleSheet.create({
   content: {
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
+    justifyContent: 'center',
   },
   lens: {
-    backgroundColor: 'rgba(255,255,255,0.58)',
+    backgroundColor: 'rgba(255,255,255,0.72)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.72)',
+    borderColor: 'rgba(0,0,0,0.06)',
     borderRadius: radius.pill,
     overflow: 'hidden',
     ...Platform.select({
@@ -215,7 +220,7 @@ const styles = StyleSheet.create({
   },
   lensSheen: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(255,255,255,0.28)',
+    backgroundColor: 'rgba(255,255,255,0.35)',
   },
   lensSpecular: {
     position: 'absolute',

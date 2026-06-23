@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import {
   FloatingTabBar,
   floatingTabIconColor,
+  floatingTabIconSize,
   type FloatingTabItem,
 } from '@/components/ui/FloatingTabBar';
 
@@ -49,8 +50,16 @@ export function ProjectTabBar({ projectId, active }: ProjectTabBarProps) {
       key: tab,
       label: meta.label,
       accessibilityLabel: meta.label,
-      icon: <Ionicons name={meta.icon} size={24} color={floatingTabIconColor(false)} />,
-      activeIcon: <Ionicons name={meta.activeIcon} size={24} color={floatingTabIconColor(true)} />,
+      icon: (
+        <Ionicons name={meta.icon} size={floatingTabIconSize(false)} color={floatingTabIconColor(false)} />
+      ),
+      activeIcon: (
+        <Ionicons
+          name={meta.activeIcon}
+          size={floatingTabIconSize(true)}
+          color={floatingTabIconColor(true)}
+        />
+      ),
       onPress: () => {
         if (tab === active) return;
         router.replace(targets[tab]);
