@@ -1,6 +1,6 @@
 import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { BlurView, type BlurTint } from 'expo-blur';
-import { colors, radius } from '@/theme/tokens';
+import { colors, radius, tabBar } from '@/theme/tokens';
 
 export type GlassVariant = 'bar' | 'item' | 'circle' | 'tabBar';
 
@@ -50,15 +50,15 @@ const PRESETS: Record<GlassVariant, GlassPreset> = {
     specular: 'rgba(255,255,255,0.82)',
     fallback: 'rgba(255,255,255,0.62)',
   },
-  /** Instagram-style floating nav — thin vibrancy, bright edge, content shows through. */
+  /** Instagram-style floating nav — neutral black/white glass, content shows through. */
   tabBar: {
     borderRadius: radius.pill,
-    intensity: 92,
+    intensity: tabBar.blurIntensity,
     blurTint: Platform.OS === 'ios' ? 'systemChromeMaterialLight' : 'extraLight',
-    overlay: 'rgba(255,255,255,0.06)',
-    border: 'rgba(255,255,255,0.58)',
-    specular: 'rgba(255,255,255,0.92)',
-    fallback: 'rgba(255,255,255,0.82)',
+    overlay: tabBar.glassOverlay,
+    border: tabBar.glassBorder,
+    specular: tabBar.glassSpecular,
+    fallback: tabBar.glassFallback,
     floating: true,
   },
 };
@@ -167,12 +167,12 @@ const styles = StyleSheet.create({
   },
   tabBarShadow: Platform.select({
     ios: {
-      shadowColor: '#000',
+      shadowColor: tabBar.shadow,
       shadowOffset: { width: 0, height: 14 },
-      shadowOpacity: 0.16,
-      shadowRadius: 32,
+      shadowOpacity: 0.14,
+      shadowRadius: 28,
     },
-    android: { elevation: 14 },
+    android: { elevation: 12 },
     default: {},
   }),
   shell: {

@@ -36,12 +36,7 @@ export function AuthField({
   return (
     <View style={[styles.field, compact && styles.fieldCompact]}>
       <Text style={[styles.fieldLabel, { color: labelColor }]}>{label}</Text>
-      <View
-        style={[
-          styles.fieldRow,
-          dark ? styles.fieldRowDark : styles.fieldRowLight,
-        ]}
-      >
+      <View style={[styles.fieldRow, dark ? styles.fieldRowDark : styles.fieldRowLight]}>
         <View style={styles.fieldIconWrap}>
           <Ionicons name={icon} size={18} color={iconColor} />
         </View>

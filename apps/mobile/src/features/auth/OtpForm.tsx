@@ -10,7 +10,6 @@ import { useAuth } from '@/auth/AuthContext';
 import { useOtpSession } from '@/auth/OtpSessionContext';
 import { requestOtp } from '@/api/auth';
 import { readApiError } from '@/api/client';
-import { useAppConfig } from '@/config/AppConfigContext';
 import { useContentFrame } from '@/hooks/useContentFrame';
 import { formatRemainingSession, isSessionExpired } from '@/lib/session';
 import { maskEmail, maskPhone } from '@/lib/mask';
@@ -21,7 +20,6 @@ const RESEND_COOLDOWN = 30;
 export default function OtpForm() {
   const router = useRouter();
   const { verifyOtp } = useAuth();
-  const { config } = useAppConfig();
   const { session, clearSession, extendSession } = useOtpSession();
   const { contentWidth, isLandscape, isCompactHeight } = useContentFrame('form');
   const scroll = isLandscape || isCompactHeight;
@@ -35,9 +33,19 @@ export default function OtpForm() {
   const [error, setError] = useState<string | null>(null);
 
   const boxSize = useMemo(() => getOtpBoxSize(contentWidth), [contentWidth]);
-  const channel = session?.channel ?? config.signupVerificationChannel;
-  const destination = channel === 'EMAIL' ? (session?.email ?? '') : (session?.phone ?? '');
-  const maskedDestination = channel === 'EMAIL' ? maskEmail(destination) : maskPhone(destination);
+  const channel = session?.channel;
+  const destination =
+    channel === 'EMAIL'
+      ? (session?.email ?? '')
+      : channel === 'PHONE'
+        ? (session?.phone ?? '')
+        : '';
+  const maskedDestination =
+    channel === 'EMAIL'
+      ? maskEmail(destination)
+      : channel === 'PHONE'
+        ? maskPhone(destination)
+        : '';
 
   useEffect(() => {
     if (!session) {
@@ -81,7 +89,17 @@ export default function OtpForm() {
   }, []);
 
   async function handleVerify(value: string) {
-    if (value.length !== 6 || submitting || !session) return;
+    if (value.length !== 6 || submitting || !session || !channel) return;
+    const email = session.email;
+    const phone = session.phone;
+    if (channel === 'EMAIL' && !email) {
+      setError('Missing email for verification.');
+      return;
+    }
+    if (channel === 'PHONE' && !phone) {
+      setError('Missing phone number for verification.');
+      return;
+    }
     if (isSessionExpired(session.expiresAtMs)) {
       setError('This code expired. Request a new one.');
       clearSession();
@@ -94,7 +112,7 @@ export default function OtpForm() {
       if (channel === 'EMAIL') {
         await verifyOtp({
           channel: 'EMAIL',
-          email: session.email!,
+          email: email!,
           code: value,
           signup:
             session.mode === 'signup' && session.role
@@ -110,7 +128,7 @@ export default function OtpForm() {
       } else {
         await verifyOtp({
           channel: 'PHONE',
-          phone: session.phone!,
+          phone: phone!,
           code: value,
           signup:
             session.mode === 'signup' && session.role
@@ -134,7 +152,17 @@ export default function OtpForm() {
   }
 
   async function handleResend() {
-    if (cooldown > 0 || resending || !session) return;
+    if (cooldown > 0 || resending || !session || !channel) return;
+    const email = session.email;
+    const phone = session.phone;
+    if (channel === 'EMAIL' && !email) {
+      setError('Missing email for resend.');
+      return;
+    }
+    if (channel === 'PHONE' && !phone) {
+      setError('Missing phone number for resend.');
+      return;
+    }
     setResending(true);
     setError(null);
     try {
@@ -143,12 +171,12 @@ export default function OtpForm() {
         channel === 'EMAIL'
           ? await requestOtp({
               channel: 'EMAIL',
-              email: session.email!,
+              email: email!,
               purpose: otpPurpose,
             })
           : await requestOtp({
               channel: 'PHONE',
-              phone: session.phone!,
+              phone: phone!,
               purpose: otpPurpose,
             });
       extendSession(Date.now() + ttlSeconds * 1000);
@@ -175,6 +203,7 @@ export default function OtpForm() {
 
   const digits = code.padEnd(6, ' ').slice(0, 6).split('');
   const channelLabel = channel === 'EMAIL' ? 'email' : 'text message';
+  const verifyCta = session.mode === 'login' ? 'Sign in' : 'Create account';
 
   return (
     <ScreenContainer scroll={scroll} constrained="form">
@@ -245,7 +274,7 @@ export default function OtpForm() {
 
       <View style={styles.actions}>
         <Button
-          title="Create account"
+          title={verifyCta}
           disabled={code.length !== 6}
           loading={submitting}
           onPress={() => handleVerify(code)}

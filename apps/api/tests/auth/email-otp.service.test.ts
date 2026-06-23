@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { EmailOtpPurpose } from '@prisma/client';
+import { OtpChannel, OtpPurpose } from '@prisma/client';
 
 const prismaMock = {
-  emailOtp: {
+  authOtp: {
     findFirst: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
@@ -34,25 +34,26 @@ describe('email-otp.service', () => {
     process.env.OTP_SECRET = 'test-otp-secret-32-chars-minimum!!';
   });
 
-  it('invalidates previous OTPs and stores hash only', async () => {
-    prismaMock.emailOtp.findFirst.mockResolvedValue(null);
-    prismaMock.emailOtp.updateMany.mockResolvedValue({ count: 0 });
-    prismaMock.emailOtp.create.mockResolvedValue({ id: '1' });
+  it('invalidates previous OTPs and stores hash only in AuthOtp', async () => {
+    prismaMock.authOtp.findFirst.mockResolvedValue(null);
+    prismaMock.authOtp.updateMany.mockResolvedValue({ count: 0 });
+    prismaMock.authOtp.create.mockResolvedValue({ id: '1' });
 
     const { sendEmailOtp } = await import('../../src/modules/auth/email-otp.service.js');
-    await sendEmailOtp('user@studio.com', EmailOtpPurpose.SIGNUP);
+    await sendEmailOtp('user@studio.com', OtpPurpose.SIGNUP);
 
-    expect(prismaMock.emailOtp.updateMany).toHaveBeenCalled();
-    expect(prismaMock.emailOtp.create).toHaveBeenCalledWith(
+    expect(prismaMock.authOtp.updateMany).toHaveBeenCalled();
+    expect(prismaMock.authOtp.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          email: 'user@studio.com',
-          purpose: EmailOtpPurpose.SIGNUP,
-          otpHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+          channel: OtpChannel.EMAIL,
+          target: 'user@studio.com',
+          purpose: OtpPurpose.SIGNUP,
+          codeHash: expect.stringMatching(/^[a-f0-9]{64}$/),
         }),
       }),
     );
-    const createArg = prismaMock.emailOtp.create.mock.calls[0]?.[0] as {
+    const createArg = prismaMock.authOtp.create.mock.calls[0]?.[0] as {
       data: Record<string, unknown>;
     };
     expect(createArg.data).not.toHaveProperty('otp');
@@ -62,20 +63,20 @@ describe('email-otp.service', () => {
 
   it('increments attempts on invalid OTP', async () => {
     const { hashOtpCode } = await import('../../src/modules/auth/otp-crypto.js');
-    prismaMock.emailOtp.findFirst.mockResolvedValue({
+    prismaMock.authOtp.findFirst.mockResolvedValue({
       id: 'otp-1',
-      otpHash: hashOtpCode('111111'),
+      codeHash: hashOtpCode('111111'),
       expiresAt: new Date(Date.now() + 60_000),
       attempts: 0,
     });
-    prismaMock.emailOtp.update.mockResolvedValue({});
+    prismaMock.authOtp.update.mockResolvedValue({});
 
     const { verifyEmailOtp } = await import('../../src/modules/auth/email-otp.service.js');
     await expect(
-      verifyEmailOtp('user@studio.com', '000000', EmailOtpPurpose.SIGNUP),
+      verifyEmailOtp('user@studio.com', '000000', OtpPurpose.SIGNUP),
     ).rejects.toMatchObject({ statusCode: 401 });
 
-    expect(prismaMock.emailOtp.update).toHaveBeenCalledWith({
+    expect(prismaMock.authOtp.update).toHaveBeenCalledWith({
       where: { id: 'otp-1' },
       data: { attempts: { increment: 1 } },
     });
@@ -83,17 +84,17 @@ describe('email-otp.service', () => {
 
   it('marks consumed and sets emailVerified on success', async () => {
     const { hashOtpCode } = await import('../../src/modules/auth/otp-crypto.js');
-    prismaMock.emailOtp.findFirst.mockResolvedValue({
+    prismaMock.authOtp.findFirst.mockResolvedValue({
       id: 'otp-2',
-      otpHash: hashOtpCode('111111'),
+      codeHash: hashOtpCode('111111'),
       expiresAt: new Date(Date.now() + 60_000),
       attempts: 0,
     });
-    prismaMock.emailOtp.update.mockResolvedValue({});
+    prismaMock.authOtp.update.mockResolvedValue({});
     prismaMock.user.updateMany.mockResolvedValue({ count: 1 });
 
     const { verifyEmailOtp } = await import('../../src/modules/auth/email-otp.service.js');
-    await verifyEmailOtp('user@studio.com', '111111', EmailOtpPurpose.VERIFY_EMAIL);
+    await verifyEmailOtp('user@studio.com', '111111', OtpPurpose.VERIFY_EMAIL);
 
     expect(prismaMock.$transaction).toHaveBeenCalled();
     expect(prismaMock.user.updateMany).toHaveBeenCalledWith({

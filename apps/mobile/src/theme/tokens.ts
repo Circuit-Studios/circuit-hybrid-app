@@ -59,6 +59,25 @@ export const colors = {
   ringTrack: 'rgba(0,0,0,0.08)',
 } as const;
 
+/** Floating glass tab bar — Instagram-style neutral dock. */
+export const tabBar = {
+  height: 80,
+  activePillWidth: 88,
+  activePillHeight: 44,
+  blurIntensity: 70,
+  iconInactive: '#6B7280',
+  iconActive: '#121212',
+  iconSizeInactive: 24,
+  iconSizeActive: 22,
+  glassOverlay: 'rgba(255,255,255,0.08)',
+  glassBorder: 'rgba(255,255,255,0.52)',
+  glassSpecular: 'rgba(255,255,255,0.9)',
+  glassFallback: 'rgba(255,255,255,0.78)',
+  activePillFill: 'rgba(255,255,255,0.72)',
+  activePillBorder: 'rgba(0,0,0,0.06)',
+  shadow: '#000000',
+} as const;
+
 export const spacing = {
   xs: 4,
   sm: 8,

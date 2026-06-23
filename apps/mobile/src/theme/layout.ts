@@ -165,4 +165,3 @@ export const dropdownLayout = {
   minListHeight: DROPDOWN_MIN_LIST_HEIGHT,
   maxListHeight: DROPDOWN_MAX_LIST_HEIGHT,
 } as const;
-

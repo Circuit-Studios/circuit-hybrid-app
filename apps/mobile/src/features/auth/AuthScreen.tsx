@@ -204,9 +204,7 @@ export default function AuthScreen() {
             >
               <CircuitLogo size={compactBrand ? 'sm' : 'md'} />
               <View style={styles.wordmarkRow}>
-                <Text style={[styles.wordmark, compactBrand && styles.wordmarkCompact]}>
-                  CIRCU
-                </Text>
+                <Text style={[styles.wordmark, compactBrand && styles.wordmarkCompact]}>CIRCU</Text>
                 <Text
                   style={[
                     styles.wordmark,
@@ -307,12 +305,7 @@ export default function AuthScreen() {
               pressed && canSubmit && !submitting && styles.ctaPressed,
             ]}
           >
-            <Text
-              style={[
-                styles.ctaText,
-                (!canSubmit || submitting) && styles.ctaTextDisabled,
-              ]}
-            >
+            <Text style={[styles.ctaText, (!canSubmit || submitting) && styles.ctaTextDisabled]}>
               {submitting
                 ? isSignup
                   ? 'Sending code…'

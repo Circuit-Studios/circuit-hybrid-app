@@ -51,7 +51,11 @@ export function ProjectTabBar({ projectId, active }: ProjectTabBarProps) {
       label: meta.label,
       accessibilityLabel: meta.label,
       icon: (
-        <Ionicons name={meta.icon} size={floatingTabIconSize(false)} color={floatingTabIconColor(false)} />
+        <Ionicons
+          name={meta.icon}
+          size={floatingTabIconSize(false)}
+          color={floatingTabIconColor(false)}
+        />
       ),
       activeIcon: (
         <Ionicons

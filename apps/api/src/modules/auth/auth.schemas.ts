@@ -136,5 +136,13 @@ export const loginSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters').max(128),
 });
 
+/** Local-only bypass when ALLOW_DIRECT_REGISTER=true and APP_ENV=local. */
+export const directRegisterSchema = personNameSchema.extend({
+  email: emailSchema,
+  password: z.string().min(8, 'Password must be at least 8 characters').max(128),
+  role: z.nativeEnum(UserRole).default(UserRole.CREW),
+  phone: phoneSchema.optional(),
+});
+
 export type RequestOtpBody = z.infer<typeof requestOtpSchema>;
 export type VerifyOtpBody = z.infer<typeof verifyOtpSchema>;

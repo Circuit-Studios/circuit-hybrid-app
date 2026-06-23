@@ -118,20 +118,43 @@ EXPO_PUSH_PROVIDER=EXPO
 CORS_ORIGINS=
 ```
 
-| Variable                 | Notes                                           |
-| ------------------------ | ----------------------------------------------- |
-| `NODE_ENV`               | `production` on Render (set by `npm start`)     |
-| `APP_ENV`                | `dev` (shared dev API) or `prod` (production)   |
-| `DATABASE_URL`           | Supabase pooler URL (recommended)               |
-| `EMAIL_OTP_PROVIDER`     | `RESEND` for real email OTP (hosted template)   |
-| `RESEND_API_KEY`         | Resend API key (Render Environment only)        |
-| `RESEND_OTP_TEMPLATE_ID` | Published template id/alias in Resend dashboard |
-| `PHONE_OTP_PROVIDER`     | `MSG91` for real SMS                            |
-| `OTP_SECRET`             | HMAC key for OTP hashes (≥ 32 chars)            |
-| `REDIS_URL`              | **Omit** unless using Redis — never set empty   |
-| `OTP_PROVIDER`           | Legacy alias; prefer split providers above      |
+| Variable                     | Notes                                                          |
+| ---------------------------- | -------------------------------------------------------------- |
+| `NODE_ENV`                   | `production` on Render (set by `npm start`)                    |
+| `APP_ENV`                    | `dev` (shared dev API) or `prod` (production)                  |
+| `DATABASE_URL`               | Supabase pooler URL (recommended)                              |
+| `EMAIL_OTP_PROVIDER`         | `RESEND` for real email OTP (hosted template)                  |
+| `RESEND_API_KEY`             | Resend API key (Render Environment only)                       |
+| `RESEND_OTP_TEMPLATE_ID`     | Published template id/alias in Resend dashboard                |
+| `RESEND_OTP_EXPIRES_MINUTES` | Passed to template as `EXPIRES_MINUTES` variable (default `5`) |
+| `PHONE_OTP_PROVIDER`         | `MSG91` for real SMS                                           |
+| `OTP_SECRET`                 | HMAC key for OTP hashes (≥ 32 chars)                           |
+| `REDIS_URL`                  | **Omit** unless using Redis — never set empty                  |
+| `OTP_PROVIDER`               | Legacy alias; prefer split providers above                     |
 
 Dev/preview can use `EMAIL_OTP_PROVIDER=MOCK` and `PHONE_OTP_PROVIDER=MOCK` (code `111111`).
+
+---
+
+## Resend email OTP template
+
+Signup and login email OTP use **`POST /auth/request-otp`** and **`POST /auth/verify-otp`**.
+The standalone **`POST /send-otp`** / **`POST /verify-otp`** routes are for **post-account email
+verification** only (`purpose=verify_email`).
+
+When `EMAIL_OTP_PROVIDER=RESEND`:
+
+1. Create a **hosted template** in the [Resend dashboard](https://resend.com/templates).
+2. Set **From** and **Subject** on the template (not in API env vars).
+3. Add template variables used by the backend:
+   - `CODE` — 6-digit OTP
+   - `EXPIRES_MINUTES` — string minutes until expiry
+   - `APP_NAME` — e.g. `Circuit`
+4. Publish the template and set on Render:
+   - `RESEND_API_KEY` — API key (Environment only)
+   - `RESEND_OTP_TEMPLATE_ID` — template id or alias (e.g. `circuit-email-otp`)
+
+The backend sends only `to`, `template.id`, and `template.variables` — no `from` or `subject` in code.
 
 ---
 

@@ -88,10 +88,7 @@ export default function ProjectList() {
         <View style={styles.listFlex}>
           <FlatList
             style={styles.listFlex}
-            contentContainerStyle={[
-              styles.list,
-              { paddingBottom: tabBarReserve + spacing.lg },
-            ]}
+            contentContainerStyle={[styles.list, { paddingBottom: tabBarReserve + spacing.lg }]}
             data={projects}
             keyExtractor={(p) => p.id}
             renderItem={({ item }) => <ProjectCard project={item} />}

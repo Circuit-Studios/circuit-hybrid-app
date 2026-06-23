@@ -111,14 +111,14 @@ Active label is bold near‑black; inactive is muted gray. (See `nav-primary.png
 
 Reusable **floating glassmorphism** bottom tab bar — Instagram-style neutral dock.
 
-| Aspect | Guidance |
-| --- | --- |
-| **Use case** | Project workspace tabs via `ProjectTabBar`; app-level tabs via `AppTabBar` |
-| **Pattern** | Capsule-shaped translucent bar, icon-only; active tab gets a wider soft white/gray pill (no brand fill) |
-| **Safe area** | Uses `useSafeAreaInsets` for bottom padding; pair screens with `useChromeInsets().projectTabBarReserve` or `appTabBarReserve` |
-| **Accessibility** | `accessibilityRole="tab"`, `accessibilityLabel`, `accessibilityState.selected`; minimum 44×44 pt touch target |
-| **Glass** | `expo-blur` `BlurView` with `systemChromeMaterialLight` on iOS; border, specular edge, and drop shadow |
-| **Metrics** | Height ~77px, width ~86% of screen (max 430px), active pill ~72px wide (`floatingTabBarMetrics.ts`) |
+| Aspect            | Guidance                                                                                                                      |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **Use case**      | Project workspace tabs via `ProjectTabBar`; app-level tabs via `AppTabBar`                                                    |
+| **Pattern**       | Capsule-shaped translucent bar, icon-only; active tab gets a wider soft white/gray pill (no brand fill)                       |
+| **Safe area**     | Uses `useSafeAreaInsets` for bottom padding; pair screens with `useChromeInsets().projectTabBarReserve` or `appTabBarReserve` |
+| **Accessibility** | `accessibilityRole="tab"`, `accessibilityLabel`, `accessibilityState.selected`; minimum 44×44 pt touch target                 |
+| **Glass**         | `expo-blur` `BlurView` with `systemChromeMaterialLight` on iOS; border, specular edge, and drop shadow                        |
+| **Metrics**       | Height ~77px, width ~86% of screen (max 430px), active pill ~72px wide (`floatingTabBarMetrics.ts`)                           |
 
 ### 5.2 Hero / Home card
 

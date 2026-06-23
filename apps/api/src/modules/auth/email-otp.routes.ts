@@ -1,40 +1,50 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { asyncHandler } from '../../lib/http.js';
+import { asyncHandler, badRequest } from '../../lib/http.js';
 import { requireFeature } from '../../middleware/require-feature.js';
 import {
   EMAIL_OTP_COOLDOWN_SECONDS,
   EMAIL_OTP_TTL_MS,
   GENERIC_SEND_SUCCESS,
   sendEmailOtp,
-  toEmailOtpPurpose,
   verifyEmailOtp,
 } from './email-otp.service.js';
 import { emailSchema } from './auth.schemas.js';
+import { OtpPurpose } from '@prisma/client';
 
 const router: Router = Router();
 
+/**
+ * Post-account email verification only.
+ * Signup/login OTP must use POST /auth/request-otp and POST /auth/verify-otp.
+ */
 const sendOtpBodySchema = z.object({
   email: emailSchema,
-  purpose: z.enum(['signup', 'login', 'verify_email']).optional(),
+  purpose: z.literal('verify_email').optional(),
 });
 
 const verifyOtpBodySchema = z.object({
   email: emailSchema,
   otp: z.string().regex(/^\d{6}$/, 'OTP must be 6 digits'),
-  purpose: z.enum(['signup', 'login', 'verify_email']).optional(),
+  purpose: z.literal('verify_email').optional(),
 });
 
-/** POST /send-otp */
+function rejectAuthSignupLoginPurpose(purpose: string | undefined): void {
+  if (purpose === 'signup' || purpose === 'login') {
+    throw badRequest('Use POST /auth/request-otp and POST /auth/verify-otp for signup and login.');
+  }
+}
+
+/** POST /send-otp — verify an email on an existing account (not signup/login). */
 router.post(
   '/send-otp',
   requireFeature('auth.emailOtp'),
   asyncHandler(async (req, res) => {
-    const { email, purpose } = sendOtpBodySchema.parse(req.body);
-    const otpPurpose = toEmailOtpPurpose(purpose);
+    const raw = req.body as { purpose?: string };
+    rejectAuthSignupLoginPurpose(raw.purpose);
 
-    // Always attempt send — response stays generic (no account enumeration).
-    await sendEmailOtp(email, otpPurpose);
+    const { email } = sendOtpBodySchema.parse(req.body);
+    await sendEmailOtp(email, OtpPurpose.VERIFY_EMAIL);
 
     res.json({
       ok: true,
@@ -45,15 +55,16 @@ router.post(
   }),
 );
 
-/** POST /verify-otp */
+/** POST /verify-otp — confirm post-account email verification. */
 router.post(
   '/verify-otp',
   requireFeature('auth.emailOtp'),
   asyncHandler(async (req, res) => {
-    const { email, otp, purpose } = verifyOtpBodySchema.parse(req.body);
-    const otpPurpose = toEmailOtpPurpose(purpose);
+    const raw = req.body as { purpose?: string };
+    rejectAuthSignupLoginPurpose(raw.purpose);
 
-    await verifyEmailOtp(email, otp, otpPurpose);
+    const { email, otp } = verifyOtpBodySchema.parse(req.body);
+    await verifyEmailOtp(email, otp, OtpPurpose.VERIFY_EMAIL);
 
     res.json({
       ok: true,

@@ -92,7 +92,11 @@ export default function NotificationsScreen() {
   return (
     <ScreenContainer topAligned edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <Pressable onPress={() => leaveOverlayScreen(router)} hitSlop={12} accessibilityRole="button">
+        <Pressable
+          onPress={() => leaveOverlayScreen(router)}
+          hitSlop={12}
+          accessibilityRole="button"
+        >
           <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />
         </Pressable>
         <Text style={styles.title}>Notifications</Text>

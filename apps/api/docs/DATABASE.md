@@ -112,19 +112,31 @@ The signed-up human. Phone-first; email + password are optional.
 
 ### `AuthOtp`
 
-One row per OTP request. We never store the raw code, only `codeHash`.
+Unified OTP storage for phone and email. Plain codes are never stored — only `codeHash`.
 
-| Column      | Type                      | Notes                      |
-| ----------- | ------------------------- | -------------------------- |
-| `id`        | `String` `PK`             | UUID                       |
-| `userId`    | `String?` `FK → User.id`  | null on first sign-in      |
-| `phone`     | `String`                  | E.164                      |
-| `codeHash`  | `String`                  | bcrypt of the 6-digit code |
-| `expiresAt` | `DateTime`                | now + 5 minutes            |
-| `consumed`  | `Boolean` default `false` | flipped on verify          |
-| `createdAt` | `DateTime`                |                            |
+| Column       | Type                      | Notes                                              |
+| ------------ | ------------------------- | -------------------------------------------------- |
+| `id`         | `String` `PK`             | UUID                                               |
+| `userId`     | `String?` `FK → User.id`  | null on first sign-in                              |
+| `channel`    | `OtpChannel`              | `PHONE` or `EMAIL`                                 |
+| `target`     | `String?`                 | E.164 phone or normalized email                    |
+| `phone`      | `String?`                 | legacy mirror for phone rows (kept for compat)     |
+| `purpose`    | `OtpPurpose`              | `SIGNUP`, `LOGIN`, or `VERIFY_EMAIL`               |
+| `codeHash`   | `String`                  | HMAC-SHA256 of the 6-digit code                    |
+| `attempts`   | `Int` default `0`         | failed verify count                                |
+| `expiresAt`  | `DateTime`                | now + 5 minutes                                    |
+| `consumed`   | `Boolean` default `false` | legacy flag — prefer `consumedAt`                  |
+| `consumedAt` | `DateTime?`               | set when verified or superseded by a newer request |
+| `createdAt`  | `DateTime`                |                                                    |
 
-**Indexes:** `(phone, consumed)`, `(expiresAt)`.
+**Indexes:** `(channel, target, purpose, consumedAt)`, `(channel, target, consumed)`,
+`(phone, consumed)`, `(expiresAt)`.
+
+### `EmailOtp` (legacy)
+
+> **Deprecated.** New email OTP writes go to `AuthOtp` with `channel = EMAIL`.
+> Table kept temporarily for historical rows — see `TODO(otp-consolidation)` in
+> `schema.prisma` before dropping.
 
 ---
 

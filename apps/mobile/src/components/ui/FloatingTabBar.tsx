@@ -9,21 +9,16 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { GlassLens, GlassSurface } from '@/components/GlassSurface';
+import { GlassSurface } from '@/components/GlassSurface';
 import {
+  FLOATING_TAB_BAR_ACTIVE_PILL_HEIGHT,
+  FLOATING_TAB_BAR_ACTIVE_PILL_WIDTH,
   FLOATING_TAB_BAR_HEIGHT,
   FLOATING_TAB_BAR_MAX_WIDTH,
   FLOATING_TAB_BAR_WIDTH_RATIO,
   FLOATING_TAB_ITEM_MIN,
 } from '@/components/ui/floatingTabBarMetrics';
-import { colors, radius, spacing, typography } from '@/theme';
-
-const ICON_INACTIVE = '#6B7280';
-const ICON_ACTIVE = '#121212';
-const ICON_SIZE_INACTIVE = 24;
-const ICON_SIZE_ACTIVE = 22;
-/** Fixed circle behind the active icon — same footprint as inactive slots. */
-const ACTIVE_LENS_SIZE = 48;
+import { colors, radius, spacing, tabBar, typography } from '@/theme';
 
 export type FloatingTabItem = {
   key: string;
@@ -61,13 +56,15 @@ export function FloatingTabBar({
   const { width: screenWidth } = useWindowDimensions();
   const bottomPad = bottomOffset ?? Math.max(insets.bottom, spacing.sm);
   const barWidth =
-    barWidthProp ?? Math.min(FLOATING_TAB_BAR_MAX_WIDTH, screenWidth * FLOATING_TAB_BAR_WIDTH_RATIO);
+    barWidthProp ??
+    Math.min(FLOATING_TAB_BAR_MAX_WIDTH, screenWidth * FLOATING_TAB_BAR_WIDTH_RATIO);
 
   return (
     <View pointerEvents="box-none" style={[styles.shell, { paddingBottom: bottomPad }, style]}>
       <GlassSurface
         variant="tabBar"
         borderRadius={radius.pill}
+        intensity={tabBar.blurIntensity}
         style={{ width: barWidth, height: FLOATING_TAB_BAR_HEIGHT, alignSelf: 'center' }}
       >
         <View style={styles.row}>
@@ -84,13 +81,10 @@ export function FloatingTabBar({
                 onPress={item.onPress}
                 style={({ pressed }) => [styles.slot, pressed && !active && styles.slotPressed]}
               >
-                {active ? <GlassLens style={styles.activeLens} /> : null}
+                {active ? <View style={styles.activePill} /> : null}
                 <View style={styles.iconWell}>{icon}</View>
                 {showLabels && item.label ? (
-                  <Text
-                    style={[styles.label, active && styles.labelActive]}
-                    numberOfLines={1}
-                  >
+                  <Text style={[styles.label, active && styles.labelActive]} numberOfLines={1}>
                     {item.label}
                   </Text>
                 ) : null}
@@ -105,12 +99,12 @@ export function FloatingTabBar({
 
 /** Near-black / muted icon colors for the dock. */
 export function floatingTabIconColor(active: boolean): string {
-  return active ? ICON_ACTIVE : ICON_INACTIVE;
+  return active ? tabBar.iconActive : tabBar.iconInactive;
 }
 
 /** Filled glyphs read larger — nudge active size down for optical balance. */
 export function floatingTabIconSize(active: boolean): number {
-  return active ? ICON_SIZE_ACTIVE : ICON_SIZE_INACTIVE;
+  return active ? tabBar.iconSizeActive : tabBar.iconSizeInactive;
 }
 
 const styles = StyleSheet.create({
@@ -130,21 +124,26 @@ const styles = StyleSheet.create({
   },
   slot: {
     flex: 1,
-    height: ACTIVE_LENS_SIZE,
+    height: FLOATING_TAB_BAR_ACTIVE_PILL_HEIGHT,
     minWidth: FLOATING_TAB_ITEM_MIN,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  activeLens: {
-    ...StyleSheet.absoluteFill,
-    borderRadius: ACTIVE_LENS_SIZE / 2,
+  activePill: {
+    position: 'absolute',
+    width: FLOATING_TAB_BAR_ACTIVE_PILL_WIDTH,
+    height: FLOATING_TAB_BAR_ACTIVE_PILL_HEIGHT,
+    borderRadius: FLOATING_TAB_BAR_ACTIVE_PILL_HEIGHT / 2,
+    backgroundColor: tabBar.activePillFill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: tabBar.activePillBorder,
   },
   slotPressed: {
     opacity: 0.72,
   },
   iconWell: {
-    width: ACTIVE_LENS_SIZE,
-    height: ACTIVE_LENS_SIZE,
+    width: FLOATING_TAB_BAR_ACTIVE_PILL_WIDTH,
+    height: FLOATING_TAB_BAR_ACTIVE_PILL_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,

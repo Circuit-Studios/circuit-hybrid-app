@@ -1,24 +1,18 @@
 import { Router } from 'express';
 import { OtpChannel } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
-import {
-  asyncHandler,
-  badRequest,
-  conflict,
-  forbidden,
-  notFound,
-  unauthorized,
-} from '../../lib/http.js';
+import { asyncHandler, badRequest, conflict, notFound, unauthorized } from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { buildAuthResponse } from './auth-response.js';
-import { findOrCreateUserAfterOtp } from './auth-signup.js';
-import { verifyPassword } from './password.service.js';
+import { findOrCreateUserAfterOtp, linkPendingInvites } from './auth-signup.js';
+import { assertDirectRegisterAllowed } from './direct-register.policy.js';
+import { hashPassword, verifyPassword } from './password.service.js';
 import { requestOtp, verifyOtp } from './otp.service.js';
 import { OTP_TTL_SECONDS } from './auth.constants.js';
 import { EMAIL_OTP_TTL_MS } from './email-otp.service.js';
-import { env } from '../../config/env.js';
 import { assertLoginChannel, assertSignupChannel } from './verification-policy.js';
 import {
+  directRegisterSchema,
   loginSchema,
   requestOtpSchema,
   verifyOtpSchema,
@@ -55,13 +49,29 @@ const EMAIL_OTP_TTL_SECONDS = EMAIL_OTP_TTL_MS / 1000;
 
 authPublicRouter.post(
   '/register',
-  asyncHandler(async (_req, res) => {
-    if (!env.ALLOW_DIRECT_REGISTER) {
-      throw forbidden(
-        'Direct registration is disabled. Use /auth/request-otp and /auth/verify-otp.',
-      );
+  asyncHandler(async (req, res) => {
+    assertDirectRegisterAllowed();
+    const body = directRegisterSchema.parse(req.body);
+
+    const existing = await prisma.user.findUnique({ where: { email: body.email } });
+    if (existing) {
+      throw conflict('An account with this email already exists');
     }
-    throw forbidden('Direct registration is disabled. Use /auth/request-otp and /auth/verify-otp.');
+
+    const passwordHash = await hashPassword(body.password);
+    const user = await prisma.user.create({
+      data: {
+        email: body.email,
+        emailVerified: true,
+        firstName: body.firstName,
+        lastName: body.lastName,
+        defaultRole: body.role,
+        phone: body.phone,
+        passwordHash,
+      },
+    });
+    await linkPendingInvites(user.id, user.phone, user.email);
+    res.json(buildAuthResponse(user));
   }),
 );
 

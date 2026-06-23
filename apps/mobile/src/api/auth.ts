@@ -10,10 +10,10 @@ export type RequestOtpInput =
   | { channel: 'EMAIL'; email: string; purpose?: OtpPurpose }
   | { channel: 'PHONE'; phone: string; purpose?: OtpPurpose };
 
-/** POST /send-otp — generic email verification (Resend). */
+/** POST /send-otp — post-account email verification only (not signup/login). */
 export async function sendEmailVerificationOtp(
   email: string,
-  purpose: OtpPurpose = 'verify_email',
+  purpose: 'verify_email' = 'verify_email',
 ): Promise<{ ok: boolean; message: string; ttlSeconds: number }> {
   await wakeApi();
   const { data } = await api.post<{ ok: boolean; message: string; ttlSeconds: number }>(
@@ -23,11 +23,11 @@ export async function sendEmailVerificationOtp(
   return data;
 }
 
-/** POST /verify-otp — verify email OTP and mark email verified. */
+/** POST /verify-otp — confirm post-account email verification. */
 export async function verifyEmailVerificationOtp(
   email: string,
   otp: string,
-  purpose: OtpPurpose = 'verify_email',
+  purpose: 'verify_email' = 'verify_email',
 ): Promise<{ ok: boolean; message: string; emailVerified: boolean }> {
   const { data } = await api.post<{
     ok: boolean;

@@ -4,7 +4,7 @@ import { badRequest, conflict } from '../../lib/http.js';
 import { hashPassword } from './password.service.js';
 import type { VerifyOtpBody } from './auth.schemas.js';
 
-async function linkPendingInvites(
+export async function linkPendingInvites(
   userId: string,
   phone?: string | null,
   email?: string | null,

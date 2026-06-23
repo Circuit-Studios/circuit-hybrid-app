@@ -1,7 +1,7 @@
 // Circuit design tokens. Kept narrow and opinionated so screens stay
 // consistent without us pulling in a UI kit.
 
-export { colors, spacing, radius, typography } from './tokens';
+export { colors, spacing, radius, typography, tabBar } from './tokens';
 export type { Colors, Spacing } from './tokens';
 export { shadows } from './shadows';
 export { fieldStyles } from './fields';

@@ -124,7 +124,8 @@ apps/api/
 │   │   │   ├── auth.routes.ts
 │   │   │   ├── otp.service.ts
 │   │   │   └── providers/
-│   │   │       ├── otp-delivery.ts          # MOCK / MSG91 / TWILIO + provider selection
+│   │   │       ├── otp-delivery.ts          # getOtpDeliveryProvider + MOCK selection
+│   │   │       ├── msg91-phone.provider.ts  # MSG91 SMS (channel=PHONE)
 │   │   │       ├── resend-email.provider.ts # Resend hosted template (channel=EMAIL)
 │   │   │       └── types.ts
 │   │   ├── projects/                # /projects/* — create + list
@@ -220,7 +221,18 @@ sequenceDiagram
 3. `express.json({ limit: '2mb' })` — small JSON only; PDFs use multer
 4. `cors()` — allow-list in prod, permissive in dev
 5. `pino-http` — request log line, skips `/health`
-6. **Public routes:** `/health`, `/auth/request-otp`, `/auth/verify-otp`
+   **Auth API (public):**
+
+| Route                    | Purpose                                                         |
+| ------------------------ | --------------------------------------------------------------- |
+| `POST /auth/request-otp` | Signup/login OTP (email or phone)                               |
+| `POST /auth/verify-otp`  | Verify signup/login OTP → session                               |
+| `POST /auth/login`       | Email + password sign-in                                        |
+| `POST /send-otp`         | Post-account email verification only                            |
+| `POST /verify-otp`       | Confirm post-account email verification                         |
+| `POST /auth/register`    | Local dev only (`APP_ENV=local` + `ALLOW_DIRECT_REGISTER=true`) |
+
+6. **Public routes:** `/health`, `/auth/*` (see table above), `/send-otp`, `/verify-otp`, `/app/config`
    (rate-limited 10 req/min in prod)
 7. **Protected routes:** everything else, gated by `requireAuth` and (where
    relevant) `requireProjectRole`
