@@ -13,6 +13,10 @@ vi.mock('../../src/lib/prisma.js', () => ({
   prisma: prismaMock,
 }));
 
+vi.mock('../../src/config/features.js', () => ({
+  isFeatureEnabled: vi.fn().mockResolvedValue(true),
+}));
+
 const sendEmailOtp = vi.fn().mockResolvedValue(undefined);
 const verifyEmailOtp = vi.fn().mockResolvedValue(undefined);
 

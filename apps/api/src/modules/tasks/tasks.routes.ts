@@ -4,6 +4,13 @@ import { MembershipStatus, TaskPriority, TaskStatus, UserRole } from '@prisma/cl
 import { prisma } from '../../lib/prisma.js';
 import { asyncHandler, badRequest, forbidden, notFound } from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { requireFeature } from '../../middleware/require-feature.js';
+import {
+  assertDeptHeadDepartmentScope,
+  can,
+  getActiveMembership,
+  isTaskManager,
+} from '../../auth/permissions.js';
 import { recomputeDepartmentProgress } from '../workspace/progress.service.js';
 import { emitToProject } from '../../realtime/socket.js';
 import { dispatchNotification } from '../../notifications/notifications.service.js';
@@ -12,20 +19,10 @@ const router: Router = Router();
 
 // Roles allowed to create or assign tasks. Crew can move their own tasks
 // (handled below as a separate check) but can't create or reassign.
-const TASK_MANAGER_ROLES: UserRole[] = [
-  UserRole.DIRECTOR,
-  UserRole.PRODUCER,
-  UserRole.EXECUTIVE_PRODUCER,
-  UserRole.LINE_PRODUCER,
-  UserRole.AD,
-  UserRole.DEPT_HEAD,
-];
+// Permission map lives in auth/permissions.ts — local aliases kept for readability.
 
 async function getMembershipOrThrow(userId: string, projectId: string) {
-  const m = await prisma.projectMember.findFirst({
-    where: { projectId, userId, status: MembershipStatus.ACTIVE },
-    select: { id: true, role: true, projectDepartmentId: true },
-  });
+  const m = await getActiveMembership(userId, projectId);
   if (!m) throw forbidden('You are not a member of this project');
   return m;
 }
@@ -52,7 +49,7 @@ router.post(
     const userId = req.user!.sub;
     const me = await getMembershipOrThrow(userId, projectId);
 
-    if (!TASK_MANAGER_ROLES.includes(me.role)) {
+    if (!can(me.role, 'tasks.create')) {
       throw forbidden(`Role ${me.role} cannot create tasks`);
     }
 
@@ -65,8 +62,6 @@ router.post(
       throw badRequest('Department does not belong to this project');
     }
 
-    // Dept heads can only create tasks inside their own department — a soft
-    // version of Module 4's role-scoped data view, enforced server-side.
     if (me.role === UserRole.DEPT_HEAD && me.projectDepartmentId !== dept.id) {
       throw forbidden('Department heads can only create tasks in their own department');
     }
@@ -131,11 +126,14 @@ router.patch(
     //   - Manager roles: can change anything.
     //   - Assignee: can move status (TODO -> IN_PROGRESS -> DONE/BLOCKED only)
     //     but can't reassign or rewrite the title.
-    const isManager = TASK_MANAGER_ROLES.includes(me.role);
+    const isManager = isTaskManager(me.role);
     const isAssignee = existing.assigneeUserId === userId;
 
     if (!isManager) {
       if (!isAssignee) throw forbidden('Only managers or the assignee can edit this task');
+      if (!can(me.role, 'tasks.updateStatus')) {
+        throw forbidden('Your role cannot update task status');
+      }
       const allowedKeys: Array<keyof typeof input> = ['status'];
       const restricted = Object.keys(input).filter(k => !allowedKeys.includes(k as keyof typeof input));
       if (restricted.length > 0) {
@@ -143,8 +141,8 @@ router.patch(
       }
     }
 
-    if (me.role === UserRole.DEPT_HEAD && me.projectDepartmentId !== existing.departmentId) {
-      throw forbidden('Department heads can only edit tasks in their own department');
+    if (me.role === UserRole.DEPT_HEAD) {
+      assertDeptHeadDepartmentScope(me, existing.departmentId);
     }
 
     const updated = await prisma.task.update({
@@ -216,11 +214,11 @@ router.delete(
     if (!existing) throw notFound('Task not found');
 
     const me = await getMembershipOrThrow(userId, existing.projectId);
-    if (!TASK_MANAGER_ROLES.includes(me.role)) {
+    if (!can(me.role, 'tasks.delete')) {
       throw forbidden('Only managers can delete tasks');
     }
-    if (me.role === UserRole.DEPT_HEAD && me.projectDepartmentId !== existing.departmentId) {
-      throw forbidden('Department heads can only delete tasks in their own department');
+    if (me.role === UserRole.DEPT_HEAD) {
+      assertDeptHeadDepartmentScope(me, existing.departmentId);
     }
 
     await prisma.task.delete({ where: { id: taskId } });

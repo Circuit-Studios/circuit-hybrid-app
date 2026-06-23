@@ -6,6 +6,8 @@ import { MembershipStatus, ScriptAnalysisStatus, UserRole } from '@prisma/client
 import { prisma } from '../../lib/prisma.js';
 import { asyncHandler, badRequest, forbidden, notFound } from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { requireFeature } from '../../middleware/require-feature.js';
+import { canEditScripts, canInviteMembers, getActiveMembership } from '../../auth/permissions.js';
 import { analyzeScript } from '../../ai/pipelines/script-analysis.pipeline.js';
 import { logger } from '../../lib/logger.js';
 import { getStorage } from '../../storage/index.js';
@@ -27,18 +29,9 @@ const upload = multer({
 });
 
 async function assertCanEditProject(userId: string, projectId: string): Promise<void> {
-  const membership = await prisma.projectMember.findFirst({
-    where: { projectId, userId, status: MembershipStatus.ACTIVE },
-    select: { role: true },
-  });
+  const membership = await getActiveMembership(userId, projectId);
   if (!membership) throw forbidden('You are not a member of this project');
-  const allowed: UserRole[] = [
-    UserRole.DIRECTOR,
-    UserRole.PRODUCER,
-    UserRole.EXECUTIVE_PRODUCER,
-    UserRole.LINE_PRODUCER,
-  ];
-  if (!allowed.includes(membership.role)) {
+  if (!canEditScripts(membership.role)) {
     throw forbidden(`Role ${membership.role} cannot upload scripts`);
   }
 }
@@ -46,6 +39,7 @@ async function assertCanEditProject(userId: string, projectId: string): Promise<
 router.post(
   '/projects/:projectId/scripts',
   requireAuth,
+  requireFeature('scripts.upload'),
   upload.single('script'),
   asyncHandler(async (req, res) => {
     const projectId = req.params.projectId!;
@@ -84,6 +78,7 @@ router.post(
 router.post(
   '/scripts/:scriptId/analyze',
   requireAuth,
+  requireFeature('scripts.aiAnalysis'),
   asyncHandler(async (req, res) => {
     const scriptId = req.params.scriptId!;
     const userId = req.user!.sub;

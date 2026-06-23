@@ -1,4 +1,4 @@
-import { EmailOtpPurpose } from '@prisma/client';
+import { EmailOtpPurpose, OtpChannel } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { badRequest, unauthorized } from '../../lib/http.js';
 import {
@@ -7,7 +7,8 @@ import {
   normalizeEmail,
   verifyOtpCode,
 } from './otp-crypto.js';
-import { sendOtpEmail } from './email-otp-mailer.js';
+import { getEmailOtpProvider } from './providers/email-otp.provider.js';
+import { assertOtpChannelEnabled } from './verification-policy.js';
 
 export const EMAIL_OTP_TTL_MS = 10 * 60 * 1000;
 export const EMAIL_OTP_MAX_ATTEMPTS = 5;
@@ -47,6 +48,8 @@ export async function sendEmailOtp(
   email: string,
   purpose: EmailOtpPurpose = EmailOtpPurpose.VERIFY_EMAIL,
 ): Promise<void> {
+  await assertOtpChannelEnabled(OtpChannel.EMAIL);
+
   const normalized = normalizeEmail(email);
   const now = new Date();
 
@@ -58,7 +61,6 @@ export async function sendEmailOtp(
     recent &&
     Date.now() - recent.createdAt.getTime() < EMAIL_OTP_COOLDOWN_SECONDS * 1000
   ) {
-    // Generic response path — still enforce cooldown server-side.
     throw badRequest(
       `Please wait ${EMAIL_OTP_COOLDOWN_SECONDS} seconds before requesting another code.`,
     );
@@ -69,11 +71,10 @@ export async function sendEmailOtp(
     data: { consumedAt: now },
   });
 
-  const plainOtp = generateSixDigitOtp();
+  const plainOtp = generateSixDigitOtp('EMAIL');
   const otpHash = hashOtpCode(plainOtp);
   const expiresAt = new Date(Date.now() + EMAIL_OTP_TTL_MS);
 
-  // Persist hash only — plain OTP is sent via Resend and not written to DB or logs.
   await prisma.emailOtp.create({
     data: {
       email: normalized,
@@ -83,7 +84,7 @@ export async function sendEmailOtp(
     },
   });
 
-  await sendOtpEmail(normalized, plainOtp);
+  await getEmailOtpProvider().send(normalized, plainOtp);
 }
 
 export async function verifyEmailOtp(
@@ -91,6 +92,8 @@ export async function verifyEmailOtp(
   otp: string,
   purpose: EmailOtpPurpose = EmailOtpPurpose.VERIFY_EMAIL,
 ): Promise<void> {
+  await assertOtpChannelEnabled(OtpChannel.EMAIL);
+
   const normalized = normalizeEmail(email);
   const record = await prisma.emailOtp.findFirst({
     where: { email: normalized, purpose, consumedAt: null },

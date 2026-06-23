@@ -36,33 +36,100 @@ export const phoneSignupPayloadSchema = personNameSchema.extend({
   email: emailSchema.optional(),
 });
 
-export const requestOtpSchema = z.discriminatedUnion('channel', [
-  z.object({
-    channel: z.literal('PHONE'),
-    phone: phoneSchema,
-    purpose: z.enum(['signup', 'login']).optional(),
-  }),
-  z.object({
-    channel: z.literal('EMAIL'),
-    email: emailSchema,
-    purpose: z.enum(['signup', 'login']).optional(),
-  }),
-]);
+function resolveOtpChannel(data: {
+  channel?: 'PHONE' | 'EMAIL';
+  phone?: string;
+  email?: string;
+}): 'PHONE' | 'EMAIL' | undefined {
+  if (data.channel) return data.channel;
+  if (data.phone && !data.email) return 'PHONE';
+  if (data.email && !data.phone) return 'EMAIL';
+  if (data.phone) return 'PHONE';
+  return undefined;
+}
 
-export const verifyOtpSchema = z.discriminatedUnion('channel', [
-  z.object({
-    channel: z.literal('PHONE'),
-    phone: phoneSchema,
-    code: z.string().regex(/^\d{6}$/, 'OTP must be 6 digits'),
-    signup: phoneSignupPayloadSchema.optional(),
-  }),
-  z.object({
-    channel: z.literal('EMAIL'),
-    email: emailSchema,
-    code: z.string().regex(/^\d{6}$/, 'OTP must be 6 digits'),
-    signup: emailSignupPayloadSchema.optional(),
-  }),
-]);
+const requestOtpBaseSchema = z.object({
+  channel: z.enum(['PHONE', 'EMAIL']).optional(),
+  phone: phoneSchema.optional(),
+  email: emailSchema.optional(),
+  purpose: z.enum(['signup', 'login']).optional(),
+});
+
+export const requestOtpSchema = requestOtpBaseSchema
+  .superRefine((data, ctx) => {
+    const channel = resolveOtpChannel(data);
+    if (!channel) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Provide channel with email/phone, or phone alone for legacy requests',
+      });
+      return;
+    }
+    if (channel === 'PHONE' && !data.phone) {
+      ctx.addIssue({ code: 'custom', path: ['phone'], message: 'Phone is required' });
+    }
+    if (channel === 'EMAIL' && !data.email) {
+      ctx.addIssue({ code: 'custom', path: ['email'], message: 'Email is required' });
+    }
+  })
+  .transform(data => {
+    const channel = resolveOtpChannel(data)!;
+    if (channel === 'PHONE') {
+      return {
+        channel: 'PHONE' as const,
+        phone: data.phone!,
+        purpose: data.purpose,
+      };
+    }
+    return {
+      channel: 'EMAIL' as const,
+      email: data.email!,
+      purpose: data.purpose,
+    };
+  });
+
+const verifyOtpBaseSchema = z.object({
+  channel: z.enum(['PHONE', 'EMAIL']).optional(),
+  phone: phoneSchema.optional(),
+  email: emailSchema.optional(),
+  code: z.string().regex(/^\d{6}$/, 'OTP must be 6 digits'),
+  signup: z.union([emailSignupPayloadSchema, phoneSignupPayloadSchema]).optional(),
+});
+
+export const verifyOtpSchema = verifyOtpBaseSchema
+  .superRefine((data, ctx) => {
+    const channel = resolveOtpChannel(data);
+    if (!channel) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Provide channel with email/phone, or phone alone for legacy requests',
+      });
+      return;
+    }
+    if (channel === 'PHONE' && !data.phone) {
+      ctx.addIssue({ code: 'custom', path: ['phone'], message: 'Phone is required' });
+    }
+    if (channel === 'EMAIL' && !data.email) {
+      ctx.addIssue({ code: 'custom', path: ['email'], message: 'Email is required' });
+    }
+  })
+  .transform(data => {
+    const channel = resolveOtpChannel(data)!;
+    if (channel === 'PHONE') {
+      return {
+        channel: 'PHONE' as const,
+        phone: data.phone!,
+        code: data.code,
+        signup: data.signup as z.infer<typeof phoneSignupPayloadSchema> | undefined,
+      };
+    }
+    return {
+      channel: 'EMAIL' as const,
+      email: data.email!,
+      code: data.code,
+      signup: data.signup as z.infer<typeof emailSignupPayloadSchema> | undefined,
+    };
+  });
 
 export const loginSchema = z.object({
   email: emailSchema,

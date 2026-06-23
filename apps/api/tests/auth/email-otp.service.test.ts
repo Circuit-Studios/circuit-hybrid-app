@@ -18,8 +18,12 @@ vi.mock('../../src/lib/prisma.js', () => ({
   prisma: prismaMock,
 }));
 
-vi.mock('../../src/modules/auth/email-otp-mailer.js', () => ({
-  sendOtpEmail: vi.fn().mockResolvedValue(undefined),
+vi.mock('../../src/config/features.js', () => ({
+  isFeatureEnabled: vi.fn().mockResolvedValue(true),
+}));
+
+vi.mock('../../src/modules/auth/providers/email-otp.provider.js', () => ({
+  getEmailOtpProvider: () => ({ send: vi.fn().mockResolvedValue(undefined) }),
 }));
 
 describe('email-otp.service', () => {

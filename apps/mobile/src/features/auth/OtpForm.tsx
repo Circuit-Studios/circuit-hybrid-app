@@ -34,7 +34,9 @@ export default function OtpForm() {
   const [error, setError] = useState<string | null>(null);
 
   const boxSize = useMemo(() => getOtpBoxSize(contentWidth), [contentWidth]);
-  const email = session?.email ?? '';
+  const channel = session?.channel ?? 'EMAIL';
+  const destination =
+    channel === 'EMAIL' ? session?.email ?? '' : session?.phone ?? '';
 
   useEffect(() => {
     if (!session) {
@@ -88,20 +90,39 @@ export default function OtpForm() {
     setSubmitting(true);
     setError(null);
     try {
-      await verifyOtp({
-        channel: 'EMAIL',
-        email: session.email,
-        code: value,
-        signup:
-          session.mode === 'signup' && session.role
-            ? {
-                firstName: session.firstName ?? '',
-                lastName: session.lastName ?? '',
-                role: session.role,
-                phone: session.phone,
-              }
-            : undefined,
-      });
+      if (channel === 'EMAIL') {
+        await verifyOtp({
+          channel: 'EMAIL',
+          email: session.email!,
+          code: value,
+          signup:
+            session.mode === 'signup' && session.role
+              ? {
+                  firstName: session.firstName ?? '',
+                  lastName: session.lastName ?? '',
+                  role: session.role,
+                  phone: session.phone,
+                  password: session.password,
+                }
+              : undefined,
+        });
+      } else {
+        await verifyOtp({
+          channel: 'PHONE',
+          phone: session.phone!,
+          code: value,
+          signup:
+            session.mode === 'signup' && session.role
+              ? {
+                  firstName: session.firstName ?? '',
+                  lastName: session.lastName ?? '',
+                  role: session.role,
+                  email: session.email,
+                  password: session.password,
+                }
+              : undefined,
+        });
+      }
       clearSession();
     } catch (err) {
       setError(readApiError(err, 'Invalid code, try again'));
@@ -116,11 +137,18 @@ export default function OtpForm() {
     setResending(true);
     setError(null);
     try {
-      const { ttlSeconds } = await requestOtp({
-        channel: 'EMAIL',
-        email: session.email,
-        purpose: session.mode,
-      });
+      const { ttlSeconds } =
+        channel === 'EMAIL'
+          ? await requestOtp({
+              channel: 'EMAIL',
+              email: session.email!,
+              purpose: session.mode,
+            })
+          : await requestOtp({
+              channel: 'PHONE',
+              phone: session.phone!,
+              purpose: session.mode,
+            });
       extendSession(Date.now() + ttlSeconds * 1000);
       setCooldown(RESEND_COOLDOWN);
     } catch (err) {
@@ -148,9 +176,9 @@ export default function OtpForm() {
   return (
     <ScreenContainer scroll={scroll} constrained="form">
       <ScreenHeader
-        eyebrow="Verify your email"
+        eyebrow={channel === 'EMAIL' ? 'Verify your email' : 'Verify your phone'}
         title="Enter the code"
-        subtitle={`We sent a 6-digit code to ${email}. Expires in ${formatRemainingSession(otpSecondsLeft)}.`}
+        subtitle={`We sent a 6-digit code to ${destination}. Expires in ${formatRemainingSession(otpSecondsLeft)}.`}
         showRule
         size="large"
       />
@@ -208,7 +236,11 @@ export default function OtpForm() {
           loading={submitting}
           onPress={() => handleVerify(code)}
         />
-        <Button title="Change email" variant="ghost" onPress={handleBack} />
+        <Button
+          title={channel === 'EMAIL' ? 'Change email' : 'Change phone'}
+          variant="ghost"
+          onPress={handleBack}
+        />
       </View>
     </ScreenContainer>
   );

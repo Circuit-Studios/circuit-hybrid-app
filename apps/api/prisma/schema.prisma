@@ -85,8 +85,9 @@ enum OtpChannel {
 model AuthOtp {
   id        String     @id @default(uuid())
   userId    String?
-  channel   OtpChannel @default(EMAIL)
-  target    String
+  channel   OtpChannel @default(PHONE)
+  target    String?
+  phone     String?
   codeHash  String
   expiresAt DateTime
   consumed  Boolean    @default(false)
@@ -95,7 +96,18 @@ model AuthOtp {
   user      User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([channel, target, consumed])
+  @@index([phone, consumed])
   @@index([expiresAt])
+}
+
+model FeatureFlag {
+  key        String   @id
+  enabled    Boolean  @default(true)
+  configJson Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("feature_flags")
 }
 
 enum EmailOtpPurpose {

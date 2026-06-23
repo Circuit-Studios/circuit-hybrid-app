@@ -25,6 +25,7 @@ describe('otp-crypto', () => {
   });
 
   it('uses fixed OTP in MOCK dev mode', () => {
-    expect(generateSixDigitOtp()).toBe('111111');
+    expect(generateSixDigitOtp('EMAIL')).toBe('111111');
+    expect(generateSixDigitOtp('PHONE')).toBe('111111');
   });
 });

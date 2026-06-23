@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { qk } from '@/api/queryKeys';
 import { useAuth } from '@/auth/AuthContext';
+import { useAppConfig } from '@/config/AppConfigContext';
 import { storage } from '@/lib/storage';
 import { circuitSocket } from './socket';
 import { attachNotificationHandlers, registerForPush } from './push';
@@ -51,6 +52,7 @@ function affectedKeys(event: RealtimeEvent): Array<readonly unknown[]> {
 
 export function RealtimeProvider({ children }: { children: ReactNode }) {
   const { status, user } = useAuth();
+  const { isFeatureEnabled } = useAppConfig();
   const qc = useQueryClient();
   const unsubRef = useRef<(() => void) | null>(null);
   const pushUnsubRef = useRef<(() => void) | null>(null);
@@ -79,7 +81,9 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       unsubRef.current = unsub;
 
       // Best-effort push registration (won't crash on simulators).
-      void registerForPush();
+      if (isFeatureEnabled('notifications.push')) {
+        void registerForPush();
+      }
 
       // Tap-to-deep-link. The backend includes `deepLink` in `data` on every
       // push, so we navigate straight to the relevant screen.
@@ -109,7 +113,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       pushUnsubRef.current?.();
       pushUnsubRef.current = null;
     };
-  }, [status, user, qc]);
+  }, [status, user, qc, isFeatureEnabled]);
 
   return <>{children}</>;
 }

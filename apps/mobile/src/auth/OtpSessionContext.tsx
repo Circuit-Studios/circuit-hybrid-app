@@ -14,8 +14,9 @@ export type OtpChannel = 'EMAIL' | 'PHONE';
 
 export interface OtpSession {
   channel: OtpChannel;
-  email: string;
+  email?: string;
   phone?: string;
+  password?: string;
   mode: OtpFlowMode;
   firstName?: string;
   lastName?: string;

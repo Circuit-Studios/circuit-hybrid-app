@@ -8,6 +8,10 @@ import { hashPassword, verifyPassword } from './password.service.js';
 import { requestOtp, verifyOtp } from './otp.service.js';
 import { OTP_TTL_SECONDS } from './auth.constants.js';
 import {
+  assertLoginChannel,
+  assertSignupChannel,
+} from './verification-policy.js';
+import {
   loginSchema,
   requestOtpSchema,
   verifyOtpSchema,
@@ -75,6 +79,11 @@ authPublicRouter.post(
     const body = requestOtpSchema.parse(req.body);
     await assertOtpPurpose(body);
 
+    const purpose = body.purpose ?? 'login';
+    const channel = body.channel === 'EMAIL' ? OtpChannel.EMAIL : OtpChannel.PHONE;
+    if (purpose === 'signup') assertSignupChannel(channel);
+    if (purpose === 'login') assertLoginChannel(channel);
+
     if (body.channel === 'EMAIL') {
       await requestOtp({
         channel: OtpChannel.EMAIL,
@@ -100,6 +109,9 @@ authPublicRouter.post(
   '/verify-otp',
   asyncHandler(async (req, res) => {
     const input: VerifyOtpBody = verifyOtpSchema.parse(req.body);
+    const verifyChannel = input.channel === 'EMAIL' ? OtpChannel.EMAIL : OtpChannel.PHONE;
+    if (input.signup) assertSignupChannel(verifyChannel);
+    else assertLoginChannel(verifyChannel);
 
     if (input.channel === 'EMAIL') {
       await verifyOtp({

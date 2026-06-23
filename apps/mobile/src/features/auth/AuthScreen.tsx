@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -13,10 +13,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { CircuitLogo } from '@/components/CircuitLogo';
 import { PhoneField, usePhoneFieldState } from '@/components/PhoneField';
+import { PasswordField } from '@/components/auth/PasswordField';
 import { useOtpSession } from '@/auth/OtpSessionContext';
 import { useAuthSubmit } from '@/features/auth/hooks';
 import { requestOtp } from '@/api/auth';
+import { useAppConfig } from '@/config/AppConfigContext';
+import { supportsLoginChannel } from '@/config/featureAccess';
 import { isValidEmail, normalizeEmail, splitFullName } from '@/lib/email';
+import { isValidPassword } from '@/lib/password';
 import { colors, radius, spacing, typography } from '@/theme';
 import type { UserRole } from '@/api/types';
 
@@ -31,54 +35,117 @@ const SIGNUP_ROLES: { id: UserRole; label: string }[] = [
 
 export default function AuthScreen() {
   const router = useRouter();
+  const { config } = useAppConfig();
   const { setSession } = useOtpSession();
   const [tab, setTab] = useState<AuthTab>('signup');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole | null>(null);
   const [attempted, setAttempted] = useState(false);
   const phoneField = usePhoneFieldState();
 
-  const emailValid = isValidEmail(email);
+  const signupChannel = config.signupVerificationChannel;
+  const signinChannel = useMemo(() => {
+    if (config.loginIdentifier === 'EMAIL') return 'EMAIL' as const;
+    if (config.loginIdentifier === 'PHONE') return 'PHONE' as const;
+    return email.trim() ? ('EMAIL' as const) : ('PHONE' as const);
+  }, [config.loginIdentifier, email]);
+
+  const activeChannel = tab === 'signup' ? signupChannel : signinChannel;
+
+  const emailValid = !email.trim() || isValidEmail(email);
+  const emailRequired = activeChannel === 'EMAIL' || (tab === 'signup' && signupChannel === 'EMAIL');
+  const phoneRequired = activeChannel === 'PHONE' || (tab === 'signup' && signupChannel === 'PHONE');
   const nameValid = tab === 'signin' || fullName.trim().length >= 1;
   const roleValid = tab === 'signin' || role !== null;
-  const canSubmit = emailValid && nameValid && roleValid;
+  const passwordValid = tab === 'signin' || !password || isValidPassword(password);
+  const phoneValid = !phoneRequired || phoneField.isValid;
+
+  const canSubmit =
+    nameValid &&
+    roleValid &&
+    passwordValid &&
+    phoneValid &&
+    (!emailRequired || isValidEmail(email)) &&
+    (tab === 'signup' || supportsLoginChannel(activeChannel, config.loginIdentifier));
 
   const submitHint = (() => {
     if (!attempted || canSubmit) return null;
-    if (!emailValid) return 'Enter a valid email address.';
+    if (emailRequired && !isValidEmail(email)) return 'Enter a valid email address.';
+    if (phoneRequired && !phoneField.isValid) return phoneField.error ?? 'Enter a valid phone number.';
     if (tab === 'signup' && !nameValid) return 'Enter your name.';
     if (tab === 'signup' && !roleValid) return 'Pick your role.';
+    if (tab === 'signup' && password && !passwordValid) return 'Password must be at least 8 characters.';
     return null;
   })();
 
   const startOtp = useCallback(async () => {
-    const normalized = normalizeEmail(email);
     const purpose = tab === 'signup' ? 'signup' : 'login';
-    const { ttlSeconds } = await requestOtp({
-      channel: 'EMAIL',
-      email: normalized,
-      purpose,
-    });
-    const { firstName, lastName } = splitFullName(fullName);
-    setSession({
-      channel: 'EMAIL',
-      email: normalized,
-      phone: phoneField.e164 ?? undefined,
-      mode: purpose,
-      firstName: tab === 'signup' ? firstName : undefined,
-      lastName: tab === 'signup' ? lastName : undefined,
-      role: tab === 'signup' ? role ?? undefined : undefined,
-      expiresAtMs: Date.now() + ttlSeconds * 1000,
-    });
+    const normalizedEmail = email.trim() ? normalizeEmail(email) : undefined;
+    const phone = phoneField.e164 ?? undefined;
+
+    if (activeChannel === 'EMAIL') {
+      const { ttlSeconds } = await requestOtp({
+        channel: 'EMAIL',
+        email: normalizedEmail!,
+        purpose,
+      });
+      const { firstName, lastName } = splitFullName(fullName);
+      setSession({
+        channel: 'EMAIL',
+        email: normalizedEmail!,
+        phone,
+        password: tab === 'signup' ? password || undefined : undefined,
+        mode: purpose,
+        firstName: tab === 'signup' ? firstName : undefined,
+        lastName: tab === 'signup' ? lastName : undefined,
+        role: tab === 'signup' ? role ?? undefined : undefined,
+        expiresAtMs: Date.now() + ttlSeconds * 1000,
+      });
+    } else {
+      const { ttlSeconds } = await requestOtp({
+        channel: 'PHONE',
+        phone: phone!,
+        purpose,
+      });
+      const { firstName, lastName } = splitFullName(fullName);
+      setSession({
+        channel: 'PHONE',
+        phone: phone!,
+        email: normalizedEmail,
+        password: tab === 'signup' ? password || undefined : undefined,
+        mode: purpose,
+        firstName: tab === 'signup' ? firstName : undefined,
+        lastName: tab === 'signup' ? lastName : undefined,
+        role: tab === 'signup' ? role ?? undefined : undefined,
+        expiresAtMs: Date.now() + ttlSeconds * 1000,
+      });
+    }
+
     router.push({ pathname: '/(auth)/otp', params: { mode: purpose } });
-  }, [email, fullName, phoneField.e164, role, router, setSession, tab]);
+  }, [
+    activeChannel,
+    email,
+    fullName,
+    password,
+    phoneField.e164,
+    role,
+    router,
+    setSession,
+    tab,
+  ]);
 
   const { submitting, error, handleSubmit } = useAuthSubmit({
     canSubmit,
     submit: startOtp,
     fallbackError: tab === 'signup' ? 'Could not start sign up' : 'Could not send sign-in code',
   });
+
+  const otpTargetHint =
+    activeChannel === 'EMAIL'
+      ? 'OTP is sent to your email.'
+      : 'OTP is sent to your phone.';
 
   return (
     <KeyboardAvoidingView
@@ -124,29 +191,41 @@ export default function AuthScreen() {
           />
         ) : null}
 
-        <AuthField
-          label="Email"
-          placeholder="you@studio.com"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoComplete="email"
-          textContentType="emailAddress"
-          icon="mail-outline"
-        />
+        {(activeChannel === 'EMAIL' || config.loginIdentifier === 'BOTH' || tab === 'signup') ? (
+          <AuthField
+            label={emailRequired ? 'Email' : 'Email (optional)'}
+            placeholder="you@studio.com"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
+            textContentType="emailAddress"
+            icon="mail-outline"
+          />
+        ) : null}
 
-        {tab === 'signup' ? (
+        {(activeChannel === 'PHONE' || tab === 'signup' || config.loginIdentifier === 'BOTH') ? (
           <View style={styles.phoneBlock}>
             <PhoneField
-              label="Phone (optional)"
+              label={phoneRequired ? 'Phone' : 'Phone (optional)'}
               country={phoneField.country}
               nationalNumber={phoneField.nationalNumber}
               onCountryChange={phoneField.setCountry}
               onNationalNumberChange={phoneField.setNationalNumber}
-              hint="Used for crew invites — OTP is sent to your email."
-              showError={attempted && !!phoneField.nationalNumber && !phoneField.isValid}
+              hint={tab === 'signup' ? otpTargetHint : undefined}
+              showError={attempted && phoneRequired && !!phoneField.nationalNumber && !phoneField.isValid}
               error={phoneField.error ?? undefined}
+            />
+          </View>
+        ) : null}
+
+        {tab === 'signup' ? (
+          <View style={styles.passwordBlock}>
+            <PasswordField
+              value={password}
+              onChangeText={setPassword}
+              mode="new"
             />
           </View>
         ) : null}
@@ -280,6 +359,7 @@ const styles = StyleSheet.create({
   fieldIcon: { marginLeft: spacing.sm },
   roleBlock: { marginBottom: spacing.lg },
   phoneBlock: { marginBottom: spacing.lg },
+  passwordBlock: { marginBottom: spacing.lg },
   roleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   roleChip: {
     paddingHorizontal: spacing.lg,

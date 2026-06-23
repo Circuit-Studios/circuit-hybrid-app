@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { asyncHandler } from '../../lib/http.js';
+import { requireFeature } from '../../middleware/require-feature.js';
 import {
   GENERIC_SEND_SUCCESS,
   sendEmailOtp,
@@ -25,6 +26,7 @@ const verifyOtpBodySchema = z.object({
 /** POST /send-otp */
 router.post(
   '/send-otp',
+  requireFeature('auth.emailOtp'),
   asyncHandler(async (req, res) => {
     const { email, purpose } = sendOtpBodySchema.parse(req.body);
     const otpPurpose = toEmailOtpPurpose(purpose);
@@ -44,6 +46,7 @@ router.post(
 /** POST /verify-otp */
 router.post(
   '/verify-otp',
+  requireFeature('auth.emailOtp'),
   asyncHandler(async (req, res) => {
     const { email, otp, purpose } = verifyOtpBodySchema.parse(req.body);
     const otpPurpose = toEmailOtpPurpose(purpose);

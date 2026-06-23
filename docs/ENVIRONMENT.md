@@ -64,6 +64,7 @@ Use local Postgres (Docker) or a **Supabase dev** project — never production S
 
 ```bash
 NODE_ENV=development
+APP_ENV=local
 PORT=3009
 LOG_LEVEL=debug
 
@@ -74,7 +75,12 @@ JWT_ISSUER=circuit-api
 JWT_AUDIENCE=circuit-mobile
 JWT_EXPIRES_IN=7d
 
-OTP_PROVIDER=MOCK
+# Verification — mobile reads GET /app/config (no rebuild needed to switch)
+SIGNUP_VERIFICATION_CHANNEL=EMAIL
+LOGIN_IDENTIFIER=PHONE
+EMAIL_OTP_PROVIDER=MOCK
+PHONE_OTP_PROVIDER=MOCK
+OTP_SECRET=replace_with_local_otp_secret_min_32_chars
 
 OPENAI_API_KEY=your_openai_key
 OPENAI_MODEL=gpt-4o
@@ -93,10 +99,11 @@ CORS_ORIGINS=http://localhost:8081,http://localhost:19006
 
 **Notes:**
 
-- `APP_ENV` is **mobile-only** (`EXPO_PUBLIC_APP_ENV`). The API uses `NODE_ENV`.
+- `APP_ENV` on the API (`local` | `dev` | `prod`) is separate from mobile `EXPO_PUBLIC_APP_ENV`. The API exposes `appEnv` via `GET /app/config`.
 - Omit `REDIS_URL` completely if you are not using Redis. Blank values are treated as unset, but omitting is clearer.
-- Dev OTP code is always **`111111`** when `OTP_PROVIDER=MOCK` (works for both phone and email channels).
-- Email OTP uses **Resend** when `OTP_PROVIDER=RESEND_EMAIL` on the deployed API (see [Resend setup](#resend-email-otp) below).
+- Dev OTP code is **`111111`** when `EMAIL_OTP_PROVIDER=MOCK` or `PHONE_OTP_PROVIDER=MOCK` (and `APP_ENV` is not `prod`, unless `ALLOW_MOCK_OTP_IN_PROD=true`).
+- Toggle signup channel with `SIGNUP_VERIFICATION_CHANNEL=EMAIL|PHONE` — backend enforces; mobile follows `/app/config`.
+- Runtime module toggles use the `feature_flags` table (see below) — no mobile rebuild required.
 
 **2. Point mobile at localhost**
 
@@ -136,35 +143,75 @@ See [`apps/api/docs/DEPLOYMENT.md`](../apps/api/docs/DEPLOYMENT.md) for Render d
 
 | Mode | Mobile API URL | Backend | Database | OTP |
 |------|----------------|---------|----------|-----|
-| **Local full stack** | `http://localhost:3009` | `npm run api:dev` | Docker Postgres / Supabase dev | `MOCK` |
-| **Mobile → Render** | Render URL | Render (remote) | Render / Supabase (remote) | `MOCK` |
-| **Production** | Custom domain | Render paid | Supabase prod | MSG91 (phone) / Resend (email) |
+| **Local full stack** | `http://localhost:3009` | `npm run api:dev` | Docker Postgres / Supabase dev | `EMAIL_OTP_PROVIDER=MOCK`, `PHONE_OTP_PROVIDER=MOCK` |
+| **Mobile → Render** | Render URL | Render (remote) | Render / Supabase (remote) | Render env (see dev example below) |
+| **Production** | Custom domain | Render paid | Supabase prod | `EMAIL_OTP_PROVIDER=RESEND`, `PHONE_OTP_PROVIDER=MSG91` |
 
 ---
 
 ## Resend email OTP
 
-Use when the mobile app requests OTP with `{ channel: "EMAIL", email, purpose }`.
+Use when `EMAIL_OTP_PROVIDER=RESEND` (or legacy `OTP_PROVIDER=RESEND_EMAIL`).
 
 **Render dashboard** (production source of truth — do not commit secrets):
 
 | Variable | Required | Notes |
 |----------|----------|-------|
-| `OTP_PROVIDER` | Yes | Set to `RESEND_EMAIL` |
+| `APP_ENV` | Yes | `prod` for production |
+| `EMAIL_OTP_PROVIDER` | Yes | Set to `RESEND` |
 | `RESEND_API_KEY` | Yes | From [resend.com](https://resend.com) → API Keys |
-| `RESEND_FROM_EMAIL` | Yes | Must use a **verified domain**, e.g. `Circuit <noreply@yourdomain.com>` |
+| `OTP_FROM_EMAIL` or `RESEND_FROM_EMAIL` | Yes | Verified domain, e.g. `Circuit <noreply@yourdomain.com>` |
 | `RESEND_REPLY_TO` | No | Optional reply-to address |
+| `OTP_SECRET` | Yes | Min 32 chars — HMAC key for OTP hashes (never store plain OTP) |
 
-**Important:** Resend delivers **email only**. Phone/SMS OTP still uses `MSG91` / `TWILIO` / `MOCK` when `channel` is `PHONE`.
+**Render dev example** (shared dev API):
 
-**Local testing:** keep `OTP_PROVIDER=MOCK` — code is `111111` for both channels.
-
-**API request shape:**
-
-```json
-POST /auth/request-otp
-{ "channel": "EMAIL", "email": "you@studio.com", "purpose": "signup" }
+```bash
+APP_ENV=dev
+SIGNUP_VERIFICATION_CHANNEL=EMAIL
+LOGIN_IDENTIFIER=BOTH
+EMAIL_OTP_PROVIDER=RESEND
+PHONE_OTP_PROVIDER=MOCK
+RESEND_API_KEY=re_...
+OTP_FROM_EMAIL=Circuit <no-reply@your-verified-domain.com>
 ```
+
+**Production guard:** if `APP_ENV=prod` and any active OTP provider is `MOCK`, the API refuses to start unless `ALLOW_MOCK_OTP_IN_PROD=true`.
+
+**Important:** Resend delivers **email only**. Phone/SMS uses `PHONE_OTP_PROVIDER` (`MSG91` / `TWILIO` / `MOCK`).
+
+**Local testing:** `EMAIL_OTP_PROVIDER=MOCK` and `PHONE_OTP_PROVIDER=MOCK` — code is `111111`.
+
+**Public runtime config (no secrets):**
+
+```bash
+GET /app/config
+```
+
+Returns `appEnv`, `signupVerificationChannel`, `loginIdentifier`, and `features` map.
+
+---
+
+## Feature flags (`feature_flags` table)
+
+Toggle modules without a mobile rebuild. Backend enforces via `requireFeature()`; mobile hides UI from `GET /app/config`.
+
+| Key | Default | Routes affected |
+|-----|---------|-----------------|
+| `scripts.upload` | on | `POST /projects/:id/scripts` |
+| `scripts.aiAnalysis` | on | `POST /scripts/:id/analyze` |
+| `team.invites` | on | `POST /projects/:id/members` |
+| `auth.emailOtp` | on | Email OTP send/verify |
+| `auth.phoneOtp` | on | Phone OTP send/verify |
+| `notifications.push` | on | Mobile push registration |
+
+Example — disable script upload in dev:
+
+```sql
+UPDATE feature_flags SET enabled = false WHERE key = 'scripts.upload';
+```
+
+Flags are cached server-side for 30 seconds.
 
 ---
 

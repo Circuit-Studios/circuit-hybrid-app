@@ -62,7 +62,7 @@ let cached: PhoneOtpProvider | null = null;
 export function getPhoneOtpProvider(): PhoneOtpProvider {
   if (cached) return cached;
 
-  switch (env.OTP_PROVIDER) {
+  switch (env.PHONE_OTP_PROVIDER) {
     case 'MSG91':
       cached = new Msg91Provider();
       break;
@@ -70,7 +70,6 @@ export function getPhoneOtpProvider(): PhoneOtpProvider {
       cached = new NotImplementedPhoneProvider('TWILIO');
       break;
     case 'MOCK':
-    case 'RESEND_EMAIL':
     default:
       cached = new MockPhoneOtpProvider();
       break;

@@ -46,7 +46,11 @@ npm run dev          # http://localhost:3009
 
 From repo root: `npm run api:dev`
 
-**Dev OTP:** `OTP_PROVIDER=MOCK` → code **`111111`** (phone and email)
+**Dev OTP:** `EMAIL_OTP_PROVIDER=MOCK` + `PHONE_OTP_PROVIDER=MOCK` → code **`111111`**
+
+**Runtime config:** mobile fetches `GET /app/config` on launch — switch `SIGNUP_VERIFICATION_CHANNEL` or feature flags in Render/DB without rebuilding the app.
+
+**Secrets:** never commit API keys, JWT/OTP secrets, or database URLs. Use `apps/api/.env.development` (local), Render dashboard (deployed API), and EAS env (cloud mobile builds) only.
 
 ### 4. Mobile
 

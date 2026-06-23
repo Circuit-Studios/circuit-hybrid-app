@@ -4,6 +4,8 @@ import { MembershipStatus, UserRole, SetStatus } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { asyncHandler, badRequest, conflict, forbidden, notFound } from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { requireFeature } from '../../middleware/require-feature.js';
+import { canInviteMembers, getActiveMembership } from '../../auth/permissions.js';
 import { dispatchNotification } from '../../notifications/notifications.service.js';
 
 const router: Router = Router();
@@ -22,24 +24,12 @@ const inviteMemberSchema = z
     message: 'Either phone or email is required',
   });
 
-// Only Director/Producer/Line Producer can invite people into a project. This
-// matches Module 1 in the spec: directors hand-pick their crew. Once we wire
-// up Spider mode in Module 4, dept heads will be allowed to invite their own
-// crew within their department — we'll add that exception then.
-const INVITER_ROLES: UserRole[] = [
-  UserRole.DIRECTOR,
-  UserRole.PRODUCER,
-  UserRole.EXECUTIVE_PRODUCER,
-  UserRole.LINE_PRODUCER,
-];
+// Only Director/Producer/Line Producer can invite people into a project.
 
 async function assertCanInvite(userId: string, projectId: string): Promise<void> {
-  const membership = await prisma.projectMember.findFirst({
-    where: { projectId, userId, status: MembershipStatus.ACTIVE },
-    select: { role: true },
-  });
+  const membership = await getActiveMembership(userId, projectId);
   if (!membership) throw forbidden('You are not a member of this project');
-  if (!INVITER_ROLES.includes(membership.role)) {
+  if (!canInviteMembers(membership.role)) {
     throw forbidden(`Role ${membership.role} cannot invite members`);
   }
 }
@@ -51,6 +41,7 @@ async function assertCanInvite(userId: string, projectId: string): Promise<void>
 router.post(
   '/projects/:projectId/members',
   requireAuth,
+  requireFeature('team.invites'),
   asyncHandler(async (req, res) => {
     const projectId = req.params.projectId!;
     const userId = req.user!.sub;
@@ -165,7 +156,7 @@ router.patch(
     if (!member) throw notFound('Member not found');
 
     const isSelf = member.userId === userId;
-    const canManage = INVITER_ROLES.includes(me.role);
+    const canManage = canInviteMembers(me.role);
     if (!isSelf && !canManage) {
       throw forbidden('You can only update your own on-set status');
     }
@@ -251,7 +242,7 @@ router.delete(
       where: { projectId: member.projectId, userId, status: MembershipStatus.ACTIVE },
       select: { role: true },
     });
-    const isInviter = inviter && INVITER_ROLES.includes(inviter.role);
+    const isInviter = inviter && canInviteMembers(inviter.role);
     const isSelf = member.userId === userId;
 
     if (!isInviter && !isSelf) {

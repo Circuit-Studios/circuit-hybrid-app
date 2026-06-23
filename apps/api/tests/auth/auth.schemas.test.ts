@@ -35,6 +35,15 @@ describe('auth OTP schemas', () => {
     expect(parsed.signup?.phone).toBe('+919812345678');
   });
 
+  it('accepts legacy phone-only request without channel', () => {
+    const parsed = requestOtpSchema.parse({
+      phone: '+919812345678',
+      purpose: 'login',
+    });
+    expect(parsed.channel).toBe('PHONE');
+    expect(parsed.phone).toBe('+919812345678');
+  });
+
   it('strips unknown fields on discriminated channel payloads', () => {
     const parsed = requestOtpSchema.parse({
       channel: 'EMAIL',

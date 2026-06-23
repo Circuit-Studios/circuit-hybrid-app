@@ -10,6 +10,7 @@ import {
   toEmailOtpPurpose,
   verifyEmailOtp,
 } from './email-otp.service.js';
+import { assertOtpChannelEnabled } from './verification-policy.js';
 
 export const OTP_RESEND_COOLDOWN_SECONDS = 30;
 
@@ -27,6 +28,8 @@ export interface VerifyOtpInput {
 }
 
 export async function requestOtp({ channel, target, purpose }: RequestOtpInput): Promise<void> {
+  await assertOtpChannelEnabled(channel);
+
   if (channel === OtpChannel.EMAIL) {
     await sendEmailOtp(target, toEmailOtpPurpose(purpose));
     return;
@@ -47,12 +50,18 @@ export async function requestOtp({ channel, target, purpose }: RequestOtpInput):
     );
   }
 
-  const plainOtp = generateSixDigitOtp();
+  const plainOtp = generateSixDigitOtp('PHONE');
   const codeHash = hashOtpCode(plainOtp);
   const expiresAt = new Date(Date.now() + OTP_TTL_SECONDS * 1000);
 
   await prisma.authOtp.create({
-    data: { channel, target: normalized, codeHash, expiresAt },
+    data: {
+      channel,
+      target: normalized,
+      phone: normalized,
+      codeHash,
+      expiresAt,
+    },
   });
 
   await getPhoneOtpProvider().send(normalized, plainOtp);
@@ -64,6 +73,8 @@ export async function verifyOtp({
   code,
   purpose,
 }: VerifyOtpInput): Promise<true> {
+  await assertOtpChannelEnabled(channel);
+
   if (channel === OtpChannel.EMAIL) {
     await verifyEmailOtp(target, code, toEmailOtpPurpose(purpose));
     return true;

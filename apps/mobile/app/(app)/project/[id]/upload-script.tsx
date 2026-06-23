@@ -9,6 +9,7 @@ import { Card } from '@/components/Card';
 import { colors, radius, spacing, typography } from '@/theme';
 import { uploadScript, triggerAnalysis } from '@/api/scripts';
 import { readApiError } from '@/api/client';
+import { useAppConfig } from '@/config/AppConfigContext';
 
 interface PickedFile {
   uri: string;
@@ -20,6 +21,9 @@ interface PickedFile {
 export default function UploadScriptScreen() {
   const { id: projectId } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { isFeatureEnabled } = useAppConfig();
+  const uploadEnabled = isFeatureEnabled('scripts.upload');
+  const analysisEnabled = isFeatureEnabled('scripts.aiAnalysis');
 
   const [picked, setPicked] = useState<PickedFile | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -54,7 +58,7 @@ export default function UploadScriptScreen() {
   }
 
   async function handleUpload() {
-    if (!picked || !projectId) return;
+    if (!picked || !projectId || !uploadEnabled) return;
     setUploading(true);
     setError(null);
     try {
@@ -64,10 +68,12 @@ export default function UploadScriptScreen() {
         fileName: picked.name,
         mimeType: picked.mimeType ?? 'application/pdf',
       });
-      // Kick off analysis immediately. The backend returns 202 and runs the
-      // pipeline in the background — we poll on the next screen.
-      await triggerAnalysis(script.id);
-      router.replace(`/(app)/project/${projectId}/ai-progress?scriptId=${script.id}`);
+      if (analysisEnabled) {
+        await triggerAnalysis(script.id);
+        router.replace(`/(app)/project/${projectId}/ai-progress?scriptId=${script.id}`);
+      } else {
+        router.replace(`/(app)/project/${projectId}`);
+      }
     } catch (err) {
       setError(readApiError(err, 'Upload failed'));
     } finally {
@@ -86,6 +92,10 @@ export default function UploadScriptScreen() {
         We accept clean PDFs up to 25MB. Final-draft or screenplay-style formatting works best.
         Once uploaded, our AI maps characters, scenes, departments, shoot days and a budget draft.
       </Text>
+
+      {!uploadEnabled ? (
+        <Text style={styles.disabledNotice}>Script upload is temporarily disabled.</Text>
+      ) : null}
 
       {picked ? (
         <Card style={styles.fileCard}>
@@ -119,7 +129,7 @@ export default function UploadScriptScreen() {
         <PrimaryButton
           title={uploading ? 'Uploading & queuing AI…' : 'Upload & analyse'}
           loading={uploading}
-          disabled={!picked}
+          disabled={!picked || !uploadEnabled}
           onPress={handleUpload}
         />
         <PrimaryButton title="Skip for now" variant="ghost" onPress={() => router.back()} />
@@ -142,6 +152,7 @@ const styles = StyleSheet.create({
   back: { ...typography.bodyStrong, color: colors.textSecondary, marginBottom: spacing.md },
   title: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.sm },
   body: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.xl },
+  disabledNotice: { ...typography.bodyStrong, color: colors.danger, marginBottom: spacing.md },
   dropzone: {
     borderWidth: 2,
     borderStyle: 'dashed',

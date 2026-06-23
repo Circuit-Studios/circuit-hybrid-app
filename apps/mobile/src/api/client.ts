@@ -4,7 +4,7 @@ import { logger, logApiRequest, logApiResponse } from '@/lib/logger';
 import { readResponseRequestId, withRequestId } from '@/lib/requestId';
 import { storage } from '@/lib/storage';
 
-const PUBLIC_AUTH_PATHS = ['/auth/login', '/auth/request-otp', '/auth/verify-otp'];
+const PUBLIC_AUTH_PATHS = ['/auth/login', '/auth/request-otp', '/auth/verify-otp', '/app/config'];
 
 interface RequestMetadata {
   startTime: number;

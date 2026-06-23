@@ -24,6 +24,7 @@ import departmentsRoutes from '../modules/departments/departments.routes.js';
 import notificationsRoutes from '../notifications/notifications.routes.js';
 import homeRoutes from '../modules/home/home.routes.js';
 import emailOtpRoutes from '../modules/auth/email-otp.routes.js';
+import appConfigRoutes from '../modules/app/app-config.routes.js';
 import { prisma } from '../lib/prisma.js';
 import { initSocket } from '../realtime/socket.js';
 import { startConflictWorker, stopConflictWorker } from '../queues/conflicts.queue.js';
@@ -132,6 +133,8 @@ app.get('/health', async (_req, res) => {
     res.status(503).json({ status: 'degraded', error: (err as Error).message });
   }
 });
+
+app.use(appConfigRoutes);
 
 app.use('/auth', authLimiter, authPublicRouter);
 app.use('/auth', authProtectedRouter);

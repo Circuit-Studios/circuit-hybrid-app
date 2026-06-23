@@ -9,6 +9,7 @@ const optionalString = z.preprocess(emptyToUndefined, z.string().optional());
 
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  APP_ENV: z.enum(['local', 'dev', 'prod']).default('local'),
   PORT: z.coerce.number().int().positive().default(3009),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('debug'),
 
@@ -17,9 +18,17 @@ const schema = z.object({
   JWT_AUDIENCE: z.string().default('circuit-mobile'),
   JWT_EXPIRES_IN: z.string().default('7d'),
 
+  /** @deprecated Use EMAIL_OTP_PROVIDER / PHONE_OTP_PROVIDER */
   OTP_PROVIDER: z.enum(['MOCK', 'MSG91', 'TWILIO', 'RESEND_EMAIL']).default('MOCK'),
   OTP_SECRET: z.string().min(32, 'OTP_SECRET must be at least 32 chars'),
   OTP_FROM_EMAIL: optionalString,
+
+  SIGNUP_VERIFICATION_CHANNEL: z.enum(['EMAIL', 'PHONE']).default('EMAIL'),
+  LOGIN_IDENTIFIER: z.enum(['PHONE', 'EMAIL', 'BOTH']).default('PHONE'),
+  EMAIL_OTP_PROVIDER: z.enum(['MOCK', 'RESEND']).default('MOCK'),
+  PHONE_OTP_PROVIDER: z.enum(['MOCK', 'MSG91', 'TWILIO']).default('MOCK'),
+  ALLOW_MOCK_OTP_IN_PROD: z.coerce.boolean().default(false),
+
   RESEND_API_KEY: optionalString,
   RESEND_FROM_EMAIL: optionalString,
   RESEND_REPLY_TO: optionalString,
@@ -30,8 +39,6 @@ const schema = z.object({
 
   DATABASE_URL: z.string().url(),
 
-  // Redis powers BullMQ (conflict detector queue) and is optional in dev —
-  // if unset we run conflict scans inline on the request thread.
   REDIS_URL: optionalUrl,
 
   OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY is required'),
@@ -51,6 +58,37 @@ const schema = z.object({
 
 export type Env = z.infer<typeof schema>;
 
+function applyLegacyOtpProvider(data: Env): Env {
+  let next = data;
+  if (!process.env.EMAIL_OTP_PROVIDER && data.OTP_PROVIDER === 'RESEND_EMAIL') {
+    next = { ...next, EMAIL_OTP_PROVIDER: 'RESEND' };
+  }
+  if (!process.env.PHONE_OTP_PROVIDER) {
+    if (data.OTP_PROVIDER === 'MSG91') {
+      next = { ...next, PHONE_OTP_PROVIDER: 'MSG91' };
+    } else if (data.OTP_PROVIDER === 'TWILIO') {
+      next = { ...next, PHONE_OTP_PROVIDER: 'TWILIO' };
+    }
+  }
+  return next;
+}
+
+function assertProductionOtpProviders(config: Env): void {
+  if (config.APP_ENV !== 'prod' || config.ALLOW_MOCK_OTP_IN_PROD) return;
+
+  const mockProviders: string[] = [];
+  if (config.EMAIL_OTP_PROVIDER === 'MOCK') mockProviders.push('EMAIL_OTP_PROVIDER=MOCK');
+  if (config.PHONE_OTP_PROVIDER === 'MOCK') mockProviders.push('PHONE_OTP_PROVIDER=MOCK');
+
+  if (mockProviders.length > 0) {
+    console.error(
+      `APP_ENV=prod cannot start with MOCK OTP providers (${mockProviders.join(', ')}). ` +
+        'Set real providers or ALLOW_MOCK_OTP_IN_PROD=true for emergency testing only.',
+    );
+    process.exit(1);
+  }
+}
+
 function loadEnv(): Env {
   const parsed = schema.safeParse(process.env);
   if (!parsed.success) {
@@ -60,7 +98,10 @@ function loadEnv(): Env {
     }
     process.exit(1);
   }
-  return parsed.data;
+
+  const resolved = applyLegacyOtpProvider(parsed.data);
+  assertProductionOtpProviders(resolved);
+  return resolved;
 }
 
 export const env = loadEnv();
