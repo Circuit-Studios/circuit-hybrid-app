@@ -1,4 +1,5 @@
 import {
+  getDropdownListMaxHeight,
   getKanbanColumnWidth,
   getOtpBoxSize,
   isCompactHeight,
@@ -38,5 +39,27 @@ describe('layout helpers', () => {
     const phone = getKanbanColumnWidth(360);
     const tablet = getKanbanColumnWidth(840);
     expect(tablet).toBeGreaterThanOrEqual(phone);
+  });
+
+  it('sizes dropdown list for portrait and landscape', () => {
+    const portrait = getDropdownListMaxHeight({
+      windowHeight: 844,
+      triggerY: 520,
+      triggerHeight: 48,
+      safeBottom: 34,
+      optionCount: 4,
+    });
+    expect(portrait.useModalSheet).toBe(false);
+    expect(portrait.maxHeight).toBeGreaterThanOrEqual(120);
+
+    const landscape = getDropdownListMaxHeight({
+      windowHeight: 390,
+      triggerY: 300,
+      triggerHeight: 48,
+      safeBottom: 21,
+      optionCount: 8,
+    });
+    expect(landscape.useModalSheet).toBe(true);
+    expect(landscape.maxHeight).toBeGreaterThanOrEqual(120);
   });
 });

@@ -1,7 +1,10 @@
 import { StyleSheet } from 'react-native';
 import { colors, radius, spacing, typography } from '@/theme';
 
+const OPTIONS_MAX_HEIGHT = 240;
+
 /** Shared styles for dropdown and chip pickers. */
+export { OPTIONS_MAX_HEIGHT };
 export const pickerStyles = StyleSheet.create({
   label: {
     ...typography.micro,
@@ -15,7 +18,7 @@ export const pickerStyles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   dropdownWrap: { marginBottom: spacing.lg },
-  dropdownWrapOpen: { zIndex: 20 },
+  dropdownWrapOpen: { zIndex: 30, elevation: 8 },
   dropdownTrigger: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -34,13 +37,18 @@ export const pickerStyles = StyleSheet.create({
   chev: { ...typography.bodyStrong, color: colors.textSecondary, marginLeft: spacing.sm },
   dropdownList: {
     marginTop: spacing.sm,
+    maxHeight: OPTIONS_MAX_HEIGHT,
     backgroundColor: colors.glass,
     borderWidth: 1,
     borderColor: colors.glassBorder,
     borderRadius: radius.md,
     overflow: 'hidden',
+    zIndex: 30,
+    elevation: 8,
   },
-  dropdownOptionsScroll: {},
+  dropdownOptionsScroll: {
+    maxHeight: OPTIONS_MAX_HEIGHT,
+  },
   dropdownOptionsContent: {
     flexGrow: 0,
   },
@@ -77,4 +85,33 @@ export const pickerStyles = StyleSheet.create({
   chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
   chipText: { ...typography.bodyStrong, color: colors.textPrimary },
   chipTextActive: { color: colors.accentInk },
+  modalRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  modalSheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    paddingTop: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    maxHeight: '70%',
+  },
+  modalTitle: {
+    ...typography.bodyStrong,
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+    textTransform: 'uppercase',
+  },
+  modalList: {
+    backgroundColor: colors.glass,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+  },
 });

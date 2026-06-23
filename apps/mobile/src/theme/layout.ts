@@ -96,3 +96,59 @@ export function getHealthRingSize(contentWidth: number, isWide: boolean, height:
   if (!isWide) return 220;
   return Math.min(260, Math.max(200, Math.round(contentWidth * 0.28)));
 }
+
+const DROPDOWN_OPTION_ROW_HEIGHT = 48;
+const DROPDOWN_MIN_LIST_HEIGHT = 120;
+const DROPDOWN_MAX_LIST_HEIGHT = 240;
+
+/** Max height for an inline dropdown list from trigger position and viewport. */
+export function getDropdownListMaxHeight(params: {
+  windowHeight: number;
+  triggerY: number;
+  triggerHeight: number;
+  safeBottom: number;
+  optionCount: number;
+  extraChrome?: number;
+}): { maxHeight: number; useModalSheet: boolean } {
+  const {
+    windowHeight,
+    triggerY,
+    triggerHeight,
+    safeBottom,
+    optionCount,
+    extraChrome = 0,
+  } = params;
+
+  const margin = spacing.lg;
+  const availableBelow = windowHeight - safeBottom - margin - (triggerY + triggerHeight);
+  const fullListHeight = optionCount * DROPDOWN_OPTION_ROW_HEIGHT + extraChrome;
+  const idealHeight = Math.min(DROPDOWN_MAX_LIST_HEIGHT, fullListHeight);
+
+  if (availableBelow >= idealHeight) {
+    return { maxHeight: idealHeight, useModalSheet: false };
+  }
+
+  if (availableBelow >= DROPDOWN_MIN_LIST_HEIGHT) {
+    return {
+      maxHeight: Math.min(idealHeight, availableBelow),
+      useModalSheet: false,
+    };
+  }
+
+  const modalHeight = Math.min(
+    DROPDOWN_MAX_LIST_HEIGHT,
+    fullListHeight,
+    Math.max(DROPDOWN_MIN_LIST_HEIGHT, windowHeight * 0.5 - safeBottom),
+  );
+
+  return {
+    maxHeight: modalHeight,
+    useModalSheet: true,
+  };
+}
+
+export const dropdownLayout = {
+  optionRowHeight: DROPDOWN_OPTION_ROW_HEIGHT,
+  minListHeight: DROPDOWN_MIN_LIST_HEIGHT,
+  maxListHeight: DROPDOWN_MAX_LIST_HEIGHT,
+} as const;
