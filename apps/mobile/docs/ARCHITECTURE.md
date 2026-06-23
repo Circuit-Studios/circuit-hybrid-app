@@ -17,8 +17,8 @@
 app/
 ├── _layout.tsx                     # providers: Query, Auth, Realtime, theme, safe-area
 ├── index.tsx                       # gate → auth vs app
-├── (auth)/                         # phone OTP flow                         [v1 ✅ restyle]
-│   ├── welcome.tsx
+├── (auth)/                         # sign-in / sign-up + OTP               [v1 ✅ restyle]
+│   ├── auth.tsx
 │   ├── login.tsx
 │   ├── signup.tsx
 │   └── otp.tsx

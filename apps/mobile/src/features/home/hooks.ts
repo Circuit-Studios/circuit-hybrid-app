@@ -6,7 +6,8 @@ export function useHomeQuery(projectId?: string | null) {
   return useQuery({
     queryKey: qk.home(projectId ?? undefined),
     queryFn: () => getHomeDashboard(projectId ?? undefined),
-    enabled: projectId !== null,
+    enabled: Boolean(projectId),
+    placeholderData: (previous) => previous,
   });
 }
 

@@ -1,5 +1,38 @@
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet, type TextStyle } from 'react-native';
 import { colors, radius, spacing, typography } from './tokens';
+
+/** Fixed-height auth row — icon + text stay vertically centered. */
+export const AUTH_FIELD_HEIGHT = 52;
+
+/** TextInput styles that avoid iOS/Android baseline drift inside icon rows. */
+export const authInputTextStyle: TextStyle = Platform.select({
+  ios: {
+    fontSize: 15,
+    fontWeight: '400',
+    lineHeight: 20,
+    paddingVertical: 0,
+  },
+  android: {
+    fontSize: 15,
+    fontWeight: '400',
+    paddingVertical: 0,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
+  },
+  default: {
+    fontSize: 15,
+    fontWeight: '400',
+    paddingVertical: 0,
+  },
+})!;
+
+export const authFieldRowStyle = {
+  flexDirection: 'row' as const,
+  alignItems: 'center' as const,
+  height: AUTH_FIELD_HEIGHT,
+  paddingHorizontal: spacing.md,
+  borderRadius: radius.lg,
+};
 
 /** Shared field chrome for inputs, dropdowns, and date pickers. */
 export const fieldStyles = StyleSheet.create({

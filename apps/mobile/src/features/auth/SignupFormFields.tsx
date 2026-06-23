@@ -30,9 +30,8 @@ export interface SignupFormFieldsProps {
   phoneField: PhoneFieldState;
   attempted: boolean;
   signupPhoneRequired: boolean;
-  onRoleDropdownOpen: (open: boolean) => void;
-  onRoleFieldLayout: (y: number) => void;
   compact?: boolean;
+  onRolePickerOpenChange?: (open: boolean) => void;
 }
 
 /** Channel-aware signup fields. EMAIL verifies via Resend; PHONE via SMS OTP. */
@@ -49,9 +48,8 @@ export function SignupFormFields({
   phoneField,
   attempted,
   signupPhoneRequired,
-  onRoleDropdownOpen,
-  onRoleFieldLayout,
   compact,
+  onRolePickerOpenChange,
 }: SignupFormFieldsProps) {
   const otpTargetHint =
     channel === 'EMAIL'
@@ -130,20 +128,15 @@ export function SignupFormFields({
         />
       ) : null}
 
-      <View
-        onLayout={(event) => {
-          onRoleFieldLayout(event.nativeEvent.layout.y);
-        }}
-      >
-        <DropdownPicker
-          label="I am a"
-          placeholder="Select your role"
-          options={SIGNUP_ROLES.map((item) => ({ value: item.id, label: item.label }))}
-          value={role}
-          onChange={onRoleChange}
-          onOpenChange={onRoleDropdownOpen}
-        />
-      </View>
+      <DropdownPicker
+        label="I am a"
+        placeholder="Select your role"
+        options={SIGNUP_ROLES.map((item) => ({ value: item.id, label: item.label }))}
+        value={role}
+        onChange={onRoleChange}
+        variant="auth"
+        onOpenChange={onRolePickerOpenChange}
+      />
 
       <View style={styles.passwordBlock}>
         <PasswordField value={password} onChangeText={onPasswordChange} mode="new" />

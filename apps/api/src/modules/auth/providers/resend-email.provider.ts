@@ -45,7 +45,7 @@ export class ResendEmailOtpProvider implements OtpDeliveryProvider {
           id: templateId,
           variables: {
             CODE: input.code,
-            EXPIRES_MINUTES: env.RESEND_OTP_EXPIRES_MINUTES,
+            EXPIRES_MINUTES: String(env.RESEND_OTP_EXPIRES_MINUTES),
             APP_NAME: 'Circuit',
           },
         },

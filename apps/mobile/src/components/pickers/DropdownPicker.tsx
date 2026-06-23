@@ -3,15 +3,19 @@ import {
   Modal,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   useWindowDimensions,
   View,
   type View as ViewType,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getDropdownListMaxHeight } from '@/theme/layout';
+import { authPalette } from '@/theme/authPalette';
+import { dropdownLayout, getDropdownListMaxHeight } from '@/theme/layout';
 import { spacing } from '@/theme';
 import { pickerStyles as styles, OPTIONS_MAX_HEIGHT } from './pickerStyles';
+
+const OPTION_ROW_HEIGHT = dropdownLayout.optionRowHeight;
 
 export type PickerOption<T extends string> = {
   value: T;
@@ -24,6 +28,7 @@ type DropdownPickerBaseProps<T extends string> = {
   placeholder: string;
   options: PickerOption<T>[];
   onOpenChange?: (open: boolean) => void;
+  variant?: 'default' | 'auth';
 };
 
 export type DropdownPickerProps<T extends string> = DropdownPickerBaseProps<T> &
@@ -43,7 +48,8 @@ export type DropdownPickerProps<T extends string> = DropdownPickerBaseProps<T> &
   );
 
 export function DropdownPicker<T extends string>(props: DropdownPickerProps<T>) {
-  const { label, hint, placeholder, options, onOpenChange } = props;
+  const { label, hint, placeholder, options, onOpenChange, variant = 'default' } = props;
+  const auth = variant === 'auth';
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
@@ -58,9 +64,17 @@ export function DropdownPicker<T extends string>(props: DropdownPickerProps<T>) 
   }
 
   const remeasureList = useCallback(() => {
+    const extraChrome = isMultiple ? 52 : 0;
+    const fullListHeight = options.length * OPTION_ROW_HEIGHT + extraChrome;
+
+    if (auth) {
+      setUseModalSheet(true);
+      setListMaxHeight(Math.min(OPTIONS_MAX_HEIGHT, fullListHeight));
+      return;
+    }
+
     if (!triggerRef.current) return;
     triggerRef.current.measureInWindow((_x, y, _w, h) => {
-      const extraChrome = isMultiple ? 52 : 0;
       const layout = getDropdownListMaxHeight({
         windowHeight,
         triggerY: y,
@@ -72,7 +86,7 @@ export function DropdownPicker<T extends string>(props: DropdownPickerProps<T>) 
       setListMaxHeight(layout.maxHeight);
       setUseModalSheet(layout.useModalSheet);
     });
-  }, [insets.bottom, isMultiple, options.length, windowHeight]);
+  }, [auth, insets.bottom, isMultiple, options.length, windowHeight]);
 
   useEffect(() => {
     if (!open) return;
@@ -113,14 +127,20 @@ export function DropdownPicker<T extends string>(props: DropdownPickerProps<T>) 
     return props.value === option.value;
   }
 
+  const extraChrome = isMultiple ? 52 : 0;
+  const fullListHeight = options.length * OPTION_ROW_HEIGHT + extraChrome;
+  const visibleListHeight = Math.min(listMaxHeight, fullListHeight);
+  const listScrollable = fullListHeight > visibleListHeight;
+
   const optionsList = (
     <ScrollView
-      style={[styles.dropdownOptionsScroll, { maxHeight: listMaxHeight }]}
+      style={[styles.dropdownOptionsScroll, { height: visibleListHeight }]}
       contentContainerStyle={styles.dropdownOptionsContent}
       keyboardShouldPersistTaps="handled"
       nestedScrollEnabled
-      showsVerticalScrollIndicator
-      bounces={options.length * 48 > listMaxHeight}
+      scrollEnabled={listScrollable}
+      showsVerticalScrollIndicator={listScrollable}
+      bounces={listScrollable}
     >
       {options.map((option) => {
         const active = isSelected(option);
@@ -147,7 +167,7 @@ export function DropdownPicker<T extends string>(props: DropdownPickerProps<T>) 
 
   return (
     <View style={[styles.dropdownWrap, open && !useModalSheet && styles.dropdownWrapOpen]}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, auth && authStyles.label]}>{label}</Text>
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
       <View ref={triggerRef} collapsable={false}>
         <Pressable
@@ -163,19 +183,29 @@ export function DropdownPicker<T extends string>(props: DropdownPickerProps<T>) 
           }}
           style={({ pressed }) => [
             styles.dropdownTrigger,
+            auth && authStyles.dropdownTrigger,
             open && styles.dropdownTriggerOpen,
+            open && auth && authStyles.dropdownTriggerOpen,
             pressed && styles.dropdownTriggerPressed,
+            pressed && auth && authStyles.dropdownTriggerPressed,
           ]}
         >
-          <Text style={[styles.dropdownValue, !hasValue && styles.dropdownPlaceholder]}>
+          <Text
+            style={[
+              styles.dropdownValue,
+              auth && authStyles.dropdownValue,
+              !hasValue && styles.dropdownPlaceholder,
+              !hasValue && auth && authStyles.dropdownPlaceholder,
+            ]}
+          >
             {displayValue}
           </Text>
-          <Text style={styles.chev}>{open ? '▾' : '›'}</Text>
+          <Text style={[styles.chev, auth && authStyles.chev]}>{open ? '▾' : '›'}</Text>
         </Pressable>
       </View>
 
       {open && !useModalSheet ? (
-        <View style={[styles.dropdownList, { maxHeight: listMaxHeight + (isMultiple ? 52 : 0) }]}>
+        <View style={[styles.dropdownList, { height: visibleListHeight + (isMultiple ? 52 : 0) }]}>
           {isMultiple ? (
             <Pressable
               accessibilityRole="button"
@@ -219,7 +249,7 @@ export function DropdownPicker<T extends string>(props: DropdownPickerProps<T>) 
                 </Text>
               </Pressable>
             ) : null}
-            <View style={[styles.modalList, { maxHeight: listMaxHeight + (isMultiple ? 52 : 0) }]}>
+            <View style={[styles.modalList, { height: visibleListHeight + (isMultiple ? 52 : 0) }]}>
               {optionsList}
             </View>
           </View>
@@ -234,3 +264,17 @@ function formatDefaultLabels<T extends string>(values: T[], options: PickerOptio
     .map((value) => options.find((option) => option.value === value)?.label ?? value)
     .join(', ');
 }
+
+const authStyles = StyleSheet.create({
+  label: { color: authPalette.label },
+  dropdownTrigger: {
+    backgroundColor: authPalette.inputBg,
+    borderColor: authPalette.inputBorder,
+    minHeight: 52,
+  },
+  dropdownTriggerOpen: { borderColor: authPalette.inputAccent },
+  dropdownTriggerPressed: { borderColor: authPalette.inputAccent },
+  dropdownValue: { color: authPalette.inputText },
+  dropdownPlaceholder: { color: authPalette.inputPlaceholder },
+  chev: { color: authPalette.muted },
+});

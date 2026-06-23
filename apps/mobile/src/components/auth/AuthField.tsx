@@ -1,6 +1,10 @@
 import { View, Text, TextInput, StyleSheet, type TextInputProps } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { authPalette } from '@/theme/authPalette';
+import { authFieldRowStyle, authInputTextStyle } from '@/theme/fields';
 import { colors, radius, spacing, typography } from '@/theme';
+
+export type AuthFieldTone = 'light' | 'dark';
 
 export interface AuthFieldProps extends TextInputProps {
   label: string;
@@ -9,9 +13,10 @@ export interface AuthFieldProps extends TextInputProps {
   onChangeText: (value: string) => void;
   icon: keyof typeof Ionicons.glyphMap;
   compact?: boolean;
+  tone?: AuthFieldTone;
 }
 
-/** Glass auth input with leading icon — shared by sign-in and sign-up. */
+/** Auth input with leading icon — dark fields on the sign-up mockup palette. */
 export function AuthField({
   label,
   placeholder,
@@ -19,19 +24,34 @@ export function AuthField({
   onChangeText,
   icon,
   compact = false,
+  tone = 'dark',
   ...rest
 }: AuthFieldProps) {
+  const dark = tone === 'dark';
+  const labelColor = dark ? authPalette.label : colors.textSecondary;
+  const iconColor = dark ? authPalette.muted : colors.textMuted;
+  const placeholderColor = dark ? authPalette.inputPlaceholder : colors.textMuted;
+  const textColor = dark ? authPalette.inputText : colors.textPrimary;
+
   return (
     <View style={[styles.field, compact && styles.fieldCompact]}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <View style={styles.fieldRow}>
-        <Ionicons name={icon} size={18} color={colors.textMuted} style={styles.fieldIcon} />
+      <Text style={[styles.fieldLabel, { color: labelColor }]}>{label}</Text>
+      <View
+        style={[
+          styles.fieldRow,
+          dark ? styles.fieldRowDark : styles.fieldRowLight,
+        ]}
+      >
+        <View style={styles.fieldIconWrap}>
+          <Ionicons name={icon} size={18} color={iconColor} />
+        </View>
         <TextInput
           placeholder={placeholder}
-          placeholderTextColor={colors.textMuted}
+          placeholderTextColor={placeholderColor}
           value={value}
           onChangeText={onChangeText}
-          style={styles.fieldInput}
+          selectionColor={authPalette.brand}
+          style={[styles.fieldInput, { color: textColor }]}
           {...rest}
         />
       </View>
@@ -44,24 +64,31 @@ const styles = StyleSheet.create({
   fieldCompact: { marginBottom: spacing.md },
   fieldLabel: {
     ...typography.micro,
-    color: colors.textSecondary,
     marginBottom: spacing.xs,
   },
   fieldRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...authFieldRowStyle,
+  },
+  fieldRowDark: {
+    backgroundColor: authPalette.inputBg,
+    borderWidth: 1,
+    borderColor: authPalette.inputBorder,
+    borderBottomWidth: 2,
+    borderBottomColor: 'rgba(232,185,49,0.35)',
+  },
+  fieldRowLight: {
     backgroundColor: colors.glass,
     borderWidth: 1,
     borderColor: colors.glassBorder,
-    borderRadius: radius.lg,
-    minHeight: 52,
-    paddingHorizontal: spacing.md,
   },
-  fieldIcon: { marginRight: spacing.sm },
+  fieldIconWrap: {
+    width: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+  },
   fieldInput: {
     flex: 1,
-    color: colors.textPrimary,
-    ...typography.body,
-    paddingVertical: spacing.md,
+    ...authInputTextStyle,
   },
 });

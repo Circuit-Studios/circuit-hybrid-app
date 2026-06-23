@@ -1,21 +1,22 @@
-// Core design tokens — Circuit v1 orange/glass light theme.
+// Core design tokens — Circuit v1 gold/glass light theme.
 
 export const colors = {
-  // Brand — orange→amber
-  brand: '#F47A1F',
-  brandStrong: '#E8650C',
-  brandSoft: 'rgba(244,122,31,0.12)',
-  amber: '#F9B233',
-  amberLight: '#FCC55A',
+  // Brand — golden yellow (auth mockup)
+  brand: '#E8B931',
+  brandStrong: '#D4A628',
+  brandSoft: 'rgba(232,185,49,0.14)',
+  brandDisabled: 'rgba(232,185,49,0.28)',
+  amber: '#E8B931',
+  amberLight: '#F0C94A',
 
   // Hero gradient (top → bottom)
-  heroFrom: '#FFA033',
-  heroMid: '#F2790E',
-  heroTo: '#140D06',
+  heroFrom: '#F0C94A',
+  heroMid: '#E8B931',
+  heroTo: '#121212',
 
   // Neutrals (light theme)
-  bg: '#ECECEC',
-  bgElevated: '#F5F5F5',
+  bg: '#FDFCF8',
+  bgElevated: '#F5F4F0',
   surface: '#FFFFFF',
   surfaceGlass: 'rgba(255,255,255,0.72)',
   surfaceElevated: '#FFFFFF',
@@ -25,18 +26,18 @@ export const colors = {
   border: 'rgba(0,0,0,0.06)',
   borderSubtle: 'rgba(0,0,0,0.04)',
 
-  textPrimary: '#141414',
+  textPrimary: '#121212',
   textSecondary: '#5C5C5C',
-  textMuted: '#9B9B9B',
-  onBrand: '#FFFFFF',
+  textMuted: '#9CA3AF',
+  onBrand: '#121212',
 
   // Backward-compatible aliases (used across existing screens)
-  accent: '#F47A1F',
-  accentLight: '#FCC55A',
-  accentMuted: '#E8650C',
-  accentSoft: 'rgba(244,122,31,0.12)',
-  accentGlow: 'rgba(244,122,31,0.35)',
-  accentInk: '#FFFFFF',
+  accent: '#E8B931',
+  accentLight: '#F0C94A',
+  accentMuted: '#D4A628',
+  accentSoft: 'rgba(232,185,49,0.14)',
+  accentGlow: 'rgba(232,185,49,0.38)',
+  accentInk: '#121212',
 
   // Semantic
   success: '#1E8E5A',

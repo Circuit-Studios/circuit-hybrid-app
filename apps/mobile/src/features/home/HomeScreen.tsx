@@ -26,10 +26,11 @@ export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { projectId } = useActiveProject();
-  const { data, isLoading, error, refetch } = useHomeQuery(projectId);
+  const { data, isLoading, isFetching, error, refetch } = useHomeQuery(projectId);
 
   const canStartProject = user?.defaultRole === 'DIRECTOR' || user?.defaultRole === 'PRODUCER';
   const { appTabBarReserve } = useChromeInsets();
+  const dashboardLoading = !!projectId && !data && !error && (isLoading || isFetching);
 
   if (!projectId && !isLoading) {
     return (
@@ -70,7 +71,7 @@ export default function HomeScreen() {
         <AppHeaderActions />
       </View>
 
-      {isLoading ? (
+      {dashboardLoading ? (
         <LoadingState />
       ) : error ? (
         <EmptyState
@@ -169,7 +170,13 @@ export default function HomeScreen() {
             </Pressable>
           ) : null}
         </>
-      ) : null}
+      ) : (
+        <EmptyState
+          title="Couldn't load dashboard"
+          body="Your film data didn't load. Try again."
+          action={<Button title="Retry" onPress={() => refetch()} />}
+        />
+      )}
     </ScreenContainer>
   );
 }
@@ -177,7 +184,7 @@ export default function HomeScreen() {
 function CircuitWordmark() {
   return (
     <Text style={styles.wordmark}>
-      CIRCUI<Text style={styles.wordmarkAccent}>IT</Text>
+      CIRCU<Text style={styles.wordmarkAccent}>IT</Text>
     </Text>
   );
 }

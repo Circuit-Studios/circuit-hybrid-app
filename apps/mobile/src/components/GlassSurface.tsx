@@ -1,33 +1,65 @@
 import { Platform, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { BlurView, type BlurTint } from 'expo-blur';
 import { colors, radius } from '@/theme/tokens';
 
-export type GlassVariant = 'bar' | 'item' | 'circle';
+export type GlassVariant = 'bar' | 'item' | 'circle' | 'tabBar';
 
-const PRESETS: Record<
-  GlassVariant,
-  { borderRadius: number; intensity: number; overlay: string; border: string; specular: string }
-> = {
+function isNativeBlurAvailable(): boolean {
+  if (Platform.OS === 'web') return false;
+  const expo = (globalThis as { expo?: { getViewConfig?: (m: string, v?: string) => unknown } })
+    .expo;
+  return expo?.getViewConfig?.('ExpoBlur', 'ExpoBlurView') != null;
+}
+
+type GlassPreset = {
+  borderRadius: number;
+  intensity: number;
+  blurTint: BlurTint;
+  overlay: string;
+  border: string;
+  specular: string;
+  fallback: string;
+  floating?: boolean;
+};
+
+const PRESETS: Record<GlassVariant, GlassPreset> = {
   bar: {
     borderRadius: radius.xl,
     intensity: 72,
+    blurTint: 'light',
     overlay: 'rgba(255,255,255,0.5)',
     border: 'rgba(255,255,255,0.38)',
     specular: 'rgba(255,255,255,0.88)',
+    fallback: colors.surfaceGlass,
   },
   item: {
     borderRadius: radius.pill,
     intensity: 48,
+    blurTint: 'light',
     overlay: 'rgba(255,255,255,0.62)',
     border: 'rgba(255,255,255,0.34)',
     specular: 'rgba(255,255,255,0.78)',
+    fallback: 'rgba(255,255,255,0.68)',
   },
   circle: {
     borderRadius: radius.pill,
     intensity: 44,
+    blurTint: 'light',
     overlay: 'rgba(255,255,255,0.56)',
     border: 'rgba(255,255,255,0.36)',
     specular: 'rgba(255,255,255,0.82)',
+    fallback: 'rgba(255,255,255,0.62)',
+  },
+  /** Instagram-style floating nav — thin vibrancy, bright edge, content shows through. */
+  tabBar: {
+    borderRadius: radius.pill,
+    intensity: 92,
+    blurTint: Platform.OS === 'ios' ? 'systemChromeMaterialLight' : 'extraLight',
+    overlay: 'rgba(255,255,255,0.06)',
+    border: 'rgba(255,255,255,0.58)',
+    specular: 'rgba(255,255,255,0.92)',
+    fallback: 'rgba(255,255,255,0.38)',
+    floating: true,
   },
 };
 
@@ -50,24 +82,43 @@ export function GlassSurface({
   const preset = PRESETS[variant];
   const cornerRadius = borderRadius ?? preset.borderRadius;
   const blurIntensity = intensity ?? preset.intensity;
+  const blurAvailable = isNativeBlurAvailable();
 
-  return (
-    <View style={[styles.shell, { borderRadius: cornerRadius }, style]}>
-      {Platform.OS === 'web' ? (
+  const glassBody = (
+    <View
+      style={[
+        styles.shell,
+        { borderRadius: cornerRadius },
+        !preset.floating && styles.shellShadow,
+        style,
+      ]}
+    >
+      {blurAvailable ? (
+        <BlurView
+          intensity={blurIntensity}
+          tint={preset.blurTint}
+          blurMethod={Platform.OS === 'android' ? 'dimezisBlurViewSdk31Plus' : undefined}
+          blurReductionFactor={Platform.OS === 'android' ? 2 : undefined}
+          style={[StyleSheet.absoluteFill, { borderRadius: cornerRadius }]}
+        />
+      ) : (
         <View
           style={[
             StyleSheet.absoluteFill,
             styles.fallback,
-            { borderRadius: cornerRadius, backgroundColor: colors.surfaceGlass },
+            { borderRadius: cornerRadius, backgroundColor: preset.fallback },
           ]}
         />
-      ) : (
-        <BlurView
-          intensity={blurIntensity}
-          tint="light"
-          style={[StyleSheet.absoluteFill, { borderRadius: cornerRadius }]}
-        />
       )}
+      {!blurAvailable && preset.floating ? (
+        <View
+          pointerEvents="none"
+          style={[
+            StyleSheet.absoluteFill,
+            { borderRadius: cornerRadius, backgroundColor: 'rgba(255,255,255,0.22)' },
+          ]}
+        />
+      ) : null}
       <View
         pointerEvents="none"
         style={[
@@ -84,6 +135,12 @@ export function GlassSurface({
       </View>
     </View>
   );
+
+  if (preset.floating) {
+    return <View style={[styles.floatingWrap, styles.tabBarShadow]}>{glassBody}</View>;
+  }
+
+  return glassBody;
 }
 
 interface GlassLensProps {
@@ -94,25 +151,39 @@ interface GlassLensProps {
 export function GlassLens({ style }: GlassLensProps) {
   return (
     <View pointerEvents="none" style={[styles.lens, style]}>
+      <View style={styles.lensSheen} />
       <View style={styles.lensSpecular} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  floatingWrap: {
+    width: '100%',
+  },
+  tabBarShadow: Platform.select({
+    ios: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 14 },
+      shadowOpacity: 0.16,
+      shadowRadius: 32,
+    },
+    android: { elevation: 14 },
+    default: {},
+  }),
   shell: {
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.1,
-        shadowRadius: 24,
-      },
-      android: { elevation: 10 },
-      default: {},
-    }),
   },
+  shellShadow: Platform.select({
+    ios: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.1,
+      shadowRadius: 24,
+    },
+    android: { elevation: 10 },
+    default: {},
+  }),
   fallback: {
     borderWidth: 1,
     borderColor: colors.glassBorder,
@@ -126,27 +197,32 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   lens: {
-    backgroundColor: 'rgba(255,255,255,0.72)',
+    backgroundColor: 'rgba(255,255,255,0.58)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.55)',
+    borderColor: 'rgba(255,255,255,0.72)',
     borderRadius: radius.pill,
+    overflow: 'hidden',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
       },
-      android: { elevation: 2 },
+      android: { elevation: 1 },
       default: {},
     }),
+  },
+  lensSheen: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(255,255,255,0.28)',
   },
   lensSpecular: {
     position: 'absolute',
     top: 0,
-    left: 12,
-    right: 12,
+    left: 14,
+    right: 14,
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: 'rgba(255,255,255,0.95)',
   },
 });

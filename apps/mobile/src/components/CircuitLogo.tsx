@@ -1,5 +1,7 @@
-import { Platform, StyleSheet, View, type ViewStyle } from 'react-native';
-import CircuitLogoSvg from '../../assets/circuit-logo.svg';
+import { Image, Platform, StyleSheet, View, type ViewStyle } from 'react-native';
+import { authPalette } from '@/theme/authPalette';
+
+const LOGO_SOURCE = require('../../assets/circuit-logo.png');
 
 interface CircuitLogoProps {
   size?: 'sm' | 'md' | 'lg';
@@ -12,24 +14,44 @@ const DIAMETERS = {
   lg: 96,
 } as const;
 
-/** Circular Circuit mark — always rendered from assets/circuit-logo.svg. */
+/** Circular Circuit mark — assets/circuit-logo.png (classical bust). */
 export function CircuitLogo({ size = 'md', style }: CircuitLogoProps) {
   const diameter = DIAMETERS[size];
 
   return (
-    <View style={[styles.shell, { width: diameter, height: diameter }, style]}>
-      <CircuitLogoSvg width={diameter} height={diameter} accessibilityLabel="Circuit" />
+    <View
+      style={[
+        styles.shell,
+        {
+          width: diameter,
+          height: diameter,
+          borderRadius: diameter / 2,
+        },
+        style,
+      ]}
+    >
+      <Image
+        source={LOGO_SOURCE}
+        style={{
+          width: diameter,
+          height: diameter,
+          borderRadius: diameter / 2,
+        }}
+        resizeMode="cover"
+        accessibilityLabel="Circuit"
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   shell: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: authPalette.brand,
     ...Platform.select({
       ios: {
-        shadowColor: '#E8C547',
+        shadowColor: authPalette.brand,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.22,
         shadowRadius: 8,

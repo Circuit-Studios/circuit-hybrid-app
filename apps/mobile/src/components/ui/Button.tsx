@@ -48,6 +48,7 @@ export function Button({
           style={[
             styles.label,
             variant === 'primary' && styles.labelPrimary,
+            variant === 'primary' && isDisabled && styles.labelPrimaryDisabled,
             variant === 'secondary' && styles.labelSecondary,
             variant === 'ghost' && styles.labelGhost,
             variant === 'danger' && styles.labelDanger,
@@ -68,7 +69,7 @@ export function Button({
         style={({ pressed }) => [
           styles.base,
           fullWidth && styles.fullWidth,
-          isDisabled && styles.disabled,
+          isDisabled && styles.disabledPrimary,
           pressed && !isDisabled && styles.pressed,
           style,
         ]}
@@ -76,10 +77,14 @@ export function Button({
         onPress={handlePress}
       >
         <LinearGradient
-          colors={[colors.amberLight, colors.brand, colors.brandStrong]}
+          colors={
+            isDisabled
+              ? [colors.brandDisabled, colors.brandDisabled, colors.brandDisabled]
+              : [colors.amberLight, colors.brand, colors.brandStrong]
+          }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.gradientFill, shadows.accent]}
+          style={[styles.gradientFill, !isDisabled && shadows.accent]}
         >
           {label}
         </LinearGradient>
@@ -148,10 +153,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     ...shadows.sm,
   },
-  disabled: { opacity: 0.45 },
+  disabled: { opacity: 1 },
+  disabledPrimary: { opacity: 1 },
   pressed: { opacity: 0.88, transform: [{ scale: 0.98 }] },
   label: { ...typography.bodyStrong, letterSpacing: 0.2 },
   labelPrimary: { color: colors.onBrand },
+  labelPrimaryDisabled: { color: 'rgba(18,18,18,0.38)' },
   labelSecondary: { color: colors.textPrimary },
   labelGhost: { color: colors.brand },
   labelDanger: { color: colors.onBrand },

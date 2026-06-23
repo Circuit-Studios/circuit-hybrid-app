@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { AppTabBar, type AppTabBarProps } from '@/components/AppTabBar';
+import { AppTabBar } from '@/components/AppTabBar';
 import { ActiveProjectProvider } from '@/context/ActiveProjectContext';
 import { colors } from '@/theme';
 
@@ -7,10 +7,17 @@ export default function TabsLayout() {
   return (
     <ActiveProjectProvider>
       <Tabs
-        tabBar={(props) => <AppTabBar {...(props as AppTabBarProps)} />}
+        tabBar={() => <AppTabBar />}
         screenOptions={{
           headerShown: false,
           sceneStyle: { backgroundColor: colors.bg },
+          tabBarStyle: {
+            position: 'absolute',
+            backgroundColor: 'transparent',
+            borderTopWidth: 0,
+            elevation: 0,
+            shadowOpacity: 0,
+          },
         }}
       >
         <Tabs.Screen name="home" options={{ title: 'Home' }} />

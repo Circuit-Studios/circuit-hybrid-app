@@ -96,7 +96,7 @@ describe('ResendEmailOtpProvider', () => {
             id: 'circuit-email-otp',
             variables: {
               CODE: '654321',
-              EXPIRES_MINUTES: 5,
+              EXPIRES_MINUTES: '5',
               APP_NAME: 'Circuit',
             },
           },

@@ -1,5 +1,20 @@
 import type { ViewStyle } from 'react-native';
+import {
+  FLOATING_TAB_BAR_HEIGHT,
+  FLOATING_TAB_BAR_MAX_WIDTH,
+  FLOATING_TAB_ITEM_SIZE,
+  getAppTabBarReserve,
+  getProjectTabBarReserve,
+} from '@/components/navigation/floatingTabBarMetrics';
 import { spacing } from './tokens';
+
+export {
+  FLOATING_TAB_BAR_HEIGHT,
+  FLOATING_TAB_BAR_MAX_WIDTH,
+  FLOATING_TAB_ITEM_SIZE,
+  getAppTabBarReserve,
+  getProjectTabBarReserve,
+};
 export const TABLET_BREAKPOINT = 768;
 
 /** Width at which we add a third column in dense grids. */
@@ -151,14 +166,3 @@ export const dropdownLayout = {
   maxListHeight: DROPDOWN_MAX_LIST_HEIGHT,
 } as const;
 
-/** Vertical space to reserve above a floating glass app tab bar. */
-export function getAppTabBarReserve(compact: boolean, safeBottom: number): number {
-  const barBody = compact ? 52 : 72;
-  return barBody + Math.max(safeBottom, spacing.sm) + spacing.lg;
-}
-
-/** Vertical space to reserve above the project segment tab bar. */
-export function getProjectTabBarReserve(compact: boolean, safeBottom: number): number {
-  const barBody = compact ? 44 : 52;
-  return barBody + spacing.lg + spacing.sm + Math.max(safeBottom, 0);
-}

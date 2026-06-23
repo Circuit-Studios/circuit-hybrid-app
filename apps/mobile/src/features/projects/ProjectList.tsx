@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { AppHeaderActions } from '@/components/AppHeaderActions';
@@ -10,7 +11,7 @@ import { Card } from '@/components/Card';
 import { StatusBadge } from '@/components/StatusBadge';
 import { readApiError } from '@/api/client';
 import { useAuth } from '@/auth/AuthContext';
-import { Ionicons } from '@expo/vector-icons';
+import { leaveOverlayScreen } from '@/lib/appNavigation';
 import { colors, radius, spacing, typography } from '@/theme';
 import { formatRole } from '@/lib/format';
 import { useChromeInsets } from '@/hooks/useChromeInsets';
@@ -33,16 +34,24 @@ export default function ProjectList() {
   const { appTabBarReserve } = useChromeInsets();
 
   return (
-    <ScreenContainer
-      topAligned
-      edges={['top', 'left', 'right']}
-      contentStyle={{ paddingBottom: appTabBarReserve }}
-    >
+    <ScreenContainer edges={['top', 'left', 'right']} contentStyle={{ paddingBottom: appTabBarReserve }}>
+      <View style={styles.topBar}>
+        <Pressable
+          onPress={() => leaveOverlayScreen(router)}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />
+        </Pressable>
+        <View style={styles.topBarSpacer} />
+        <AppHeaderActions />
+      </View>
+
       <ScreenHeader
         eyebrow={`Hi ${user?.firstName?.trim() || 'there'}`}
-        title={inSpiderMode ? 'Your projects' : projects.length === 1 ? 'Your project' : 'Welcome'}
+        title={inSpiderMode ? 'Your projects' : projects.length === 1 ? 'Your project' : 'Projects'}
         subtitle={inSpiderMode ? 'Spider mode — tap a project to open its workspace.' : undefined}
-        trailing={<AppHeaderActions />}
       />
 
       {isLoading ? (
@@ -71,46 +80,49 @@ export default function ProjectList() {
           }
         />
       ) : (
-        <FlatList
-          contentContainerStyle={styles.list}
-          data={projects}
-          keyExtractor={(p) => p.id}
-          renderItem={({ item }) => <ProjectCard project={item} />}
-          onRefresh={() => {
-            void refetch();
-            void invitesQ.refetch();
-          }}
-          refreshing={isRefetching}
-          ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
-          ListHeaderComponent={
-            invites.length > 0 ? (
-              <View style={styles.inviteBlock}>
-                <Text style={styles.inviteHeader}>
-                  Pending invite{invites.length === 1 ? '' : 's'} ({invites.length})
-                </Text>
-                {invites.map((inv) => (
-                  <InviteCard
-                    key={inv.id}
-                    invite={inv}
-                    accepting={acceptMutation.isPending}
-                    onAccept={() => acceptMutation.mutate(inv.id)}
+        <View style={styles.listFlex}>
+          <FlatList
+            style={styles.listFlex}
+            contentContainerStyle={styles.list}
+            data={projects}
+            keyExtractor={(p) => p.id}
+            renderItem={({ item }) => <ProjectCard project={item} />}
+            onRefresh={() => {
+              void refetch();
+              void invitesQ.refetch();
+            }}
+            refreshing={isRefetching}
+            ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
+            ListHeaderComponent={
+              invites.length > 0 ? (
+                <View style={styles.inviteBlock}>
+                  <Text style={styles.inviteHeader}>
+                    Pending invite{invites.length === 1 ? '' : 's'} ({invites.length})
+                  </Text>
+                  {invites.map((inv) => (
+                    <InviteCard
+                      key={inv.id}
+                      invite={inv}
+                      accepting={acceptMutation.isPending}
+                      onAccept={() => acceptMutation.mutate(inv.id)}
+                    />
+                  ))}
+                </View>
+              ) : null
+            }
+            ListFooterComponent={
+              canStartProject ? (
+                <View style={{ marginTop: spacing.xl }}>
+                  <Button
+                    title="Start a new project"
+                    variant="secondary"
+                    onPress={() => router.push('/(app)/create-project')}
                   />
-                ))}
-              </View>
-            ) : null
-          }
-          ListFooterComponent={
-            canStartProject ? (
-              <View style={{ marginTop: spacing.xl }}>
-                <Button
-                  title="Start a new project"
-                  variant="secondary"
-                  onPress={() => router.push('/(app)/create-project')}
-                />
-              </View>
-            ) : null
-          }
-        />
+                </View>
+              ) : null
+            }
+          />
+        </View>
       )}
     </ScreenContainer>
   );
@@ -152,6 +164,14 @@ function InviteCard({
 }
 
 const styles = StyleSheet.create({
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  topBarSpacer: { flex: 1 },
+  listFlex: { flex: 1 },
   list: { paddingBottom: spacing.xl },
   inviteBlock: {
     marginBottom: spacing.lg,

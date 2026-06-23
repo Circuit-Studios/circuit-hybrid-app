@@ -24,5 +24,10 @@ export function useAuthSubmit({ canSubmit, submit, fallbackError }: UseAuthSubmi
     }
   }, [canSubmit, fallbackError, submit]);
 
-  return { submitting, error, handleSubmit };
+  const clearFeedback = useCallback(() => {
+    setError(null);
+    setSubmitting(false);
+  }, []);
+
+  return { submitting, error, handleSubmit, clearFeedback };
 }

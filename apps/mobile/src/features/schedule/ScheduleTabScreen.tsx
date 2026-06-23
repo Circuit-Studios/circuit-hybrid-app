@@ -78,7 +78,7 @@ export default function ScheduleTabScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.wordmark}>
-            CIRCUI<Text style={styles.wordmarkAccent}>IT</Text>
+            CIRCU<Text style={styles.wordmarkAccent}>IT</Text>
           </Text>
           <Text style={styles.title}>Shoot schedule</Text>
           <Text style={styles.date}>

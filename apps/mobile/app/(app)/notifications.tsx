@@ -20,6 +20,7 @@ import {
 import { GlassFilterChip } from '@/components/GlassFilterChip';
 import { useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import { leaveOverlayScreen } from '@/lib/appNavigation';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { AccountButton } from '@/components/AccountButton';
@@ -91,7 +92,7 @@ export default function NotificationsScreen() {
   return (
     <ScreenContainer>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12} accessibilityRole="button">
+        <Pressable onPress={() => leaveOverlayScreen(router)} hitSlop={12} accessibilityRole="button">
           <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />
         </Pressable>
         <Text style={styles.title}>Notifications</Text>

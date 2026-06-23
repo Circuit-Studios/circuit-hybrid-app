@@ -15,7 +15,7 @@ export default function AppLayout() {
   }
 
   if (status === 'signedOut') {
-    return <Redirect href="/(auth)/splash" />;
+    return <Redirect href="/(auth)/auth" />;
   }
 
   return (

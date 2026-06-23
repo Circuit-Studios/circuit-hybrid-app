@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { leaveOverlayScreen } from '@/lib/appNavigation';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Card } from '@/components/Card';
@@ -66,9 +67,9 @@ export default function AccountScreen() {
   }
 
   return (
-    <ScreenContainer scroll topAligned edges={['top', 'left', 'right']}>
+    <ScreenContainer scroll topAligned edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12} accessibilityRole="button">
+        <Pressable onPress={() => leaveOverlayScreen(router)} hitSlop={12} accessibilityRole="button">
           <Text style={styles.back}>‹ Back</Text>
         </Pressable>
       </View>
