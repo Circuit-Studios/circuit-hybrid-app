@@ -10,7 +10,13 @@ import {
 import { logger } from '@/lib/logger';
 import { storage } from '@/lib/storage';
 import { setUnauthorizedHandler, setAuthToken, wakeApi } from '@/api/client';
-import { getMe, verifyOtp as apiVerifyOtp, type VerifyOtpInput } from '@/api/auth';
+import {
+  getMe,
+  deleteAccount as apiDeleteAccount,
+  loginWithPassword as apiLoginWithPassword,
+  verifyOtp as apiVerifyOtp,
+  type VerifyOtpInput,
+} from '@/api/auth';
 import { teardownPushRegistration } from '@/realtime/push';
 import { isIdleSessionExpired, isSessionExpired, resolveSessionExpiresAtMs } from '@/lib/session';
 import { useIdleSessionMonitor } from '@/auth/useIdleSessionMonitor';
@@ -23,6 +29,8 @@ interface AuthContextValue {
   status: AuthStatus;
   user: AuthUser | null;
   verifyOtp(input: VerifyOtpInput): Promise<void>;
+  loginWithPassword(email: string, password: string): Promise<void>;
+  deleteAccount(): Promise<void>;
   signOut(): Promise<void>;
   refresh(): Promise<void>;
 }
@@ -182,6 +190,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [saveSession],
   );
 
+  const loginWithPassword = useCallback(
+    async (email: string, password: string) => {
+      const res = await apiLoginWithPassword(email, password);
+      await saveSession(res);
+    },
+    [saveSession],
+  );
+
+  const deleteAccount = useCallback(async () => {
+    await apiDeleteAccount();
+    await signOut();
+  }, [signOut]);
+
   const refresh = useCallback(async () => {
     try {
       const me = await getMe();
@@ -192,8 +213,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [signOut]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ status, user, verifyOtp, signOut, refresh }),
-    [status, user, verifyOtp, signOut, refresh],
+    () => ({ status, user, verifyOtp, loginWithPassword, deleteAccount, signOut, refresh }),
+    [status, user, verifyOtp, loginWithPassword, deleteAccount, signOut, refresh],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

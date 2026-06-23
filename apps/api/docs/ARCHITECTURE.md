@@ -465,16 +465,16 @@ Cross-stack view (mobile + backend + DB + OTP): see [DEPLOYMENT.md § Recommende
 
 Backend-only variables by tier:
 
-| Variable             | Dev (Docker)                                      | Prod (Render)                      |
-| -------------------- | ------------------------------------------------- | ---------------------------------- |
-| `NODE_ENV`           | `development`                                     | `production`                       |
-| `DATABASE_URL`       | `postgresql://circuit@localhost:5432/circuit_dev` | Supabase pooler or Render Postgres |
-| `REDIS_URL`          | `redis://localhost:6379` _(optional)_             | Render Redis URL _(optional)_      |
-| `JWT_SECRET`         | dev placeholder                                   | strong random ≥ 32 chars           |
-| `OTP_PROVIDER`       | `MOCK` (fixed code `111111`)                      | `MSG91` / `TWILIO`                 |
-| `EXPO_PUSH_PROVIDER` | `MOCK`                                            | `EXPO`                             |
-| `OPENAI_API_KEY`     | dev key                                           | real key                           |
-| `CORS_ORIGINS`       | localhost origins                                 | empty OK for mobile-only           |
+| Variable             | Dev (Docker)                                      | Prod (Render)                 |
+| -------------------- | ------------------------------------------------- | ----------------------------- |
+| `NODE_ENV`           | `development`                                     | `production`                  |
+| `DATABASE_URL`       | `postgresql://circuit@localhost:5432/circuit_dev` | Supabase pooler URL           |
+| `REDIS_URL`          | `redis://localhost:6379` _(optional)_             | Render Redis URL _(optional)_ |
+| `JWT_SECRET`         | dev placeholder                                   | strong random ≥ 32 chars      |
+| `OTP_PROVIDER`       | `MOCK` (fixed code `111111`)                      | `MSG91` / `TWILIO`            |
+| `EXPO_PUSH_PROVIDER` | `MOCK`                                            | `EXPO`                        |
+| `OPENAI_API_KEY`     | dev key                                           | real key                      |
+| `CORS_ORIGINS`       | localhost origins                                 | empty OK for mobile-only      |
 
 Full schema lives in `src/config/env.ts` — invalid envs **fail boot** with
 a printed list of missing/invalid values.

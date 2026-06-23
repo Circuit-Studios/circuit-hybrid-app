@@ -1,7 +1,9 @@
 import {
+  getAppTabBarReserve,
   getDropdownListMaxHeight,
   getKanbanColumnWidth,
   getOtpBoxSize,
+  getProjectTabBarReserve,
   isCompactHeight,
   isLandscapeOrientation,
   isTabletWidth,
@@ -39,6 +41,13 @@ describe('layout helpers', () => {
     const phone = getKanbanColumnWidth(360);
     const tablet = getKanbanColumnWidth(840);
     expect(tablet).toBeGreaterThanOrEqual(phone);
+  });
+
+  it('reserves space for floating tab bars', () => {
+    const portrait = getAppTabBarReserve(false, 34);
+    const landscape = getAppTabBarReserve(true, 21);
+    expect(portrait).toBeGreaterThan(landscape);
+    expect(getProjectTabBarReserve(true, 0)).toBeGreaterThan(40);
   });
 
   it('sizes dropdown list for portrait and landscape', () => {

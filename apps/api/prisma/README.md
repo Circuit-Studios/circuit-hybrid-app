@@ -17,7 +17,7 @@ npm run db:prepare:dev
 
 ## Render (production)
 
-Render Postgres is linked via `DATABASE_URL`. Apply migrations **manually** when schema changes land:
+Use a **Supabase** project and set `DATABASE_URL` to the connection pooler URL in Render → **Environment**. Apply migrations **manually** when schema changes land:
 
 ```bash
 cd apps/api

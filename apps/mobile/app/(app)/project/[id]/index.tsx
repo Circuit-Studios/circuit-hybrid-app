@@ -15,7 +15,9 @@ import { getProject } from '@/api/projects';
 import { qk } from '@/api/queryKeys';
 import { getProjectHealth, listConflicts } from '@/api/workspace';
 import { readApiError } from '@/api/client';
+import { useAppConfig } from '@/config/AppConfigContext';
 import { useContentFrame } from '@/hooks/useContentFrame';
+import { useChromeInsets } from '@/hooks/useChromeInsets';
 import { useProjectRoom } from '@/realtime/useProjectRoom';
 import { getHealthRingSize, colors, radius, spacing, typography } from '@/theme';
 import { formatProjectLanguages, formatRole, formatStatus, relativeTimeFrom } from '@/lib/format';
@@ -43,7 +45,10 @@ const DEPT_COLORS: Record<DepartmentKind, string> = {
 export default function ProjectWorkspaceScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { isFeatureEnabled } = useAppConfig();
+  const scriptUploadEnabled = isFeatureEnabled('scripts.upload');
   const { contentWidth, isWide, height } = useContentFrame('auto');
+  const { projectTabBarReserve } = useChromeInsets();
   const ringSize = useMemo(
     () => getHealthRingSize(contentWidth, isWide, height),
     [contentWidth, height, isWide],
@@ -125,7 +130,11 @@ export default function ProjectWorkspaceScreen() {
 
   return (
     <View style={styles.root}>
-      <ScreenContainer scroll edges={['top', 'left', 'right']}>
+      <ScreenContainer
+        scroll
+        edges={['top', 'left', 'right']}
+        contentStyle={{ paddingBottom: projectTabBarReserve }}
+      >
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <Pressable onPress={() => router.replace('/(app)/projects')} hitSlop={12}>
@@ -165,12 +174,24 @@ export default function ProjectWorkspaceScreen() {
           />
         </View>
 
-        <SectionHeader title="Project health" sub="Per-department progress" />
+        <SectionHeader
+          title="Project health"
+          sub="Each ring segment tracks a required department. Tap a department to review its tasks."
+        />
         <Card variant="glass">
           {segments.length === 0 ? (
-            <Text style={styles.placeholder}>
-              Upload your script and we'll set up your required departments.
-            </Text>
+            <View style={styles.healthEmpty}>
+              <Text style={styles.placeholder}>
+                Upload your script and Circuit will map required departments here.
+              </Text>
+              {scriptUploadEnabled ? (
+                <PrimaryButton
+                  title="Upload script"
+                  variant="secondary"
+                  onPress={() => router.push(`/(app)/project/${project.id}/upload-script`)}
+                />
+              ) : null}
+            </View>
           ) : (
             <View style={[styles.ringWrap, isWide && styles.ringWrapTablet]}>
               <HealthRing
@@ -181,11 +202,20 @@ export default function ProjectWorkspaceScreen() {
               />
               <View style={[styles.legend, isWide && styles.legendTablet]}>
                 {segments.map(seg => (
-                  <View key={seg.id} style={styles.legendRow}>
+                  <Pressable
+                    key={seg.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`View tasks for ${seg.label}`}
+                    onPress={() =>
+                      router.push(`/(app)/project/${project.id}/tasks?dept=${seg.id}`)
+                    }
+                    style={({ pressed }) => [styles.legendRow, pressed && styles.legendRowPressed]}
+                  >
                     <View style={[styles.legendDot, { backgroundColor: seg.color }]} />
                     <Text style={styles.legendLabel}>{seg.label}</Text>
                     <Text style={styles.legendValue}>{seg.value}%</Text>
-                  </View>
+                    <Text style={styles.legendChevron}>›</Text>
+                  </Pressable>
                 ))}
               </View>
             </View>
@@ -209,22 +239,27 @@ export default function ProjectWorkspaceScreen() {
             ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
           />
         ) : (
-          <Card>
+          <Card variant="glass" style={styles.conflictEmptyCard}>
+            <Text style={styles.conflictEmptyTitle}>No open conflicts</Text>
             <Text style={styles.placeholder}>
-              The conflict scanner will alert you when a teammate is double-booked, a required
-              department falls behind, or a stunt/VFX scene doesn't have prep done.
+              Circuit scans your schedule and department progress. You will see alerts here when a
+              teammate is double-booked, a department falls behind, or stunt/VFX prep is missing.
             </Text>
           </Card>
         )}
 
-        <SectionHeader title="Script & AI" />
-        <PrimaryButton
-          title="Upload a new script"
-          variant="secondary"
-          onPress={() => router.push(`/(app)/project/${project.id}/upload-script`)}
-        />
+        {scriptUploadEnabled ? (
+          <>
+            <SectionHeader title="Script & AI" />
+            <PrimaryButton
+              title="Upload a new script"
+              variant="secondary"
+              onPress={() => router.push(`/(app)/project/${project.id}/upload-script`)}
+            />
+          </>
+        ) : null}
 
-        <View style={{ height: spacing.xxl }} />
+        <View style={{ height: spacing.lg }} />
       </ScreenContainer>
 
       <ProjectTabBar projectId={project.id} active="workspace" />
@@ -250,15 +285,18 @@ function Stat({ big, label, tone }: { big: string; label: string; tone?: 'succes
 }
 
 function ConflictRow({ alert }: { alert: ConflictAlert }) {
+  const isCritical = alert.severity === 'CRITICAL';
   const tone =
     alert.severity === 'CRITICAL' ? 'danger' : alert.severity === 'WARNING' ? 'warning' : 'info';
   return (
-    <Card>
+    <Card style={isCritical ? styles.conflictCritical : undefined}>
       <View style={styles.conflictHead}>
         <StatusBadge label={alert.severity} tone={tone} />
         <Text style={styles.conflictTime}>{relativeTimeFrom(alert.createdAt)}</Text>
       </View>
-      <Text style={styles.conflictTitle}>{alert.title}</Text>
+      <Text style={[styles.conflictTitle, isCritical && styles.conflictTitleCritical]}>
+        {alert.title}
+      </Text>
       <Text style={styles.conflictBody}>{alert.body}</Text>
     </Card>
   );
@@ -323,11 +361,29 @@ const styles = StyleSheet.create({
   },
   legend: { alignSelf: 'stretch', marginTop: spacing.lg, width: '100%', gap: spacing.sm },
   legendTablet: { marginTop: 0, flex: 1, maxWidth: 360 },
-  legendRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  legendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.xs,
+    borderRadius: radius.md,
+  },
+  legendRowPressed: { backgroundColor: colors.accentSoft },
   legendDot: { width: 12, height: 12, borderRadius: 999 },
   legendLabel: { ...typography.body, color: colors.textPrimary, flex: 1 },
   legendValue: { ...typography.bodyStrong, color: colors.textSecondary },
+  legendChevron: { ...typography.bodyStrong, color: colors.textMuted },
+  healthEmpty: { gap: spacing.md, alignItems: 'flex-start' },
   placeholder: { ...typography.body, color: colors.textSecondary },
+  conflictEmptyCard: { gap: spacing.sm },
+  conflictEmptyTitle: { ...typography.bodyStrong, color: colors.textPrimary },
+  conflictCritical: {
+    borderColor: colors.danger,
+    borderWidth: 1,
+    backgroundColor: colors.danger + '0D',
+  },
+  conflictTitleCritical: { color: colors.danger },
   conflictHead: {
     flexDirection: 'row',
     alignItems: 'center',

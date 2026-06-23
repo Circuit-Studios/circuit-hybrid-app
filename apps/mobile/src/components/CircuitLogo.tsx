@@ -1,33 +1,41 @@
-import { StyleSheet, View, type ViewStyle } from 'react-native';
+import { Platform, StyleSheet, View, type ViewStyle } from 'react-native';
 import CircuitLogoSvg from '../../assets/circuit-logo.svg';
-import { shadows } from '@/theme';
 
 interface CircuitLogoProps {
   size?: 'sm' | 'md' | 'lg';
   style?: ViewStyle;
 }
 
-/** Render sizes — SVG viewBox is 104×104. */
-const SIZES = {
-  sm: 52,
-  md: 80,
-  lg: 104,
+const DIAMETERS = {
+  sm: 60,
+  md: 78,
+  lg: 96,
 } as const;
 
-/** Welcome / in-app branding — always sourced from assets/circuit-logo.svg. */
+/** Circular Circuit mark — always rendered from assets/circuit-logo.svg. */
 export function CircuitLogo({ size = 'md', style }: CircuitLogoProps) {
-  const side = SIZES[size];
+  const diameter = DIAMETERS[size];
 
   return (
-    <View style={[styles.wrap, { width: side, height: side }, shadows.glow, style]}>
-      <CircuitLogoSvg width={side} height={side} accessibilityLabel="Circuit" />
+    <View style={[styles.shell, { width: diameter, height: diameter }, style]}>
+      <CircuitLogoSvg width={diameter} height={diameter} accessibilityLabel="Circuit" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
+  shell: {
     alignItems: 'center',
     justifyContent: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#E8C547',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.22,
+        shadowRadius: 8,
+      },
+      android: { elevation: 3 },
+      default: {},
+    }),
   },
 });

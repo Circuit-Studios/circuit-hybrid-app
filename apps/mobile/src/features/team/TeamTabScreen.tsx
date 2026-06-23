@@ -12,6 +12,7 @@ import { useTeamMembersQuery } from '@/features/team/hooks';
 import { readApiError } from '@/api/client';
 import type { ProjectMember, SetStatus } from '@/api/types';
 import { formatRole, formatUserInitials, formatUserName } from '@/lib/format';
+import { useChromeInsets } from '@/hooks/useChromeInsets';
 import { colors, radius, spacing, typography } from '@/theme';
 
 const STATUS_META: Record<SetStatus, { label: string; color: string; dot: string }> = {
@@ -27,9 +28,14 @@ export default function TeamTabScreen() {
   const { data, isLoading, error, refetch } = useTeamMembersQuery(projectId ?? undefined);
 
   const members = (data ?? []).filter(m => m.status === 'ACTIVE');
+  const { appTabBarReserve } = useChromeInsets();
 
   return (
-    <ScreenContainer scroll edges={['top', 'left', 'right']} contentStyle={styles.pad}>
+    <ScreenContainer
+      scroll
+      edges={['top', 'left', 'right']}
+      contentStyle={{ paddingBottom: appTabBarReserve }}
+    >
       <View style={styles.header}>
         <View>
           <Text style={styles.eyebrow}>Team status</Text>
@@ -117,7 +123,6 @@ function MemberCard({ member, isYou }: { member: ProjectMember; isYou: boolean }
 }
 
 const styles = StyleSheet.create({
-  pad: { paddingBottom: 120 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

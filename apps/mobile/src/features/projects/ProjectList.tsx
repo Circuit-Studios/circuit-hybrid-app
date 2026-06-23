@@ -10,8 +10,10 @@ import { Card } from '@/components/Card';
 import { StatusBadge } from '@/components/StatusBadge';
 import { readApiError } from '@/api/client';
 import { useAuth } from '@/auth/AuthContext';
-import { colors, spacing, typography } from '@/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, radius, spacing, typography } from '@/theme';
 import { formatRole } from '@/lib/format';
+import { useChromeInsets } from '@/hooks/useChromeInsets';
 import type { ProjectInvite } from '@/api/types';
 import { ProjectCard } from './ProjectCard';
 import { useAcceptInviteMutation, useMyInvitesQuery, useProjectsQuery } from './hooks';
@@ -28,9 +30,14 @@ export default function ProjectList() {
   const projects = data ?? [];
   const invites = invitesQ.data ?? [];
   const inSpiderMode = projects.length >= 2;
+  const { appTabBarReserve } = useChromeInsets();
 
   return (
-    <ScreenContainer topAligned edges={['top', 'left', 'right']}>
+    <ScreenContainer
+      topAligned
+      edges={['top', 'left', 'right']}
+      contentStyle={{ paddingBottom: appTabBarReserve }}
+    >
       <ScreenHeader
         eyebrow={`Hi ${user?.firstName?.trim() || 'there'}`}
         title={inSpiderMode ? 'Your projects' : projects.length === 1 ? 'Your project' : 'Welcome'}
@@ -120,18 +127,25 @@ function InviteCard({
 }) {
   return (
     <Card variant="hero" style={styles.inviteCard}>
-      <View style={styles.inviteHead}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.projectName}>{invite.project.name}</Text>
-          <Text style={styles.projectMeta}>
-            Invited as {formatRole(invite.role)}
-            {invite.projectDepartment ? ` · ${invite.projectDepartment.displayName}` : ''}
-          </Text>
+      <View style={styles.inviteAccent} />
+      <View style={styles.inviteContent}>
+        <View style={styles.inviteHead}>
+          <View style={styles.inviteIcon}>
+            <Ionicons name="mail-unread-outline" size={22} color={colors.warning} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.inviteEyebrow}>Action required</Text>
+            <Text style={styles.inviteProjectName}>{invite.project.name}</Text>
+            <Text style={styles.projectMeta}>
+              Invited as {formatRole(invite.role)}
+              {invite.projectDepartment ? ` · ${invite.projectDepartment.displayName}` : ''}
+            </Text>
+          </View>
+          <StatusBadge label="Pending" tone="warning" />
         </View>
-        <StatusBadge label="Invite" tone="warning" />
-      </View>
-      <View style={styles.inviteActions}>
-        <Button title="Accept" onPress={onAccept} loading={accepting} />
+        <View style={styles.inviteActions}>
+          <Button title="Accept invite" onPress={onAccept} loading={accepting} />
+        </View>
       </View>
     </Card>
   );
@@ -139,21 +153,56 @@ function InviteCard({
 
 const styles = StyleSheet.create({
   list: { paddingBottom: spacing.xl },
-  inviteBlock: { marginBottom: spacing.lg },
+  inviteBlock: {
+    marginBottom: spacing.lg,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.warning + '14',
+    borderWidth: 1,
+    borderColor: colors.warning + '44',
+  },
   inviteHeader: {
     ...typography.micro,
     color: colors.warning,
     textTransform: 'uppercase',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
+    fontWeight: '700',
   },
-  inviteCard: { gap: spacing.md, marginBottom: spacing.sm },
+  inviteCard: {
+    overflow: 'hidden',
+    marginBottom: spacing.sm,
+    padding: 0,
+  },
+  inviteAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    backgroundColor: colors.warning,
+  },
+  inviteContent: { padding: spacing.lg, paddingLeft: spacing.lg + 4, gap: spacing.md },
   inviteHead: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
-  inviteActions: { marginTop: spacing.sm },
-  projectName: {
+  inviteIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inviteEyebrow: {
+    ...typography.micro,
+    color: colors.warning,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  inviteProjectName: {
     ...typography.title,
     fontSize: 20,
     color: colors.textPrimary,
     marginBottom: 4,
   },
+  inviteActions: { marginTop: spacing.xs },
   projectMeta: { ...typography.caption, color: colors.textSecondary },
 });

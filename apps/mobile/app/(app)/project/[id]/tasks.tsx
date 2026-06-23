@@ -11,41 +11,86 @@ import {
   projectScreenStyles,
 } from '@/components/project/ProjectScreenScaffold';
 import { readApiError } from '@/api/client';
-import { useMoveTask, useProjectHealth, useProjectTasks } from '@/features/tasks/hooks';
+import { useProjectHealth, useProjectTasks } from '@/features/tasks/hooks';
 import { TaskSheet } from '@/features/tasks/TaskSheet';
+import { GlassFilterChip } from '@/components/GlassFilterChip';
 import { useContentFrame } from '@/hooks/useContentFrame';
-import { getKanbanColumnWidth, colors, radius, spacing, typography } from '@/theme';
+import { colors, radius, spacing, typography } from '@/theme';
 import type { Task, TaskPriority, TaskStatus } from '@/api/types';
 
-const COLUMNS: { id: TaskStatus; label: string }[] = [
+const STATUS_FILTERS: { id: TaskStatus | 'ALL'; label: string }[] = [
+  { id: 'ALL', label: 'All' },
   { id: 'TODO', label: 'To do' },
   { id: 'IN_PROGRESS', label: 'In progress' },
   { id: 'BLOCKED', label: 'Blocked' },
   { id: 'DONE', label: 'Done' },
 ];
 
+const KANBAN_COLUMNS: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE'];
+
+const STATUS_LABEL: Record<TaskStatus, string> = {
+  TODO: 'To do',
+  IN_PROGRESS: 'In progress',
+  BLOCKED: 'Blocked',
+  DONE: 'Done',
+};
+
+const STATUS_TONE: Record<TaskStatus, 'neutral' | 'info' | 'warning' | 'success'> = {
+  TODO: 'neutral',
+  IN_PROGRESS: 'info',
+  BLOCKED: 'warning',
+  DONE: 'success',
+};
+
 export default function TasksScreen() {
-  const { id: projectId } = useLocalSearchParams<{ id: string }>();
+  const { id: projectId, dept: deptParam } = useLocalSearchParams<{ id: string; dept?: string }>();
+  const { isWide } = useContentFrame('auto');
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [filterDept, setFilterDept] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<TaskStatus | 'ALL'>('ALL');
 
   const pid = projectId ?? '';
   const healthQ = useProjectHealth(pid);
-  const { data: tasks = [], isLoading, error, refetch } = useProjectTasks(pid, filterDept);
-  const moveTask = useMoveTask(pid);
-
   const departments = healthQ.data?.departments ?? [];
+  const deptFromLink =
+    deptParam && departments.some(d => d.id === deptParam) ? deptParam : null;
+  const activeDeptFilter = filterDept ?? deptFromLink;
 
-  const grouped = useMemo(() => {
-    const map: Record<TaskStatus, Task[]> = { TODO: [], IN_PROGRESS: [], BLOCKED: [], DONE: [] };
-    for (const t of tasks) map[t.status].push(t);
-    return map;
+  const { data: tasks = [], isLoading, error, refetch } = useProjectTasks(pid, activeDeptFilter);
+
+  const visibleTasks = useMemo(() => {
+    const filtered =
+      filterStatus === 'ALL' ? tasks : tasks.filter(task => task.status === filterStatus);
+    return [...filtered].sort((a, b) => {
+      const statusOrder: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE'];
+      const statusDiff = statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status);
+      if (statusDiff !== 0) return statusDiff;
+      const priorityOrder: TaskPriority[] = ['URGENT', 'HIGH', 'MEDIUM', 'LOW'];
+      const priorityDiff = priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority);
+      if (priorityDiff !== 0) return priorityDiff;
+      if (a.dueDate && b.dueDate) {
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      }
+      return a.title.localeCompare(b.title);
+    });
+  }, [filterStatus, tasks]);
+
+  const tasksByStatus = useMemo(() => {
+    const grouped: Record<TaskStatus, Task[]> = {
+      TODO: [],
+      IN_PROGRESS: [],
+      BLOCKED: [],
+      DONE: [],
+    };
+    for (const task of tasks) {
+      grouped[task.status].push(task);
+    }
+    return grouped;
   }, [tasks]);
 
-  const { contentWidth } = useContentFrame('auto');
-  const columnWidth = getKanbanColumnWidth(contentWidth);
+  const showKanban = isWide && filterStatus === 'ALL';
 
   return (
     <ProjectScreenScaffold
@@ -70,7 +115,7 @@ export default function TasksScreen() {
           projectId={pid}
           departments={departments}
           editing={editTask}
-          defaultDepartmentId={filterDept ?? null}
+          defaultDepartmentId={activeDeptFilter}
         />
       }
     >
@@ -80,13 +125,34 @@ export default function TasksScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterRow}
         >
-          <FilterChip label="All" active={filterDept == null} onPress={() => setFilterDept(null)} />
+          <GlassFilterChip
+            label="All depts"
+            active={filterDept == null && deptFromLink == null}
+            onPress={() => setFilterDept(null)}
+          />
           {departments.map(d => (
-            <FilterChip
+            <GlassFilterChip
               key={d.id}
               label={d.displayName}
-              active={filterDept === d.id}
+              active={activeDeptFilter === d.id}
               onPress={() => setFilterDept(d.id)}
+            />
+          ))}
+        </ScrollView>
+      ) : null}
+
+      {!showKanban ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterRow}
+        >
+          {STATUS_FILTERS.map(item => (
+            <GlassFilterChip
+              key={item.id}
+              label={item.label}
+              active={filterStatus === item.id}
+              onPress={() => setFilterStatus(item.id)}
             />
           ))}
         </ScrollView>
@@ -116,83 +182,73 @@ export default function TasksScreen() {
             ) : null
           }
         />
-      ) : (
-        <ScrollView
-          horizontal
-          pagingEnabled={false}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.board}
-        >
-          {COLUMNS.map(col => (
-            <View key={col.id} style={[styles.column, { width: columnWidth }]}>
-              <View style={styles.columnHead}>
-                <Text style={styles.columnTitle}>{col.label}</Text>
-                <Text style={styles.columnCount}>{grouped[col.id].length}</Text>
+      ) : showKanban ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.kanban}>
+            {KANBAN_COLUMNS.map(status => (
+              <View key={status} style={styles.kanbanCol}>
+                <Text style={styles.kanbanColTitle}>{STATUS_LABEL[status]}</Text>
+                <View style={styles.kanbanList}>
+                  {tasksByStatus[status].map(task => (
+                    <TaskListItem key={task.id} task={task} onPress={() => setEditTask(task)} />
+                  ))}
+                </View>
               </View>
-              {grouped[col.id].map(task => (
-                <Pressable
-                  key={task.id}
-                  onPress={() => setEditTask(task)}
-                  style={({ pressed }) => [pressed && { opacity: 0.7 }]}
-                >
-                  <Card style={styles.taskCard}>
-                    <Text style={styles.taskTitle} numberOfLines={2}>
-                      {task.title}
-                    </Text>
-                    {task.department ? (
-                      <Text style={styles.taskDept}>{task.department.displayName}</Text>
-                    ) : null}
-                    <View style={styles.taskFooter}>
-                      <StatusBadge label={task.priority} tone={priorityTone(task.priority)} />
-                      {task.dueDate ? (
-                        <Text style={styles.taskDue}>
-                          {new Date(task.dueDate).toLocaleDateString(undefined, {
-                            month: 'short',
-                            day: 'numeric',
-                          })}
-                        </Text>
-                      ) : null}
-                    </View>
-                    <View style={styles.moveRow}>
-                      {COLUMNS.filter(c => c.id !== col.id).map(target => (
-                        <Pressable
-                          key={target.id}
-                          onPress={() => moveTask.mutate({ taskId: task.id, status: target.id })}
-                          hitSlop={6}
-                          style={styles.moveBtn}
-                        >
-                          <Text style={styles.moveBtnText}>→ {target.label}</Text>
-                        </Pressable>
-                      ))}
-                    </View>
-                  </Card>
-                </Pressable>
-              ))}
-            </View>
-          ))}
+            ))}
+          </View>
         </ScrollView>
+      ) : visibleTasks.length === 0 ? (
+        <EmptyState
+          title="No tasks in this view"
+          body={`No ${STATUS_LABEL[filterStatus as TaskStatus].toLowerCase()} tasks match your filters.`}
+          action={<PrimaryButton title="Show all tasks" onPress={() => setFilterStatus('ALL')} />}
+        />
+      ) : (
+        <View style={styles.list}>
+          {visibleTasks.map(task => (
+            <TaskListItem key={task.id} task={task} onPress={() => setEditTask(task)} />
+          ))}
+        </View>
       )}
     </ProjectScreenScaffold>
   );
 }
 
-function FilterChip({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
+function TaskListItem({ task, onPress }: { task: Task; onPress: () => void }) {
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
-      style={[styles.filterChip, active && styles.filterChipActive]}
-    >
-      <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{label}</Text>
+    <Pressable onPress={onPress} style={({ pressed }) => [pressed && styles.rowPressed]}>
+      <Card style={styles.taskCard}>
+        <View style={styles.taskTop}>
+          <Text style={styles.taskTitle} numberOfLines={2}>
+            {task.title}
+          </Text>
+          <StatusBadge label={STATUS_LABEL[task.status]} tone={STATUS_TONE[task.status]} />
+        </View>
+
+        {task.description ? (
+          <Text style={styles.taskDescription} numberOfLines={2}>
+            {task.description}
+          </Text>
+        ) : null}
+
+        <View style={styles.taskMeta}>
+          {task.department ? (
+            <Text style={styles.taskDept}>{task.department.displayName}</Text>
+          ) : null}
+          <StatusBadge label={task.priority} tone={priorityTone(task.priority)} />
+          {task.dueDate ? (
+            <Text style={styles.taskDue}>
+              Due{' '}
+              {new Date(task.dueDate).toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+              })}
+            </Text>
+          ) : null}
+        </View>
+
+        <Text style={styles.taskHint}>Tap to edit or change status</Text>
+      </Card>
     </Pressable>
   );
 }
@@ -212,50 +268,33 @@ function priorityTone(p: TaskPriority): 'neutral' | 'info' | 'warning' | 'danger
 
 const styles = StyleSheet.create({
   filterRow: { gap: spacing.sm, paddingVertical: spacing.xs, paddingRight: spacing.lg },
-  filterChip: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+  list: { gap: spacing.md, paddingBottom: spacing.xl },
+  kanban: { flexDirection: 'row', gap: spacing.md, paddingBottom: spacing.xl },
+  kanbanCol: { width: 280 },
+  kanbanColTitle: {
+    ...typography.micro,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    marginBottom: spacing.sm,
   },
-  filterChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  filterChipText: { ...typography.bodyStrong, color: colors.textPrimary },
-  filterChipTextActive: { color: colors.accentInk },
-  board: { paddingVertical: spacing.md, gap: spacing.md },
-  column: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
+  kanbanList: { gap: spacing.sm },
+  rowPressed: { opacity: 0.85 },
+  taskCard: { gap: spacing.sm, padding: spacing.lg },
+  taskTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
     gap: spacing.sm,
   },
-  columnHead: {
+  taskTitle: { ...typography.bodyStrong, color: colors.textPrimary, flex: 1 },
+  taskDescription: { ...typography.body, color: colors.textSecondary },
+  taskMeta: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xs,
+    gap: spacing.sm,
   },
-  columnTitle: { ...typography.heading, color: colors.textPrimary },
-  columnCount: { ...typography.caption, color: colors.textMuted },
-  taskCard: { gap: spacing.xs, padding: spacing.md },
-  taskTitle: { ...typography.bodyStrong, color: colors.textPrimary },
   taskDept: { ...typography.caption, color: colors.textMuted },
-  taskFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: spacing.xs,
-  },
   taskDue: { ...typography.caption, color: colors.textSecondary },
-  moveRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: spacing.xs },
-  moveBtn: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radius.sm,
-    backgroundColor: colors.surfaceMuted,
-  },
-  moveBtnText: { ...typography.caption, color: colors.textSecondary },
+  taskHint: { ...typography.micro, color: colors.textMuted, marginTop: spacing.xs },
 });

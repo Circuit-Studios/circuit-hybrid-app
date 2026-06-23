@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Card } from '@/components/Card';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -12,6 +12,7 @@ import {
   projectScreenStyles,
 } from '@/components/project/ProjectScreenScaffold';
 import { InviteMemberSheet } from '@/features/team/InviteMemberSheet';
+import { canRemoveMember, memberRemoveLabel } from '@/features/team/memberActions';
 import { listMembers, removeMember } from '@/api/members';
 import { qk } from '@/api/queryKeys';
 import { readApiError } from '@/api/client';
@@ -41,6 +42,33 @@ export default function TeamScreen() {
 
   const active = (membersQ.data ?? []).filter(m => m.status === 'ACTIVE');
   const invited = (membersQ.data ?? []).filter(m => m.status === 'INVITED');
+
+  function confirmRemove(member: ProjectMember) {
+    if (!canRemoveMember(member)) return;
+
+    const displayName =
+      (member.user ? formatUserName(member.user) : null) ??
+      member.inviteeName ??
+      member.inviteePhone ??
+      member.inviteeEmail ??
+      'this member';
+
+    const isInvite = member.status === 'INVITED';
+    Alert.alert(
+      isInvite ? 'Cancel invite?' : 'Remove member?',
+      isInvite
+        ? `Cancel the invite for ${displayName}? They will no longer be able to join from this link.`
+        : `Remove ${displayName} from this project? They will lose access immediately.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: isInvite ? 'Cancel invite' : 'Remove',
+          style: 'destructive',
+          onPress: () => removeMutation.mutate(member.id),
+        },
+      ],
+    );
+  }
 
   return (
     <ProjectScreenScaffold
@@ -76,7 +104,12 @@ export default function TeamScreen() {
             </Card>
           ) : (
             active.map(m => (
-              <MemberRow key={m.id} member={m} onRemove={() => removeMutation.mutate(m.id)} />
+              <MemberRow
+                key={m.id}
+                member={m}
+                removing={removeMutation.isPending}
+                onRemove={() => confirmRemove(m)}
+              />
             ))
           )}
 
@@ -84,7 +117,12 @@ export default function TeamScreen() {
             <>
               <Text style={styles.sectionLabel}>Pending invites ({invited.length})</Text>
               {invited.map(m => (
-                <MemberRow key={m.id} member={m} onRemove={() => removeMutation.mutate(m.id)} />
+                <MemberRow
+                  key={m.id}
+                  member={m}
+                  removing={removeMutation.isPending}
+                  onRemove={() => confirmRemove(m)}
+                />
               ))}
             </>
           ) : null}
@@ -94,7 +132,15 @@ export default function TeamScreen() {
   );
 }
 
-function MemberRow({ member, onRemove }: { member: ProjectMember; onRemove: () => void }) {
+function MemberRow({
+  member,
+  removing,
+  onRemove,
+}: {
+  member: ProjectMember;
+  removing: boolean;
+  onRemove: () => void;
+}) {
   const displayName =
     (member.user ? formatUserName(member.user) : null) ??
     member.inviteeName ??
@@ -103,6 +149,9 @@ function MemberRow({ member, onRemove }: { member: ProjectMember; onRemove: () =
     'Pending';
   const subtitle =
     member.user?.phone ?? member.inviteePhone ?? member.user?.email ?? member.inviteeEmail ?? '';
+  const removeLabel = memberRemoveLabel(member);
+  const showRemove = canRemoveMember(member);
+
   return (
     <Card style={styles.memberCard}>
       <View style={{ flex: 1 }}>
@@ -116,12 +165,14 @@ function MemberRow({ member, onRemove }: { member: ProjectMember; onRemove: () =
         ) : null}
         <View style={styles.memberFoot}>
           <StatusBadge
-            label={member.status}
+            label={member.status === 'INVITED' ? 'Invited' : member.status}
             tone={member.status === 'ACTIVE' ? 'success' : 'warning'}
           />
-          <Pressable onPress={onRemove} hitSlop={6}>
-            <Text style={styles.remove}>Remove</Text>
-          </Pressable>
+          {showRemove ? (
+            <Pressable onPress={onRemove} hitSlop={6} disabled={removing}>
+              <Text style={styles.remove}>{removing ? 'Working…' : removeLabel}</Text>
+            </Pressable>
+          ) : null}
         </View>
       </View>
     </Card>

@@ -1,5 +1,5 @@
-import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -14,14 +14,14 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { CircuitLogo } from '@/components/CircuitLogo';
-import { PhoneField, usePhoneFieldState } from '@/components/PhoneField';
-import { DropdownPicker } from '@/components/pickers/DropdownPicker';
+import { usePhoneFieldState } from '@/components/PhoneField';
 import { PasswordField } from '@/components/auth/PasswordField';
+import { SignupFormFields } from '@/features/auth/SignupFormFields';
+import { useAuth } from '@/auth/AuthContext';
 import { useOtpSession } from '@/auth/OtpSessionContext';
 import { useAuthSubmit } from '@/features/auth/hooks';
 import { requestOtp } from '@/api/auth';
 import { useAppConfig } from '@/config/AppConfigContext';
-import { supportsLoginChannel } from '@/config/featureAccess';
 import { useContentFrame } from '@/hooks/useContentFrame';
 import { isValidEmail, normalizeEmail, splitFullName } from '@/lib/email';
 import { isValidPassword } from '@/lib/password';
@@ -30,20 +30,15 @@ import type { UserRole } from '@/api/types';
 
 type AuthTab = 'signup' | 'signin';
 
-const SIGNUP_ROLES: { id: UserRole; label: string }[] = [
-  { id: 'DIRECTOR', label: 'Director' },
-  { id: 'PRODUCER', label: 'Producer' },
-  { id: 'CREW', label: 'Crew' },
-  { id: 'ACTOR', label: 'Actor' },
-];
-
 export default function AuthScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const { loginWithPassword } = useAuth();
   const { config } = useAppConfig();
   const { setSession } = useOtpSession();
   const frame = useContentFrame('form');
   const insets = useSafeAreaInsets();
-  const [tab, setTab] = useState<AuthTab>('signup');
+  const [tab, setTab] = useState<AuthTab>(params.tab === 'signin' ? 'signin' : 'signup');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -54,103 +49,104 @@ export default function AuthScreen() {
   const roleFieldY = useRef(0);
   const phoneField = usePhoneFieldState();
 
+  const isSignup = tab === 'signup';
   const signupChannel = config.signupVerificationChannel;
-  const signinChannel = useMemo(() => {
-    if (config.loginIdentifier === 'EMAIL') return 'EMAIL' as const;
-    if (config.loginIdentifier === 'PHONE') return 'PHONE' as const;
-    return email.trim() ? ('EMAIL' as const) : ('PHONE' as const);
-  }, [config.loginIdentifier, email]);
 
-  const activeChannel = tab === 'signup' ? signupChannel : signinChannel;
+  const signupEmailRequired = signupChannel === 'EMAIL';
+  const signupPhoneRequired = signupChannel === 'PHONE';
+  const nameValid = !isSignup || fullName.trim().length >= 1;
+  const roleValid = !isSignup || role !== null;
+  const signupPasswordValid = !password || isValidPassword(password);
+  const signupPhoneValid = !signupPhoneRequired || phoneField.isValid;
+  const signupEmailValid =
+    signupChannel === 'EMAIL' ? isValidEmail(email) : !email.trim() || isValidEmail(email);
 
-  const emailValid = !email.trim() || isValidEmail(email);
-  const _emailValid = emailValid;
-  const emailRequired =
-    activeChannel === 'EMAIL' || (tab === 'signup' && signupChannel === 'EMAIL');
-  const phoneRequired =
-    activeChannel === 'PHONE' || (tab === 'signup' && signupChannel === 'PHONE');
-  const nameValid = tab === 'signin' || fullName.trim().length >= 1;
-  const roleValid = tab === 'signin' || role !== null;
-  const passwordValid = tab === 'signin' || !password || isValidPassword(password);
-  const phoneValid = !phoneRequired || phoneField.isValid;
+  const signInValid = isValidEmail(email) && isValidPassword(password);
 
-  const canSubmit =
-    nameValid &&
-    roleValid &&
-    passwordValid &&
-    phoneValid &&
-    (!emailRequired || isValidEmail(email)) &&
-    (tab === 'signup' || supportsLoginChannel(activeChannel, config.loginIdentifier));
+  const canSubmit = isSignup
+    ? nameValid && roleValid && signupPasswordValid && signupPhoneValid && signupEmailValid
+    : signInValid;
 
   const submitHint = (() => {
     if (!attempted || canSubmit) return null;
-    if (emailRequired && !isValidEmail(email)) return 'Enter a valid email address.';
-    if (phoneRequired && !phoneField.isValid)
+    if (!isSignup) {
+      if (!isValidEmail(email)) return 'Enter a valid email address.';
+      if (!isValidPassword(password)) return 'Password must be at least 8 characters.';
+      return null;
+    }
+    if (signupEmailRequired && !isValidEmail(email)) return 'Enter a valid email address.';
+    if (!signupEmailValid) return 'Enter a valid email address.';
+    if (signupPhoneRequired && !phoneField.isValid)
       return phoneField.error ?? 'Enter a valid phone number.';
-    if (tab === 'signup' && !nameValid) return 'Enter your name.';
-    if (tab === 'signup' && !roleValid) return 'Pick your role.';
-    if (tab === 'signup' && password && !passwordValid)
-      return 'Password must be at least 8 characters.';
+    if (!nameValid) return 'Enter your name.';
+    if (!roleValid) return 'Pick your role.';
+    if (password && !signupPasswordValid) return 'Password must be at least 8 characters.';
     return null;
   })();
 
-  const startOtp = useCallback(async () => {
-    const purpose = tab === 'signup' ? 'signup' : 'login';
+  const startSignupOtp = useCallback(async () => {
     const normalizedEmail = email.trim() ? normalizeEmail(email) : undefined;
     const phone = phoneField.e164 ?? undefined;
+    const { firstName, lastName } = splitFullName(fullName);
 
-    if (activeChannel === 'EMAIL') {
+    if (signupChannel === 'EMAIL') {
       const { ttlSeconds } = await requestOtp({
         channel: 'EMAIL',
         email: normalizedEmail!,
-        purpose,
+        purpose: 'signup',
       });
-      const { firstName, lastName } = splitFullName(fullName);
       setSession({
         channel: 'EMAIL',
         email: normalizedEmail!,
         phone,
-        password: tab === 'signup' ? password || undefined : undefined,
-        mode: purpose,
-        firstName: tab === 'signup' ? firstName : undefined,
-        lastName: tab === 'signup' ? lastName : undefined,
-        role: tab === 'signup' ? (role ?? undefined) : undefined,
+        password: password || undefined,
+        mode: 'signup',
+        firstName,
+        lastName,
+        role: role ?? undefined,
         expiresAtMs: Date.now() + ttlSeconds * 1000,
       });
     } else {
       const { ttlSeconds } = await requestOtp({
         channel: 'PHONE',
         phone: phone!,
-        purpose,
+        purpose: 'signup',
       });
-      const { firstName, lastName } = splitFullName(fullName);
       setSession({
         channel: 'PHONE',
         phone: phone!,
         email: normalizedEmail,
-        password: tab === 'signup' ? password || undefined : undefined,
-        mode: purpose,
-        firstName: tab === 'signup' ? firstName : undefined,
-        lastName: tab === 'signup' ? lastName : undefined,
-        role: tab === 'signup' ? (role ?? undefined) : undefined,
+        password: password || undefined,
+        mode: 'signup',
+        firstName,
+        lastName,
+        role: role ?? undefined,
         expiresAtMs: Date.now() + ttlSeconds * 1000,
       });
     }
 
-    router.push({ pathname: '/(auth)/otp', params: { mode: purpose } });
-  }, [activeChannel, email, fullName, password, phoneField.e164, role, router, setSession, tab]);
+    router.push({ pathname: '/(auth)/otp', params: { mode: 'signup' } });
+  }, [email, fullName, password, phoneField.e164, role, router, setSession, signupChannel]);
+
+  const signIn = useCallback(async () => {
+    await loginWithPassword(normalizeEmail(email), password);
+  }, [email, loginWithPassword, password]);
+
+  const submit = useCallback(async () => {
+    if (isSignup) {
+      await startSignupOtp();
+    } else {
+      await signIn();
+    }
+  }, [isSignup, signIn, startSignupOtp]);
 
   const { submitting, error, handleSubmit } = useAuthSubmit({
     canSubmit,
-    submit: startOtp,
-    fallbackError: tab === 'signup' ? 'Could not start sign up' : 'Could not send sign-in code',
+    submit,
+    fallbackError: isSignup ? 'Could not start sign up' : 'Invalid email or password',
   });
 
-  const signupUsesEmail = tab === 'signup' && signupChannel === 'EMAIL';
-
-  const otpTargetHint = signupUsesEmail
-    ? "We'll email your verification code."
-    : 'OTP is sent to your phone.';
+  const signupUsesEmail = signupChannel === 'EMAIL';
 
   const scrollToRoleField = useCallback(() => {
     requestAnimationFrame(() => {
@@ -177,7 +173,9 @@ export default function AuthScreen() {
 
   const compact = frame.isCompactHeight;
   const landscape = frame.isLandscape;
+  const compactBrand = compact || landscape || isSignup;
   const dropdownScrollPadding = Math.min(frame.height * 0.35, 280);
+  const footerReserve = isSignup ? 148 : 112;
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom', 'left', 'right']}>
@@ -191,10 +189,11 @@ export default function AuthScreen() {
           style={styles.scroll}
           contentContainerStyle={[
             styles.scrollContent,
-            roleDropdownOpen && { paddingBottom: dropdownScrollPadding },
+            { paddingBottom: footerReserve },
+            roleDropdownOpen && { paddingBottom: dropdownScrollPadding + footerReserve },
           ]}
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={isSignup}
           nestedScrollEnabled
         >
           <View
@@ -205,62 +204,66 @@ export default function AuthScreen() {
                 maxWidth: frame.maxWidth,
                 alignSelf: frame.maxWidth != null ? 'center' : undefined,
                 width: '100%',
-                paddingTop: compact ? spacing.lg : landscape ? spacing.xl : spacing.xxxl,
+                paddingTop: compactBrand ? spacing.lg : spacing.xxxl,
               },
             ]}
           >
             <View
               style={[
                 styles.brandBlock,
-                compact && styles.brandBlockCompact,
+                compactBrand && styles.brandBlockCompact,
                 landscape && styles.brandBlockLandscape,
               ]}
             >
-              <CircuitLogo size={compact || landscape ? 'sm' : 'md'} />
-              <Text style={[styles.wordmark, (compact || landscape) && styles.wordmarkCompact]}>
+              <CircuitLogo size={compactBrand ? 'sm' : 'md'} />
+              <Text style={[styles.wordmark, compactBrand && styles.wordmarkCompact]}>
                 CIRCUI<Text style={styles.wordmarkAccent}>IT</Text>
               </Text>
-              {!compact ? <Text style={styles.tagline}>FOR FILMMAKERS</Text> : null}
+              {!compactBrand ? <Text style={styles.tagline}>FOR FILMMAKERS</Text> : null}
             </View>
 
             <View style={[styles.tabRow, compact && styles.tabRowCompact]}>
               <Pressable
                 accessibilityRole="tab"
-                accessibilityState={{ selected: tab === 'signup' }}
+                accessibilityState={{ selected: isSignup }}
                 onPress={() => setTab('signup')}
-                style={[styles.tab, tab === 'signup' && styles.tabActive]}
+                style={[styles.tab, isSignup && styles.tabActive]}
               >
-                <Text style={[styles.tabText, tab === 'signup' && styles.tabTextActive]}>
-                  Sign up
-                </Text>
+                <Text style={[styles.tabText, isSignup && styles.tabTextActive]}>Sign up</Text>
               </Pressable>
               <Pressable
                 accessibilityRole="tab"
-                accessibilityState={{ selected: tab === 'signin' }}
+                accessibilityState={{ selected: !isSignup }}
                 onPress={() => setTab('signin')}
-                style={[styles.tab, tab === 'signin' && styles.tabActive]}
+                style={[styles.tab, !isSignup && styles.tabActive]}
               >
-                <Text style={[styles.tabText, tab === 'signin' && styles.tabTextActive]}>
-                  Sign In
-                </Text>
+                <Text style={[styles.tabText, !isSignup && styles.tabTextActive]}>Sign In</Text>
               </Pressable>
             </View>
 
-            {tab === 'signup' ? (
-              <AuthField
-                label="Name"
-                placeholder="Your full name"
-                value={fullName}
-                onChangeText={setFullName}
-                autoCapitalize="words"
-                icon="person-outline"
-                compact={compact}
+            {isSignup ? (
+              <SignupFormFields
+                channel={signupChannel}
+                fullName={fullName}
+                onFullNameChange={setFullName}
+                email={email}
+                onEmailChange={setEmail}
+                password={password}
+                onPasswordChange={setPassword}
+                role={role}
+                onRoleChange={setRole}
+                phoneField={phoneField}
+                attempted={attempted}
+                signupPhoneRequired={signupPhoneRequired}
+                onRoleDropdownOpen={handleRoleDropdownOpen}
+                onRoleFieldLayout={y => {
+                  roleFieldY.current = y;
+                }}
+                compact={compact || isSignup}
               />
-            ) : null}
-
-            {activeChannel === 'EMAIL' || config.loginIdentifier === 'BOTH' || tab === 'signup' ? (
+            ) : (
               <AuthField
-                label={emailRequired ? 'Email' : 'Email (optional)'}
+                label="Email"
                 placeholder="you@studio.com"
                 value={email}
                 onChangeText={setEmail}
@@ -271,93 +274,56 @@ export default function AuthScreen() {
                 icon="mail-outline"
                 compact={compact}
               />
-            ) : null}
+            )}
 
-            {tab === 'signup' && signupChannel === 'EMAIL' ? (
-              <View style={styles.phoneBlock}>
-                <PhoneField
-                  label="Phone (optional)"
-                  country={phoneField.country}
-                  nationalNumber={phoneField.nationalNumber}
-                  onCountryChange={phoneField.setCountry}
-                  onNationalNumberChange={phoneField.setNationalNumber}
-                  hint="Used for crew invites — we'll email your verification code."
-                  showError={attempted && !!phoneField.nationalNumber && !phoneField.isValid}
-                  error={phoneField.error ?? undefined}
-                />
-              </View>
-            ) : (tab === 'signup' && signupChannel === 'PHONE') ||
-              activeChannel === 'PHONE' ||
-              (tab === 'signin' && config.loginIdentifier === 'BOTH') ? (
-              <View style={styles.phoneBlock}>
-                <PhoneField
-                  label={phoneRequired ? 'Phone' : 'Phone (optional)'}
-                  country={phoneField.country}
-                  nationalNumber={phoneField.nationalNumber}
-                  onCountryChange={phoneField.setCountry}
-                  onNationalNumberChange={phoneField.setNationalNumber}
-                  hint={tab === 'signup' ? otpTargetHint : undefined}
-                  showError={
-                    attempted && phoneRequired && !!phoneField.nationalNumber && !phoneField.isValid
-                  }
-                  error={phoneField.error ?? undefined}
-                />
-              </View>
-            ) : null}
-
-            {tab === 'signup' ? (
-              <View
-                onLayout={event => {
-                  roleFieldY.current = event.nativeEvent.layout.y;
-                }}
-              >
-                <DropdownPicker
-                  label="I am a"
-                  placeholder="Select your role"
-                  options={SIGNUP_ROLES.map(item => ({ value: item.id, label: item.label }))}
-                  value={role}
-                  onChange={setRole}
-                  onOpenChange={handleRoleDropdownOpen}
-                />
-              </View>
-            ) : null}
-
-            {tab === 'signup' ? (
+            {!isSignup ? (
               <View style={styles.passwordBlock}>
-                <PasswordField value={password} onChangeText={setPassword} mode="new" />
+                <PasswordField value={password} onChangeText={setPassword} mode="login" />
               </View>
             ) : null}
-
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-            {submitHint ? <Text style={styles.hint}>{submitHint}</Text> : null}
-
-            <Pressable
-              accessibilityRole="button"
-              disabled={!canSubmit || submitting}
-              onPress={() => {
-                setAttempted(true);
-                void handleSubmit();
-              }}
-              style={({ pressed }) => [
-                styles.cta,
-                (!canSubmit || submitting) && styles.ctaDisabled,
-                pressed && canSubmit && styles.ctaPressed,
-              ]}
-            >
-              <Text style={styles.ctaText}>
-                {submitting
-                  ? 'Sending code…'
-                  : tab === 'signup'
-                    ? signupUsesEmail
-                      ? 'Email verification code →'
-                      : 'Get started →'
-                    : signupUsesEmail
-                      ? 'Email sign-in code →'
-                      : 'Send sign-in code →'}
-              </Text>
-            </Pressable>
           </View>
         </ScrollView>
+
+        <View
+          style={[
+            styles.footer,
+            {
+              paddingHorizontal: frame.horizontalPadding,
+              maxWidth: frame.maxWidth,
+              alignSelf: frame.maxWidth != null ? 'center' : undefined,
+              width: '100%',
+            },
+          ]}
+        >
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {submitHint ? <Text style={styles.hint}>{submitHint}</Text> : null}
+
+          <Pressable
+            accessibilityRole="button"
+            disabled={!canSubmit || submitting}
+            onPress={() => {
+              setAttempted(true);
+              void handleSubmit();
+            }}
+            style={({ pressed }) => [
+              styles.cta,
+              (!canSubmit || submitting) && styles.ctaDisabled,
+              pressed && canSubmit && styles.ctaPressed,
+            ]}
+          >
+            <Text style={styles.ctaText}>
+              {submitting
+                ? isSignup
+                  ? 'Sending code…'
+                  : 'Signing in…'
+                : isSignup
+                  ? signupUsesEmail
+                    ? 'Email verification code →'
+                    : 'Text verification code →'
+                  : 'Sign In →'}
+            </Text>
+          </Pressable>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -386,12 +352,12 @@ function AuthField({
         <TextInput
           style={styles.fieldInput}
           placeholder={placeholder}
-          placeholderTextColor="rgba(255,255,255,0.45)"
+          placeholderTextColor={colors.textMuted}
           value={value}
           onChangeText={onChangeText}
           {...rest}
         />
-        <Ionicons name={icon} size={18} color="rgba(255,255,255,0.5)" style={styles.fieldIcon} />
+        <Ionicons name={icon} size={18} color={colors.textMuted} style={styles.fieldIcon} />
       </View>
     </View>
   );
@@ -403,8 +369,14 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { flexGrow: 1 },
   inner: {
-    flexGrow: 1,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.md,
+  },
+  footer: {
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
+    backgroundColor: '#F3F0EA',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(0,0,0,0.08)',
   },
   brandBlock: { alignItems: 'center', marginBottom: spacing.xl },
   brandBlockCompact: { marginBottom: spacing.md },
@@ -443,7 +415,9 @@ const styles = StyleSheet.create({
   fieldBlockCompact: { marginBottom: spacing.md },
   fieldLabel: { ...typography.micro, color: colors.textMuted, marginBottom: spacing.xs },
   fieldInputWrap: {
-    backgroundColor: '#1C1C1E',
+    backgroundColor: colors.glass,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
     borderRadius: radius.lg,
     flexDirection: 'row',
     alignItems: 'center',
@@ -453,14 +427,13 @@ const styles = StyleSheet.create({
   fieldInput: {
     flex: 1,
     ...typography.body,
-    color: colors.onBrand,
+    color: colors.textPrimary,
     paddingVertical: spacing.md,
   },
   fieldIcon: { marginLeft: spacing.sm },
   phoneBlock: { marginBottom: spacing.lg },
   passwordBlock: { marginBottom: spacing.lg },
   cta: {
-    marginTop: spacing.md,
     backgroundColor: colors.brand,
     borderRadius: radius.pill,
     paddingVertical: spacing.md + 4,

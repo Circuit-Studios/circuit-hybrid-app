@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { ScreenContainer } from '@/components/ScreenContainer';
@@ -10,8 +10,10 @@ import { useAuth } from '@/auth/AuthContext';
 import { useOtpSession } from '@/auth/OtpSessionContext';
 import { requestOtp } from '@/api/auth';
 import { readApiError } from '@/api/client';
+import { useAppConfig } from '@/config/AppConfigContext';
 import { useContentFrame } from '@/hooks/useContentFrame';
 import { formatRemainingSession, isSessionExpired } from '@/lib/session';
+import { maskEmail, maskPhone } from '@/lib/mask';
 import { getOtpBoxSize, colors, radius, spacing, typography } from '@/theme';
 
 const RESEND_COOLDOWN = 30;
@@ -19,11 +21,10 @@ const RESEND_COOLDOWN = 30;
 export default function OtpForm() {
   const router = useRouter();
   const { verifyOtp } = useAuth();
+  const { config } = useAppConfig();
   const { session, clearSession, extendSession } = useOtpSession();
   const { contentWidth, isLandscape, isCompactHeight } = useContentFrame('form');
   const scroll = isLandscape || isCompactHeight;
-  const params = useLocalSearchParams<{ mode?: 'signup' | 'login' }>();
-  const mode = params.mode === 'login' ? 'login' : 'signup';
 
   const inputRef = useRef<TextInput>(null);
   const [code, setCode] = useState('');
@@ -34,8 +35,9 @@ export default function OtpForm() {
   const [error, setError] = useState<string | null>(null);
 
   const boxSize = useMemo(() => getOtpBoxSize(contentWidth), [contentWidth]);
-  const channel = session?.channel ?? 'EMAIL';
+  const channel = session?.channel ?? config.signupVerificationChannel;
   const destination = channel === 'EMAIL' ? (session?.email ?? '') : (session?.phone ?? '');
+  const maskedDestination = channel === 'EMAIL' ? maskEmail(destination) : maskPhone(destination);
 
   useEffect(() => {
     if (!session) {
@@ -141,12 +143,12 @@ export default function OtpForm() {
           ? await requestOtp({
               channel: 'EMAIL',
               email: session.email!,
-              purpose: session.mode,
+              purpose: 'signup',
             })
           : await requestOtp({
               channel: 'PHONE',
               phone: session.phone!,
-              purpose: session.mode,
+              purpose: 'signup',
             });
       extendSession(Date.now() + ttlSeconds * 1000);
       setCooldown(RESEND_COOLDOWN);
@@ -171,16 +173,24 @@ export default function OtpForm() {
   }
 
   const digits = code.padEnd(6, ' ').slice(0, 6).split('');
+  const channelLabel = channel === 'EMAIL' ? 'email' : 'text message';
 
   return (
     <ScreenContainer scroll={scroll} constrained="form">
       <ScreenHeader
         eyebrow={channel === 'EMAIL' ? 'Verify your email' : 'Verify your phone'}
         title="Enter the code"
-        subtitle={`We sent a 6-digit code to ${destination}. Expires in ${formatRemainingSession(otpSecondsLeft)}.`}
+        subtitle={`We sent a 6-digit code via ${channelLabel} to ${maskedDestination}.`}
         showRule
         size="large"
       />
+
+      <View style={styles.expiryBanner}>
+        <Text style={styles.expiryText}>
+          Code expires in {formatRemainingSession(otpSecondsLeft)}. Enter it before the timer runs
+          out.
+        </Text>
+      </View>
 
       <View style={styles.boxes}>
         {digits.map((d, i) => (
@@ -217,7 +227,11 @@ export default function OtpForm() {
       {error ? <FormErrorText>{error}</FormErrorText> : null}
 
       <View style={styles.resendRow}>
-        <Text style={styles.resendInfo}>Didn't receive it?</Text>
+        <Text style={styles.resendInfo}>
+          {cooldown > 0
+            ? `You can request a new code in ${cooldown}s.`
+            : "Didn't receive it? Tap below to resend."}
+        </Text>
         <Button
           title={cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend code'}
           variant="ghost"
@@ -230,7 +244,7 @@ export default function OtpForm() {
 
       <View style={styles.actions}>
         <Button
-          title={mode === 'signup' ? 'Create account' : 'Sign in'}
+          title="Create account"
           disabled={code.length !== 6}
           loading={submitting}
           onPress={() => handleVerify(code)}
@@ -265,7 +279,14 @@ const styles = StyleSheet.create({
   boxFilled: { borderColor: colors.accentMuted },
   boxText: { ...typography.title, color: colors.textPrimary },
   hiddenInput: { position: 'absolute', opacity: 0, width: '100%', height: 1 },
-  resendRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md },
+  expiryBanner: {
+    backgroundColor: colors.accentSoft,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  expiryText: { ...typography.caption, color: colors.textSecondary, textAlign: 'center' },
+  resendRow: { gap: spacing.sm, marginTop: spacing.md },
   resendInfo: { ...typography.body, color: colors.textSecondary },
   actions: { marginTop: spacing.xl, gap: spacing.sm },
 });

@@ -18,7 +18,7 @@ export default function SplashScreen() {
     }).start();
 
     const timer = setTimeout(() => {
-      router.replace('/(auth)/auth');
+      router.replace('/(auth)/welcome');
     }, SPLASH_MS);
 
     return () => clearTimeout(timer);
@@ -33,9 +33,7 @@ export default function SplashScreen() {
     <View style={styles.screen}>
       <View style={styles.glow} />
       <View style={styles.center}>
-        <View style={styles.logoFrame}>
-          <CircuitLogo size="lg" />
-        </View>
+        <CircuitLogo size="md" />
         <Text style={styles.wordmark}>
           CIRCUI<Text style={styles.wordmarkAccent}>IT</Text>
         </Text>
@@ -71,14 +69,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(244,122,31,0.18)',
   },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
-  logoFrame: {
-    padding: spacing.lg,
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.08)',
-    backgroundColor: 'rgba(255,255,255,0.65)',
-    marginBottom: spacing.md,
-  },
   wordmark: { fontSize: 34, fontWeight: '800', color: colors.textPrimary, letterSpacing: 0.5 },
   wordmarkAccent: { color: colors.brand },
   rule: {

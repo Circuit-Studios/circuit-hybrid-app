@@ -1,7 +1,5 @@
 import type { ViewStyle } from 'react-native';
 import { spacing } from './tokens';
-
-/** Width at which we treat the device as a tablet layout. */
 export const TABLET_BREAKPOINT = 768;
 
 /** Width at which we add a third column in dense grids. */
@@ -152,3 +150,15 @@ export const dropdownLayout = {
   minListHeight: DROPDOWN_MIN_LIST_HEIGHT,
   maxListHeight: DROPDOWN_MAX_LIST_HEIGHT,
 } as const;
+
+/** Vertical space to reserve above a floating glass app tab bar. */
+export function getAppTabBarReserve(compact: boolean, safeBottom: number): number {
+  const barBody = compact ? 52 : 72;
+  return barBody + Math.max(safeBottom, spacing.sm) + spacing.lg;
+}
+
+/** Vertical space to reserve above the project segment tab bar. */
+export function getProjectTabBarReserve(compact: boolean, safeBottom: number): number {
+  const barBody = compact ? 44 : 52;
+  return barBody + spacing.lg + spacing.sm + Math.max(safeBottom, 0);
+}

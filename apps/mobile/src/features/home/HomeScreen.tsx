@@ -11,6 +11,7 @@ import { Card } from '@/components/Card';
 import { useActiveProject } from '@/context/ActiveProjectContext';
 import { useAuth } from '@/auth/AuthContext';
 import { readApiError } from '@/api/client';
+import { useChromeInsets } from '@/hooks/useChromeInsets';
 import { colors, radius, spacing, typography } from '@/theme';
 import { useHomeQuery } from './hooks';
 
@@ -28,10 +29,15 @@ export default function HomeScreen() {
   const { data, isLoading, error, refetch } = useHomeQuery(projectId);
 
   const canStartProject = user?.defaultRole === 'DIRECTOR' || user?.defaultRole === 'PRODUCER';
+  const { appTabBarReserve } = useChromeInsets();
 
   if (!projectId && !isLoading) {
     return (
-      <ScreenContainer scroll edges={['top', 'left', 'right']}>
+      <ScreenContainer
+        scroll
+        edges={['top', 'left', 'right']}
+        contentStyle={{ paddingBottom: appTabBarReserve }}
+      >
         <View style={styles.headerRow}>
           <CircuitWordmark />
           <AppHeaderActions />
@@ -54,7 +60,11 @@ export default function HomeScreen() {
   }
 
   return (
-    <ScreenContainer scroll edges={['top', 'left', 'right']} contentStyle={styles.scrollPad}>
+    <ScreenContainer
+      scroll
+      edges={['top', 'left', 'right']}
+      contentStyle={{ paddingBottom: appTabBarReserve }}
+    >
       <View style={styles.headerRow}>
         <CircuitWordmark />
         <AppHeaderActions />
@@ -194,7 +204,6 @@ function QuickAction({
 }
 
 const styles = StyleSheet.create({
-  scrollPad: { paddingBottom: 120 },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { AccountButton } from '@/components/AccountButton';
@@ -10,6 +10,8 @@ import { Card } from '@/components/Card';
 import { useActiveProject } from '@/context/ActiveProjectContext';
 import { readApiError } from '@/api/client';
 import type { ActivityFilter } from '@/api/home';
+import { GlassFilterChip } from '@/components/GlassFilterChip';
+import { useChromeInsets } from '@/hooks/useChromeInsets';
 import { colors, radius, spacing, typography } from '@/theme';
 import { useActivityQuery } from '@/features/home/hooks';
 
@@ -65,26 +67,28 @@ export default function ActivityScreen() {
     return [...map.entries()];
   }, [data]);
 
+  const { appTabBarReserve } = useChromeInsets();
+
   return (
-    <ScreenContainer topAligned edges={['top', 'left', 'right']} contentStyle={styles.pad}>
+    <ScreenContainer
+      topAligned
+      edges={['top', 'left', 'right']}
+      contentStyle={{ flex: 1, paddingBottom: appTabBarReserve }}
+    >
       <View style={styles.header}>
         <Text style={styles.title}>Activity</Text>
         <AccountButton />
       </View>
 
       <View style={styles.filters}>
-        {FILTERS.map(f => {
-          const active = filter === f.id;
-          return (
-            <Pressable
-              key={f.id}
-              onPress={() => setFilter(f.id)}
-              style={[styles.chip, active && styles.chipActive]}
-            >
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>{f.label}</Text>
-            </Pressable>
-          );
-        })}
+        {FILTERS.map(f => (
+          <GlassFilterChip
+            key={f.id}
+            label={f.label}
+            active={filter === f.id}
+            onPress={() => setFilter(f.id)}
+          />
+        ))}
       </View>
 
       {!projectId ? (
@@ -167,7 +171,6 @@ function PulseStat({ value, label }: { value: number; label: string }) {
 }
 
 const styles = StyleSheet.create({
-  pad: { flex: 1, paddingBottom: 120 },
   flex: { flex: 1 },
   header: {
     flexDirection: 'row',
@@ -177,15 +180,6 @@ const styles = StyleSheet.create({
   },
   title: { ...typography.title, color: colors.textPrimary },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg },
-  chip: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surfaceMuted,
-  },
-  chipActive: { backgroundColor: colors.brand },
-  chipText: { ...typography.bodyStrong, color: colors.textSecondary },
-  chipTextActive: { color: colors.textPrimary },
   pulse: { marginBottom: spacing.lg },
   pulseHead: {
     flexDirection: 'row',

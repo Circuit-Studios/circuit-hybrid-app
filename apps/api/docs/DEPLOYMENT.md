@@ -1,6 +1,6 @@
 # Circuit — Deployment (Render)
 
-Production runs on **[Render](https://render.com)**. Configure everything in the **Render dashboard** — there is no Blueprint or `render.yaml` in this repo.
+Production runs on **[Render](https://render.com)**. Configure everything in the **Render dashboard**.
 
 > **Config surfaces:** local mobile → `apps/mobile/.env`; local API → `apps/api/.env.development`; deployed API → **Render → Environment**. See [`../../docs/ENVIRONMENT.md`](../../docs/ENVIRONMENT.md).
 

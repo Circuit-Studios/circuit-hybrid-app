@@ -76,6 +76,20 @@ export async function verifyOtp(input: VerifyOtpInput): Promise<VerifyOtpRespons
   return data;
 }
 
+export async function loginWithPassword(
+  email: string,
+  password: string,
+): Promise<VerifyOtpResponse> {
+  await wakeApi();
+  const { data } = await api.post<VerifyOtpResponse>('/auth/login', { email, password });
+  return data;
+}
+
+export async function deleteAccount(): Promise<{ ok: boolean }> {
+  const { data } = await api.delete<{ ok: boolean }>('/auth/me');
+  return data;
+}
+
 export async function getMe(): Promise<{ user: AuthUser }> {
   const { data } = await api.get<{ user: AuthUser }>('/auth/me');
   return data;

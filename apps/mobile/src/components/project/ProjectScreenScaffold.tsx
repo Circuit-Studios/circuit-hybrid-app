@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { AccountButton } from '@/components/AccountButton';
+import { useChromeInsets } from '@/hooks/useChromeInsets';
 import { useProjectRoom } from '@/realtime/useProjectRoom';
 import { colors, radius, spacing, typography } from '@/theme';
 import { ProjectTabBar, type ProjectTab } from './ProjectTabBar';
@@ -34,10 +35,16 @@ export function ProjectScreenScaffold({
   footer,
 }: ProjectScreenScaffoldProps) {
   useProjectRoom(projectId);
+  const { projectTabBarReserve } = useChromeInsets();
 
   return (
     <View style={styles.root}>
-      <ScreenContainer topAligned scroll={scroll} edges={['top', 'left', 'right']}>
+      <ScreenContainer
+        topAligned
+        scroll={scroll}
+        edges={['top', 'left', 'right']}
+        contentStyle={{ paddingBottom: projectTabBarReserve }}
+      >
         <View style={styles.headerRow}>
           <Pressable
             onPress={() => router.replace(`/(app)/project/${projectId}`)}

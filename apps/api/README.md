@@ -20,7 +20,7 @@ From monorepo root: `npm run setup:env:api` then `npm run api:dev`
 
 **Dev OTP:** `EMAIL_OTP_PROVIDER=MOCK` + `PHONE_OTP_PROVIDER=MOCK` → code **`111111`**.
 
-**Production:** deploy via the [Render dashboard](docs/DEPLOYMENT.md) (manual web service — no Blueprint).
+**Production:** deploy via the [Render dashboard](docs/DEPLOYMENT.md) (manual web service).
 
 Mobile app: see [`../mobile/README.md`](../mobile/README.md) or the [root README](../../README.md).
 

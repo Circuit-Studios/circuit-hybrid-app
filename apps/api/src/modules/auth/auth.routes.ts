@@ -234,6 +234,37 @@ authProtectedRouter.get(
   }),
 );
 
+authProtectedRouter.delete(
+  '/me',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const userId = req.user?.sub;
+    if (!userId) {
+      throw unauthorized('Missing auth context');
+    }
+
+    const ownedProjects = await prisma.project.count({ where: { ownerUserId: userId } });
+    if (ownedProjects > 0) {
+      throw conflict('Transfer or delete your projects before deleting your account.');
+    }
+
+    const uploadedScripts = await prisma.script.count({ where: { uploadedByUserId: userId } });
+    if (uploadedScripts > 0) {
+      throw conflict('Remove uploaded scripts tied to your account before deleting it.');
+    }
+
+    await prisma.$transaction([
+      prisma.projectMember.deleteMany({ where: { userId } }),
+      prisma.pushToken.deleteMany({ where: { userId } }),
+      prisma.notification.deleteMany({ where: { userId } }),
+      prisma.authOtp.deleteMany({ where: { userId } }),
+      prisma.user.delete({ where: { id: userId } }),
+    ]);
+
+    res.json({ ok: true });
+  }),
+);
+
 authProtectedRouter.get(
   '/me/invites',
   requireAuth,

@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, radius, spacing, typography } from '@/theme';
+import { GlassLens, GlassSurface } from '@/components/GlassSurface';
+import { useChromeInsets } from '@/hooks/useChromeInsets';
+import { colors, spacing, typography } from '@/theme';
 
 type TabKey = 'home' | 'activity' | 'schedule' | 'team';
 
@@ -47,48 +49,70 @@ export type AppTabBarProps = TabBarProps;
 
 export function AppTabBar({ state, descriptors, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
+  const { compactTabBar, safeHorizontal, tabBarMaxWidth } = useChromeInsets();
 
   return (
-    <View style={[styles.shell, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
-      <View style={styles.bar}>
-        {state.routes.map((route, index) => {
-          const tab = routeToTab(route.name);
-          if (!tab) return null;
+    <View
+      style={[
+        styles.shell,
+        {
+          left: safeHorizontal,
+          right: safeHorizontal,
+          paddingBottom: Math.max(insets.bottom, spacing.sm),
+        },
+      ]}
+    >
+      <GlassSurface
+        variant="bar"
+        style={[styles.bar, tabBarMaxWidth != null && { maxWidth: tabBarMaxWidth, alignSelf: 'center' }]}
+      >
+        <View style={[styles.row, compactTabBar && styles.rowCompact]}>
+          {state.routes.map((route, index) => {
+            const tab = routeToTab(route.name);
+            if (!tab) return null;
 
-          const focused = state.index === index;
-          const meta = TAB_META[tab];
-          const { options } = descriptors[route.key]!;
+            const focused = state.index === index;
+            const meta = TAB_META[tab];
+            const { options } = descriptors[route.key]!;
 
-          return (
-            <Pressable
-              key={route.key}
-              accessibilityRole="button"
-              accessibilityState={focused ? { selected: true } : {}}
-              accessibilityLabel={options.tabBarAccessibilityLabel ?? meta.label}
-              onPress={() => {
-                const event = navigation.emit({
-                  type: 'tabPress',
-                  target: route.key,
-                  canPreventDefault: true,
-                });
-                if (!focused && !event.defaultPrevented) {
-                  navigation.navigate(route.name);
-                }
-              }}
-              style={styles.item}
-            >
-              <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
-                <Ionicons
-                  name={focused ? meta.activeIcon : meta.icon}
-                  size={20}
-                  color={focused ? colors.textPrimary : colors.textMuted}
-                />
-              </View>
-              <Text style={[styles.label, focused && styles.labelActive]}>{meta.label}</Text>
-            </Pressable>
-          );
-        })}
-      </View>
+            return (
+              <Pressable
+                key={route.key}
+                accessibilityRole="button"
+                accessibilityState={focused ? { selected: true } : {}}
+                accessibilityLabel={options.tabBarAccessibilityLabel ?? meta.label}
+                onPress={() => {
+                  const event = navigation.emit({
+                    type: 'tabPress',
+                    target: route.key,
+                    canPreventDefault: true,
+                  });
+                  if (!focused && !event.defaultPrevented) {
+                    navigation.navigate(route.name);
+                  }
+                }}
+                style={styles.item}
+              >
+                {focused ? (
+                  <GlassLens style={[styles.activeLens, compactTabBar && styles.activeLensCompact]} />
+                ) : null}
+                <View style={[styles.iconWrap, compactTabBar && styles.iconWrapCompact]}>
+                  <Ionicons
+                    name={focused ? meta.activeIcon : meta.icon}
+                    size={compactTabBar ? 22 : 20}
+                    color={focused ? colors.brand : colors.textMuted}
+                  />
+                </View>
+                {!compactTabBar ? (
+                  <Text style={[styles.label, focused && styles.labelActive]} numberOfLines={1}>
+                    {meta.label}
+                  </Text>
+                ) : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      </GlassSurface>
     </View>
   );
 }
@@ -96,33 +120,57 @@ export function AppTabBar({ state, descriptors, navigation }: TabBarProps) {
 const styles = StyleSheet.create({
   shell: {
     position: 'absolute',
-    left: spacing.lg,
-    right: spacing.lg,
     bottom: 0,
   },
   bar: {
-    flexDirection: 'row',
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
+    width: '100%',
   },
-  item: { flex: 1, alignItems: 'center', gap: 4 },
+  row: {
+    flexDirection: 'row',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
+  },
+  rowCompact: {
+    paddingVertical: spacing.xs,
+  },
+  item: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: spacing.xs,
+    position: 'relative',
+    minWidth: 0,
+  },
+  activeLens: {
+    position: 'absolute',
+    top: 0,
+    left: spacing.xs,
+    right: spacing.xs,
+    bottom: 18,
+  },
+  activeLensCompact: {
+    bottom: 0,
+  },
   iconWrap: {
     width: 40,
     height: 40,
-    borderRadius: radius.pill,
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
-  iconWrapActive: { backgroundColor: colors.brand },
-  label: { ...typography.caption, color: colors.textMuted, fontSize: 11 },
-  labelActive: { color: colors.brand, fontWeight: '700' },
+  iconWrapCompact: {
+    width: 44,
+    height: 44,
+  },
+  label: {
+    ...typography.caption,
+    color: colors.textMuted,
+    fontSize: 11,
+    zIndex: 1,
+  },
+  labelActive: {
+    color: colors.brand,
+    fontWeight: '700',
+  },
 });

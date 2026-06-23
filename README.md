@@ -107,7 +107,7 @@ Details: [`apps/api/docs/DEPLOYMENT.md`](./apps/api/docs/DEPLOYMENT.md)
 
 ## Deploy API (Render)
 
-Configure in the **Render dashboard** — no Blueprint or `render.yaml`.
+Configure in the **Render dashboard** (manual web service).
 
 1. Push to GitHub.
 2. Render → **New** → **Web Service** → connect this repo.
