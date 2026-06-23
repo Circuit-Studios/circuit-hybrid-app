@@ -3,10 +3,11 @@ import { prisma } from '../../lib/prisma.js';
 import { badRequest, unauthorized } from '../../lib/http.js';
 import { OTP_TTL_SECONDS } from './auth.constants.js';
 import { normalizeOtpTarget } from './otp-target.js';
-import { getPhoneOtpProvider } from './providers/phone-otp.provider.js';
+import { getOtpDeliveryProvider } from './providers/otp-delivery.js';
 import { generateSixDigitOtp, hashOtpCode, verifyOtpCode } from './otp-crypto.js';
 import { sendEmailOtp, toEmailOtpPurpose, verifyEmailOtp } from './email-otp.service.js';
 import { assertOtpChannelEnabled } from './verification-policy.js';
+import { logOtpFailed, logOtpRequested, logOtpVerified } from './otp-logging.js';
 
 export const OTP_RESEND_COOLDOWN_SECONDS = 30;
 
@@ -43,6 +44,9 @@ export async function requestOtp({ channel, target, purpose }: RequestOtpInput):
     );
   }
 
+  const purposeLabel = purpose ?? 'login';
+  logOtpRequested(channel, normalized, purposeLabel);
+
   const plainOtp = generateSixDigitOtp('PHONE');
   const codeHash = hashOtpCode(plainOtp);
   const expiresAt = new Date(Date.now() + OTP_TTL_SECONDS * 1000);
@@ -57,7 +61,17 @@ export async function requestOtp({ channel, target, purpose }: RequestOtpInput):
     },
   });
 
-  await getPhoneOtpProvider().send(normalized, plainOtp);
+  try {
+    await getOtpDeliveryProvider('PHONE').send({
+      channel: 'PHONE',
+      target: normalized,
+      code: plainOtp,
+      purpose: purposeLabel,
+    });
+  } catch (err) {
+    logOtpFailed(channel, normalized, err instanceof Error ? err.message : 'send_failed');
+    throw err;
+  }
 }
 
 export async function verifyOtp({ channel, target, code, purpose }: VerifyOtpInput): Promise<true> {
@@ -83,11 +97,15 @@ export async function verifyOtp({ channel, target, code, purpose }: VerifyOtpInp
   }
 
   const ok = verifyOtpCode(code, candidate.codeHash);
-  if (!ok) throw unauthorized('Invalid or expired verification code.');
+  if (!ok) {
+    logOtpFailed(channel, normalized, 'invalid_code');
+    throw unauthorized('Invalid or expired verification code.');
+  }
 
   await prisma.authOtp.update({
     where: { id: candidate.id },
     data: { consumed: true },
   });
+  logOtpVerified(channel, normalized, purpose ?? 'login');
   return true;
 }

@@ -54,15 +54,14 @@ export default function TasksScreen() {
   const pid = projectId ?? '';
   const healthQ = useProjectHealth(pid);
   const departments = healthQ.data?.departments ?? [];
-  const deptFromLink =
-    deptParam && departments.some(d => d.id === deptParam) ? deptParam : null;
+  const deptFromLink = deptParam && departments.some((d) => d.id === deptParam) ? deptParam : null;
   const activeDeptFilter = filterDept ?? deptFromLink;
 
   const { data: tasks = [], isLoading, error, refetch } = useProjectTasks(pid, activeDeptFilter);
 
   const visibleTasks = useMemo(() => {
     const filtered =
-      filterStatus === 'ALL' ? tasks : tasks.filter(task => task.status === filterStatus);
+      filterStatus === 'ALL' ? tasks : tasks.filter((task) => task.status === filterStatus);
     return [...filtered].sort((a, b) => {
       const statusOrder: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'BLOCKED', 'DONE'];
       const statusDiff = statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status);
@@ -130,7 +129,7 @@ export default function TasksScreen() {
             active={filterDept == null && deptFromLink == null}
             onPress={() => setFilterDept(null)}
           />
-          {departments.map(d => (
+          {departments.map((d) => (
             <GlassFilterChip
               key={d.id}
               label={d.displayName}
@@ -147,7 +146,7 @@ export default function TasksScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterRow}
         >
-          {STATUS_FILTERS.map(item => (
+          {STATUS_FILTERS.map((item) => (
             <GlassFilterChip
               key={item.id}
               label={item.label}
@@ -185,11 +184,11 @@ export default function TasksScreen() {
       ) : showKanban ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View style={styles.kanban}>
-            {KANBAN_COLUMNS.map(status => (
+            {KANBAN_COLUMNS.map((status) => (
               <View key={status} style={styles.kanbanCol}>
                 <Text style={styles.kanbanColTitle}>{STATUS_LABEL[status]}</Text>
                 <View style={styles.kanbanList}>
-                  {tasksByStatus[status].map(task => (
+                  {tasksByStatus[status].map((task) => (
                     <TaskListItem key={task.id} task={task} onPress={() => setEditTask(task)} />
                   ))}
                 </View>
@@ -205,7 +204,7 @@ export default function TasksScreen() {
         />
       ) : (
         <View style={styles.list}>
-          {visibleTasks.map(task => (
+          {visibleTasks.map((task) => (
             <TaskListItem key={task.id} task={task} onPress={() => setEditTask(task)} />
           ))}
         </View>

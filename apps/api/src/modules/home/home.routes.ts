@@ -45,7 +45,7 @@ async function resolvePrimaryProjectId(userId: string, requested?: string): Prom
     throw forbidden('Join a project to view your command centre');
   }
   if (requested) {
-    const hit = memberships.find(m => m.projectId === requested);
+    const hit = memberships.find((m) => m.projectId === requested);
     if (!hit) throw forbidden('You are not a member of that project');
     return requested;
   }
@@ -112,17 +112,17 @@ router.get(
       }),
     ]);
 
-    const tasksDone = taskCounts.find(r => r.status === TaskStatus.DONE)?._count ?? 0;
+    const tasksDone = taskCounts.find((r) => r.status === TaskStatus.DONE)?._count ?? 0;
     const tasksTotal = taskCounts.reduce((sum, r) => sum + r._count, 0);
 
     const now = new Date();
-    const shootCompleted = shootDays.filter(d => d.date < todayStart).length;
+    const shootCompleted = shootDays.filter((d) => d.date < todayStart).length;
     const shootTotal = shootDays.length;
     const nextShootDay =
-      shootDays.find(d => d.date >= todayStart) ?? shootDays[shootDays.length - 1] ?? null;
+      shootDays.find((d) => d.date >= todayStart) ?? shootDays[shootDays.length - 1] ?? null;
 
     const productions = await Promise.all(
-      memberships.map(async m => {
+      memberships.map(async (m) => {
         const [done, next] = await Promise.all([
           prisma.task.count({ where: { projectId: m.projectId, status: TaskStatus.DONE } }),
           prisma.shootDay.findFirst({
@@ -210,7 +210,9 @@ router.get(
         : Promise.resolve([]),
     ]);
 
-    const assigneeIds = [...new Set(tasks.map(t => t.assigneeUserId).filter(Boolean))] as string[];
+    const assigneeIds = [
+      ...new Set(tasks.map((t) => t.assigneeUserId).filter(Boolean)),
+    ] as string[];
     const assignees =
       assigneeIds.length > 0
         ? await prisma.user.findMany({
@@ -218,7 +220,7 @@ router.get(
             select: { id: true, firstName: true, lastName: true },
           })
         : [];
-    const assigneeById = new Map(assignees.map(u => [u.id, u]));
+    const assigneeById = new Map(assignees.map((u) => [u.id, u]));
 
     type FeedItem = {
       id: string;

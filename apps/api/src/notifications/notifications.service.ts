@@ -51,7 +51,7 @@ export async function dispatchNotification(input: DispatchNotificationInput): Pr
   try {
     // ---- 1. Always: write IN_APP inbox rows + push events --------------
     const inAppRows = await Promise.all(
-      recipients.map(userId =>
+      recipients.map((userId) =>
         prisma.notification.create({
           data: {
             userId,
@@ -88,7 +88,7 @@ export async function dispatchNotification(input: DispatchNotificationInput): Pr
     });
     if (tokens.length === 0) return;
 
-    const messages: ExpoPushMessage[] = tokens.map(t => ({
+    const messages: ExpoPushMessage[] = tokens.map((t) => ({
       to: t.token,
       title: input.title,
       body: input.body,
@@ -110,7 +110,7 @@ export async function dispatchNotification(input: DispatchNotificationInput): Pr
       results.map(async (result, idx) => {
         const token = tokens[idx];
         if (!token) return;
-        const inApp = inAppRows.find(r => r.userId === token.userId);
+        const inApp = inAppRows.find((r) => r.userId === token.userId);
         const baseUpdate = inApp
           ? prisma.notification.update({
               where: { id: inApp.id },

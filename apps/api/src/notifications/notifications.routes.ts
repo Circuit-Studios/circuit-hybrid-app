@@ -80,7 +80,7 @@ const listQuerySchema = z.object({
   unreadOnly: z
     .string()
     .optional()
-    .transform(v => v === 'true' || v === '1'),
+    .transform((v) => v === 'true' || v === '1'),
 });
 
 // GET /me/notifications
@@ -105,7 +105,7 @@ router.get(
     const items = hasMore ? rows.slice(0, q.limit) : rows;
 
     res.json({
-      items: items.map(n => ({
+      items: items.map((n) => ({
         id: n.id,
         kind: n.kind,
         title: n.title,

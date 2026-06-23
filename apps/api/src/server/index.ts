@@ -187,7 +187,7 @@ const shutdown = async (signal: string) => {
   logger.info({ signal }, 'Shutting down');
   await stopConflictWorker();
   await disconnectRedis();
-  await new Promise<void>(resolve => httpServer.close(() => resolve()));
+  await new Promise<void>((resolve) => httpServer.close(() => resolve()));
   await prisma.$disconnect();
   process.exit(0);
 };

@@ -64,7 +64,10 @@ export function AppTabBar({ state, descriptors, navigation }: TabBarProps) {
     >
       <GlassSurface
         variant="bar"
-        style={[styles.bar, tabBarMaxWidth != null && { maxWidth: tabBarMaxWidth, alignSelf: 'center' }]}
+        style={[
+          styles.bar,
+          tabBarMaxWidth != null && { maxWidth: tabBarMaxWidth, alignSelf: 'center' },
+        ]}
       >
         <View style={[styles.row, compactTabBar && styles.rowCompact]}>
           {state.routes.map((route, index) => {
@@ -94,7 +97,9 @@ export function AppTabBar({ state, descriptors, navigation }: TabBarProps) {
                 style={styles.item}
               >
                 {focused ? (
-                  <GlassLens style={[styles.activeLens, compactTabBar && styles.activeLensCompact]} />
+                  <GlassLens
+                    style={[styles.activeLens, compactTabBar && styles.activeLensCompact]}
+                  />
                 ) : null}
                 <View style={[styles.iconWrap, compactTabBar && styles.iconWrapCompact]}>
                   <Ionicons

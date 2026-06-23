@@ -2,8 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../src/config/env.js', () => ({
   env: {
-    NODE_ENV: 'production',
-    APP_ENV: 'prod',
+    ALLOW_DIRECT_REGISTER: false,
   },
 }));
 
@@ -27,7 +26,7 @@ describe('/auth/register', () => {
 
     const next = vi.fn();
     handler({}, { json: vi.fn() }, next);
-    await new Promise(resolve => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
     expect(next).toHaveBeenCalledWith(
       expect.objectContaining({
         statusCode: 403,

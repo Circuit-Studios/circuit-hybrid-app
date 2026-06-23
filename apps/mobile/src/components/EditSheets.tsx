@@ -138,7 +138,7 @@ export function CharacterEditSheet({
       />
       <Text style={styles.fieldLabel}>Importance</Text>
       <View style={styles.optionRow}>
-        {IMPORTANCE_OPTIONS.map(opt => (
+        {IMPORTANCE_OPTIONS.map((opt) => (
           <Pressable
             key={opt}
             onPress={() => setImportance(opt)}
@@ -242,7 +242,7 @@ export function SceneEditSheet({
       />
       <Text style={styles.fieldLabel}>Location type</Text>
       <View style={styles.optionRow}>
-        {LOCATION_TYPES.map(opt => (
+        {LOCATION_TYPES.map((opt) => (
           <Pressable
             key={opt}
             onPress={() => setLocationType(opt)}
@@ -258,7 +258,7 @@ export function SceneEditSheet({
       </View>
       <Text style={styles.fieldLabel}>Time of day</Text>
       <View style={styles.optionRow}>
-        {TIMES_OF_DAY.map(opt => (
+        {TIMES_OF_DAY.map((opt) => (
           <Pressable
             key={opt}
             onPress={() => setTimeOfDay(opt)}

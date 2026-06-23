@@ -1,5 +1,6 @@
 import './load-env.js';
 import { z } from 'zod';
+import { assertProductionOtpProviders, assertResendEmailOtpConfig } from './env-guards.js';
 
 const emptyToUndefined = (value: unknown) => (value === '' ? undefined : value);
 
@@ -30,8 +31,12 @@ const schema = z.object({
   ALLOW_MOCK_OTP_IN_PROD: z.coerce.boolean().default(false),
 
   RESEND_API_KEY: optionalString,
+  RESEND_OTP_TEMPLATE_ID: optionalString,
+  RESEND_OTP_EXPIRES_MINUTES: z.coerce.number().int().positive().default(5),
   RESEND_FROM_EMAIL: optionalString,
   RESEND_REPLY_TO: optionalString,
+
+  ALLOW_DIRECT_REGISTER: z.coerce.boolean().default(false),
 
   MSG91_AUTH_KEY: optionalString,
   MSG91_SENDER_ID: optionalString,
@@ -73,22 +78,6 @@ function applyLegacyOtpProvider(data: Env): Env {
   return next;
 }
 
-function assertProductionOtpProviders(config: Env): void {
-  if (config.APP_ENV !== 'prod' || config.ALLOW_MOCK_OTP_IN_PROD) return;
-
-  const mockProviders: string[] = [];
-  if (config.EMAIL_OTP_PROVIDER === 'MOCK') mockProviders.push('EMAIL_OTP_PROVIDER=MOCK');
-  if (config.PHONE_OTP_PROVIDER === 'MOCK') mockProviders.push('PHONE_OTP_PROVIDER=MOCK');
-
-  if (mockProviders.length > 0) {
-    console.error(
-      `APP_ENV=prod cannot start with MOCK OTP providers (${mockProviders.join(', ')}). ` +
-        'Set real providers or ALLOW_MOCK_OTP_IN_PROD=true for emergency testing only.',
-    );
-    process.exit(1);
-  }
-}
-
 function loadEnv(): Env {
   const parsed = schema.safeParse(process.env);
   if (!parsed.success) {
@@ -100,6 +89,7 @@ function loadEnv(): Env {
   }
 
   const resolved = applyLegacyOtpProvider(parsed.data);
+  assertResendEmailOtpConfig(resolved);
   assertProductionOtpProviders(resolved);
   return resolved;
 }
@@ -107,5 +97,5 @@ function loadEnv(): Env {
 export const env = loadEnv();
 
 export const corsOrigins: string[] = env.CORS_ORIGINS.split(',')
-  .map(s => s.trim())
+  .map((s) => s.trim())
   .filter(Boolean);

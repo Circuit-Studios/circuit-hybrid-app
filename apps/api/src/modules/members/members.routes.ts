@@ -20,7 +20,7 @@ const inviteMemberSchema = z
     email: z.string().email().optional(),
     projectDepartmentId: z.string().uuid().optional(),
   })
-  .refine(v => v.phone || v.email, {
+  .refine((v) => v.phone || v.email, {
     message: 'Either phone or email is required',
   });
 

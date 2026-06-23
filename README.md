@@ -66,19 +66,19 @@ First-time iOS native setup: [`apps/mobile/README.md`](./apps/mobile/README.md)
 
 ## Monorepo scripts (repo root)
 
-| Command                    | Purpose                                                            |
-| -------------------------- | ------------------------------------------------------------------ |
-| `npm install`              | Install all workspace dependencies                                 |
-| `npm run setup:env`        | Create `apps/api/.env.development` + `apps/mobile/.env` if missing |
-| `npm run setup:env:api`    | API env file only                                                  |
-| `npm run setup:env:mobile` | Mobile env file only                                               |
-| `npm run format`           | Prettier write (ts, tsx, js, json, md, yml, yaml)                  |
-| `npm run format:check`     | Prettier check (CI)                                                |
-| `npm run api:dev`          | Start API with hot reload                                          |
-| `npm run mobile`           | Start Expo Metro (alias: `npm run dev:mobile`)                     |
-| `npm run typecheck`        | Typecheck mobile + API                                             |
-| `npm run lint`             | Lint both packages                                                 |
-| `npm run test`             | Run mobile Jest + API Vitest                                       |
+| Command                    | Purpose                                                                                            |
+| -------------------------- | -------------------------------------------------------------------------------------------------- |
+| `npm install`              | Install all workspace dependencies                                                                 |
+| `npm run setup:env`        | Create `apps/api/.env.development` + `apps/mobile/.env` if missing (skips with message if present) |
+| `npm run setup:env:api`    | API env file only                                                                                  |
+| `npm run setup:env:mobile` | Mobile env file only                                                                               |
+| `npm run format`           | Prettier write (ts, tsx, js, json, md, yml, yaml)                                                  |
+| `npm run format:check`     | Prettier check (CI)                                                                                |
+| `npm run api:dev`          | Start API with hot reload                                                                          |
+| `npm run mobile`           | Start Expo Metro (alias: `npm run dev:mobile`)                                                     |
+| `npm run typecheck`        | Typecheck mobile + API                                                                             |
+| `npm run lint`             | Lint both packages                                                                                 |
+| `npm run test`             | Run mobile Jest + API Vitest                                                                       |
 
 ---
 

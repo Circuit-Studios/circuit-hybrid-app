@@ -58,7 +58,7 @@ export async function sendExpoPush(messages: ExpoPushMessage[]): Promise<ExpoPus
 
   if (env.EXPO_PUSH_PROVIDER === 'MOCK') {
     logger.debug({ count: messages.length }, '[expo-push:mock] dispatched');
-    return messages.map(m => ({
+    return messages.map((m) => ({
       to: m.to,
       ticket: {
         status: 'ok' as const,

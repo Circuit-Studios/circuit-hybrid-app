@@ -11,7 +11,8 @@ import {
 } from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { buildAuthResponse } from './auth-response.js';
-import { hashPassword, verifyPassword } from './password.service.js';
+import { findOrCreateUserAfterOtp } from './auth-signup.js';
+import { verifyPassword } from './password.service.js';
 import { requestOtp, verifyOtp } from './otp.service.js';
 import { OTP_TTL_SECONDS } from './auth.constants.js';
 import { EMAIL_OTP_TTL_MS } from './email-otp.service.js';
@@ -22,27 +23,10 @@ import {
   requestOtpSchema,
   verifyOtpSchema,
   type RequestOtpBody,
-  type VerifyOtpBody,
 } from './auth.schemas.js';
 
 export const authPublicRouter: Router = Router();
 export const authProtectedRouter: Router = Router();
-
-async function linkPendingInvites(
-  userId: string,
-  phone?: string | null,
-  email?: string | null,
-): Promise<void> {
-  const or: Array<{ inviteePhone?: string; inviteeEmail?: string }> = [];
-  if (phone) or.push({ inviteePhone: phone });
-  if (email) or.push({ inviteeEmail: email });
-  if (or.length === 0) return;
-
-  await prisma.projectMember.updateMany({
-    where: { userId: null, OR: or },
-    data: { userId },
-  });
-}
 
 async function assertOtpPurpose(body: RequestOtpBody): Promise<void> {
   const purpose = body.purpose ?? 'login';
@@ -72,8 +56,10 @@ const EMAIL_OTP_TTL_SECONDS = EMAIL_OTP_TTL_MS / 1000;
 authPublicRouter.post(
   '/register',
   asyncHandler(async (_req, res) => {
-    if (env.NODE_ENV === 'production' || env.APP_ENV === 'prod') {
-      throw forbidden('Direct registration is disabled. Sign up with OTP verification.');
+    if (!env.ALLOW_DIRECT_REGISTER) {
+      throw forbidden(
+        'Direct registration is disabled. Use /auth/request-otp and /auth/verify-otp.',
+      );
     }
     throw forbidden('Direct registration is disabled. Use /auth/request-otp and /auth/verify-otp.');
   }),
@@ -101,24 +87,16 @@ authPublicRouter.post(
     const body = requestOtpSchema.parse(req.body);
     await assertOtpPurpose(body);
 
-    const purpose = body.purpose ?? 'login';
     const channel = body.channel === 'EMAIL' ? OtpChannel.EMAIL : OtpChannel.PHONE;
+    const purpose = body.purpose ?? 'login';
     if (purpose === 'signup') assertSignupChannel(channel);
     if (purpose === 'login') assertLoginChannel(channel);
 
-    if (body.channel === 'EMAIL') {
-      await requestOtp({
-        channel: OtpChannel.EMAIL,
-        target: body.email,
-        purpose: body.purpose,
-      });
-    } else {
-      await requestOtp({
-        channel: OtpChannel.PHONE,
-        target: body.phone,
-        purpose: body.purpose,
-      });
-    }
+    await requestOtp({
+      channel,
+      target: body.channel === 'EMAIL' ? body.email : body.phone,
+      purpose: body.purpose,
+    });
 
     res.json({
       ok: true,
@@ -130,79 +108,20 @@ authPublicRouter.post(
 authPublicRouter.post(
   '/verify-otp',
   asyncHandler(async (req, res) => {
-    const input: VerifyOtpBody = verifyOtpSchema.parse(req.body);
-    const verifyChannel = input.channel === 'EMAIL' ? OtpChannel.EMAIL : OtpChannel.PHONE;
-    if (input.signup) assertSignupChannel(verifyChannel);
-    else assertLoginChannel(verifyChannel);
+    const input = verifyOtpSchema.parse(req.body);
+    const channel = input.channel === 'EMAIL' ? OtpChannel.EMAIL : OtpChannel.PHONE;
 
-    if (input.channel === 'EMAIL') {
-      await verifyOtp({
-        channel: OtpChannel.EMAIL,
-        target: input.email,
-        code: input.code,
-        purpose: input.signup ? 'signup' : 'login',
-      });
-
-      let user = await prisma.user.findUnique({ where: { email: input.email } });
-      if (!user) {
-        if (!input.signup) {
-          throw badRequest(
-            'First-time sign-in requires signup payload (firstName, lastName, role)',
-          );
-        }
-        const passwordHash = input.signup.password
-          ? await hashPassword(input.signup.password)
-          : undefined;
-        user = await prisma.user.create({
-          data: {
-            email: input.email,
-            emailVerified: true,
-            phone: input.signup.phone,
-            firstName: input.signup.firstName,
-            lastName: input.signup.lastName,
-            defaultRole: input.signup.role,
-            passwordHash,
-          },
-        });
-        await linkPendingInvites(user.id, user.phone, user.email);
-      } else if (input.signup) {
-        throw conflict('An account with this email already exists');
-      }
-
-      res.json(buildAuthResponse(user));
-      return;
-    }
+    if (input.signup) assertSignupChannel(channel);
+    else assertLoginChannel(channel);
 
     await verifyOtp({
-      channel: OtpChannel.PHONE,
-      target: input.phone,
+      channel,
+      target: input.channel === 'EMAIL' ? input.email : input.phone,
       code: input.code,
       purpose: input.signup ? 'signup' : 'login',
     });
 
-    let user = await prisma.user.findUnique({ where: { phone: input.phone } });
-    if (!user) {
-      if (!input.signup) {
-        throw badRequest('First-time sign-in requires signup payload (firstName, lastName, role)');
-      }
-      const passwordHash = input.signup.password
-        ? await hashPassword(input.signup.password)
-        : undefined;
-      user = await prisma.user.create({
-        data: {
-          phone: input.phone,
-          email: input.signup.email,
-          firstName: input.signup.firstName,
-          lastName: input.signup.lastName,
-          defaultRole: input.signup.role,
-          passwordHash,
-        },
-      });
-      await linkPendingInvites(user.id, user.phone, user.email);
-    } else if (input.signup) {
-      throw conflict('An account with this phone number already exists');
-    }
-
+    const user = await findOrCreateUserAfterOtp(input);
     res.json(buildAuthResponse(user));
   }),
 );

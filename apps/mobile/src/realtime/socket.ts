@@ -5,6 +5,7 @@
 import { io, Socket } from 'socket.io-client';
 import { API_BASE_URL } from '@/api/client';
 import type { RealtimeEvent } from '@/api/types';
+import { logger } from '@/lib/logger';
 
 type EventHandler = (event: RealtimeEvent) => void;
 
@@ -23,13 +24,22 @@ class CircuitSocket {
     this.currentToken = token;
     this.socket = io(API_BASE_URL, {
       auth: { token },
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1_000,
       reconnectionDelayMax: 8_000,
       timeout: 10_000,
     });
+
+    if (__DEV__) {
+      this.socket.on('connect_error', (err) => {
+        logger.warn('socket connect_error', { message: err.message });
+      });
+      this.socket.on('disconnect', (reason) => {
+        logger.info('socket disconnect', { reason });
+      });
+    }
 
     this.socket.on('connect', () => {
       // Re-join any project rooms we were in before a disconnect. This
@@ -58,7 +68,7 @@ class CircuitSocket {
   async joinProject(projectId: string): Promise<void> {
     this.joinedProjects.add(projectId);
     if (!this.socket?.connected) return;
-    await new Promise<void>(resolve => {
+    await new Promise<void>((resolve) => {
       this.socket!.emit('join', { projectId }, () => resolve());
     });
   }
@@ -66,7 +76,7 @@ class CircuitSocket {
   async leaveProject(projectId: string): Promise<void> {
     this.joinedProjects.delete(projectId);
     if (!this.socket?.connected) return;
-    await new Promise<void>(resolve => {
+    await new Promise<void>((resolve) => {
       this.socket!.emit('leave', { projectId }, () => resolve());
     });
   }

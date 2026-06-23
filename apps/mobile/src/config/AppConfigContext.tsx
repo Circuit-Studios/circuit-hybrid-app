@@ -13,7 +13,7 @@ import { canUseFeature } from '@/config/featureAccess';
 const DEFAULT_CONFIG: PublicAppConfig = {
   appEnv: 'local',
   signupVerificationChannel: 'EMAIL',
-  loginIdentifier: 'PHONE',
+  loginIdentifier: 'EMAIL',
   features: {
     'scripts.upload': true,
     'scripts.aiAnalysis': true,

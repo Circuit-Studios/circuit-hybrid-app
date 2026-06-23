@@ -115,7 +115,7 @@ router.patch(
       if (dupe) throw conflict('Another shoot day already occupies that date');
     }
 
-    await prisma.$transaction(async tx => {
+    await prisma.$transaction(async (tx) => {
       if (input.sceneIds) {
         await tx.shootDayScene.deleteMany({ where: { shootDayId } });
         if (input.sceneIds.length > 0) {

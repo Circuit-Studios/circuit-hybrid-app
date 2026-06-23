@@ -42,10 +42,13 @@ export function ProjectTabBar({ projectId, active }: ProjectTabBarProps) {
       >
         <GlassSurface
           variant="bar"
-          style={[styles.bar, tabBarMaxWidth != null && { maxWidth: tabBarMaxWidth, alignSelf: 'center' }]}
+          style={[
+            styles.bar,
+            tabBarMaxWidth != null && { maxWidth: tabBarMaxWidth, alignSelf: 'center' },
+          ]}
         >
           <View style={[styles.row, compactTabBar && styles.rowCompact]}>
-            {TABS.map(tab => {
+            {TABS.map((tab) => {
               const isActive = tab.id === active;
               const label = compactTabBar ? tab.shortLabel : tab.label;
               return (
@@ -62,7 +65,11 @@ export function ProjectTabBar({ projectId, active }: ProjectTabBarProps) {
                 >
                   {isActive ? <GlassLens style={StyleSheet.absoluteFill} /> : null}
                   <Text
-                    style={[styles.label, compactTabBar && styles.labelCompact, isActive && styles.labelActive]}
+                    style={[
+                      styles.label,
+                      compactTabBar && styles.labelCompact,
+                      isActive && styles.labelActive,
+                    ]}
                     numberOfLines={1}
                     adjustsFontSizeToFit
                     minimumFontScale={0.8}

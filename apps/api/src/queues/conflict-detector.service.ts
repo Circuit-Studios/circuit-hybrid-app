@@ -67,7 +67,7 @@ export async function scanProjectConflicts(input: ConflictScanInput): Promise<{
     select: { userId: true, role: true, user: { select: { firstName: true, lastName: true } } },
   });
 
-  const userIds = memberships.map(m => m.userId!).filter(Boolean);
+  const userIds = memberships.map((m) => m.userId!).filter(Boolean);
   if (userIds.length > 0) {
     // For each of this project's shoot days, find any *other* project's
     // shoot day with a matching call-time member where:
@@ -268,7 +268,7 @@ export async function scanProjectConflicts(input: ConflictScanInput): Promise<{
     },
     select: { userId: true },
   });
-  const leadershipUserIds = leadership.map(m => m.userId!).filter(Boolean);
+  const leadershipUserIds = leadership.map((m) => m.userId!).filter(Boolean);
 
   let created = 0;
   for (const cand of candidates) {

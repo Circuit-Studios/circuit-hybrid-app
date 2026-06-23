@@ -27,7 +27,7 @@ export default function TeamTabScreen() {
   const { projectId } = useActiveProject();
   const { data, isLoading, error, refetch } = useTeamMembersQuery(projectId ?? undefined);
 
-  const members = (data ?? []).filter(m => m.status === 'ACTIVE');
+  const members = (data ?? []).filter((m) => m.status === 'ACTIVE');
   const { appTabBarReserve } = useChromeInsets();
 
   return (
@@ -64,7 +64,7 @@ export default function TeamTabScreen() {
           action={<Button title="Retry" onPress={() => refetch()} />}
         />
       ) : (
-        members.map(member => (
+        members.map((member) => (
           <MemberCard key={member.id} member={member} isYou={member.userId === user?.id} />
         ))
       )}

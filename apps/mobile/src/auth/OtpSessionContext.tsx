@@ -40,7 +40,7 @@ export function OtpSessionProvider({ children }: { children: ReactNode }) {
   );
 
   const extendSession = useCallback((expiresAtMs: number) => {
-    setSessionState(current => (current ? { ...current, expiresAtMs } : current));
+    setSessionState((current) => (current ? { ...current, expiresAtMs } : current));
   }, []);
 
   const clearSession = useCallback(() => {

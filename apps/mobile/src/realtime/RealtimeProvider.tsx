@@ -73,7 +73,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       const token = await storage.getToken();
       if (!token || cancelled) return;
       circuitSocket.connect(token);
-      const unsub = circuitSocket.onEvent(event => {
+      const unsub = circuitSocket.onEvent((event) => {
         for (const key of affectedKeys(event)) {
           void qc.invalidateQueries({ queryKey: key });
         }
@@ -88,7 +88,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       // Tap-to-deep-link. The backend includes `deepLink` in `data` on every
       // push, so we navigate straight to the relevant screen.
       pushUnsubRef.current = attachNotificationHandlers({
-        onTap: response => {
+        onTap: (response) => {
           const data = response.notification.request.content.data as
             | { deepLink?: string }
             | undefined;

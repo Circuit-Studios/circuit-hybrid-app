@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     (async () => {
       try {
-        const session = await storage.loadSession().catch(err => {
+        const session = await storage.loadSession().catch((err) => {
           logger.warn('auth loadSession failed; treating as signed-out', { error: String(err) });
           return null;
         });

@@ -66,7 +66,7 @@ export function DateField({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${label}, ${hasValue ? displayValue : placeholder}`}
-        onPress={() => setOpen(prev => !prev)}
+        onPress={() => setOpen((prev) => !prev)}
         style={({ pressed }) => [
           styles.inputWrap,
           error ? styles.inputError : null,

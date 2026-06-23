@@ -15,7 +15,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "test": "jest",
-    "setup:env": "sh -c 'test -f .env || cp .env.example .env'",
+    "setup:env": "sh -c 'if [ -f .env ]; then echo \"apps/mobile/.env already exists — skipping\"; else cp .env.example .env && echo \"Created apps/mobile/.env from .env.example\"; fi'",
     "generate:brand": "node scripts/generate-brand-assets.mjs"
   },
   "dependencies": {

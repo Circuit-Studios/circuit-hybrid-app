@@ -72,7 +72,7 @@ export const requestOtpSchema = requestOtpBaseSchema
       ctx.addIssue({ code: 'custom', path: ['email'], message: 'Email is required' });
     }
   })
-  .transform(data => {
+  .transform((data) => {
     const channel = resolveOtpChannel(data)!;
     if (channel === 'PHONE') {
       return {
@@ -113,7 +113,7 @@ export const verifyOtpSchema = verifyOtpBaseSchema
       ctx.addIssue({ code: 'custom', path: ['email'], message: 'Email is required' });
     }
   })
-  .transform(data => {
+  .transform((data) => {
     const channel = resolveOtpChannel(data)!;
     if (channel === 'PHONE') {
       return {

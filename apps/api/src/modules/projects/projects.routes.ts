@@ -67,7 +67,7 @@ router.get(
       orderBy: { acceptedAt: 'desc' },
     });
     res.json(
-      memberships.map(m => ({
+      memberships.map((m) => ({
         ...serializeProject(m.project),
         role: m.role,
       })),

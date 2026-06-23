@@ -79,7 +79,7 @@ export default function ScheduleScreen() {
           visible={sheetOpen}
           onClose={() => setSheetOpen(false)}
           projectId={pid}
-          existingDays={days.map(d => d.dayNumber)}
+          existingDays={days.map((d) => d.dayNumber)}
         />
       }
     >

@@ -23,7 +23,7 @@ export function ChipPicker<T extends string>({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.row}
       >
-        {options.map(option => {
+        {options.map((option) => {
           const active = value === option.value;
           return (
             <Pressable

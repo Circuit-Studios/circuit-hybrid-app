@@ -89,7 +89,7 @@ export function DropdownPicker<T extends string>(props: DropdownPickerProps<T>) 
     if (!props.value) return placeholder;
     return (
       props.formatDisplayValue?.(props.value) ??
-      options.find(option => option.value === props.value)?.label ??
+      options.find((option) => option.value === props.value)?.label ??
       placeholder
     );
   })();
@@ -98,7 +98,7 @@ export function DropdownPicker<T extends string>(props: DropdownPickerProps<T>) 
     if (isMultiple) {
       const { value, onChange } = props;
       if (value.includes(option.value)) {
-        onChange(value.filter(item => item !== option.value));
+        onChange(value.filter((item) => item !== option.value));
       } else {
         onChange([...value, option.value]);
       }
@@ -122,7 +122,7 @@ export function DropdownPicker<T extends string>(props: DropdownPickerProps<T>) 
       showsVerticalScrollIndicator
       bounces={options.length * 48 > listMaxHeight}
     >
-      {options.map(option => {
+      {options.map((option) => {
         const active = isSelected(option);
         return (
           <Pressable
@@ -231,6 +231,6 @@ export function DropdownPicker<T extends string>(props: DropdownPickerProps<T>) 
 
 function formatDefaultLabels<T extends string>(values: T[], options: PickerOption<T>[]): string {
   return values
-    .map(value => options.find(option => option.value === value)?.label ?? value)
+    .map((value) => options.find((option) => option.value === value)?.label ?? value)
     .join(', ');
 }

@@ -59,7 +59,7 @@ const PIPELINE: PipelinePhase[] = [
 ];
 
 function phaseIndex(status: ScriptAnalysisStatus): number {
-  const idx = PIPELINE.findIndex(p => p.status === status);
+  const idx = PIPELINE.findIndex((p) => p.status === status);
   if (idx >= 0) return idx;
   if (status === 'PENDING') return -1;
   if (status === 'COMPLETED') return PIPELINE.length;
@@ -76,7 +76,7 @@ export default function AIProgressScreen() {
     enabled: !!scriptId,
     // Poll until we hit a terminal state. 2.5s strikes a balance between
     // perceived liveness and not hammering the backend.
-    refetchInterval: q => {
+    refetchInterval: (q) => {
       const status = q.state.data?.script.analysisStatus;
       if (!status) return 2500;
       if (status === 'COMPLETED' || status === 'FAILED') return false;

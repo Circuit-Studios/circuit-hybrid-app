@@ -138,7 +138,7 @@ export function TaskSheet({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={formSheetStyles.chipRow}
       >
-        {departments.map(d => (
+        {departments.map((d) => (
           <Pressable
             key={d.id}
             onPress={() => setDepartmentId(d.id)}
@@ -158,7 +158,7 @@ export function TaskSheet({
 
       <FormSheetFieldLabel>Priority</FormSheetFieldLabel>
       <View style={formSheetStyles.chipRow}>
-        {PRIORITIES.map(p => (
+        {PRIORITIES.map((p) => (
           <Pressable
             key={p}
             onPress={() => setPriority(p)}
@@ -175,7 +175,7 @@ export function TaskSheet({
 
       <FormSheetFieldLabel>Status</FormSheetFieldLabel>
       <View style={formSheetStyles.chipRow}>
-        {TASK_STATUSES.map(s => (
+        {TASK_STATUSES.map((s) => (
           <Pressable
             key={s.id}
             onPress={() => setStatus(s.id)}

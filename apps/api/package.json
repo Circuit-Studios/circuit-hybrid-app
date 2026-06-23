@@ -12,7 +12,7 @@
     "dev": "NODE_ENV=development tsx watch src/server/index.ts",
     "build": "tsc -p tsconfig.json",
     "start": "NODE_ENV=production node dist/server/index.js",
-    "setup:env": "sh -c 'test -f .env.development || cp .env.example .env.development'",
+    "setup:env": "sh -c 'if [ -f .env.development ]; then echo \"apps/api/.env.development already exists — skipping\"; else cp .env.example .env.development && echo \"Created apps/api/.env.development from .env.example\"; fi'",
     "db:prepare:dev": "NODE_ENV=development node scripts/with-env.mjs bash -c 'npx prisma migrate deploy && npx prisma generate'",
     "dev:db": "npm run db:prepare:dev",
     "prisma:generate": "prisma generate",

@@ -20,14 +20,16 @@ Git tracks **`.env.example` only** — never commit real secrets.
 From the monorepo root:
 
 ```bash
+npm run setup:env
+# or individually:
 npm run setup:env:api
 npm run setup:env:mobile
 ```
 
-This creates:
+This creates (or skips with a message if already present):
 
-- `apps/api/.env.development` from `apps/api/.env.example` (if missing)
-- `apps/mobile/.env` from `apps/mobile/.env.example` (if missing)
+- `apps/api/.env.development` from `apps/api/.env.example`
+- `apps/mobile/.env` from `apps/mobile/.env.example`
 
 Then edit the files below for your workflow.
 
@@ -77,8 +79,10 @@ JWT_AUDIENCE=circuit-mobile
 JWT_EXPIRES_IN=7d
 
 # Verification — mobile reads GET /app/config (no rebuild needed to switch)
+# Sign up: OTP via SIGNUP_VERIFICATION_CHANNEL (EMAIL or PHONE)
+# Sign in (mobile): email + password via POST /auth/login — not OTP
 SIGNUP_VERIFICATION_CHANNEL=EMAIL
-LOGIN_IDENTIFIER=PHONE
+LOGIN_IDENTIFIER=EMAIL
 EMAIL_OTP_PROVIDER=MOCK
 PHONE_OTP_PROVIDER=MOCK
 OTP_SECRET=replace_with_local_otp_secret_min_32_chars
@@ -104,6 +108,7 @@ CORS_ORIGINS=http://localhost:8081,http://localhost:19006
 - Omit `REDIS_URL` completely if you are not using Redis. Blank values are treated as unset, but omitting is clearer.
 - Dev OTP code is **`111111`** when `EMAIL_OTP_PROVIDER=MOCK` or `PHONE_OTP_PROVIDER=MOCK` (and `APP_ENV` is not `prod`, unless `ALLOW_MOCK_OTP_IN_PROD=true`).
 - Toggle signup channel with `SIGNUP_VERIFICATION_CHANNEL=EMAIL|PHONE` — backend enforces; mobile follows `/app/config`.
+- **Sign in (mobile)** uses **email + password** (`POST /auth/login`). `LOGIN_IDENTIFIER` only affects legacy OTP login (`purpose=login` on `/auth/request-otp`), not the mobile Sign In tab.
 - Runtime module toggles use the `feature_flags` table (see below) — no mobile rebuild required.
 
 **2. Point mobile at localhost**
@@ -128,6 +133,22 @@ npm run mobile           # second terminal
 
 ---
 
+## Deployed API (Render)
+
+Set in Render → **Environment** (never commit):
+
+| Variable   | Render value    | Purpose                                                                         |
+| ---------- | --------------- | ------------------------------------------------------------------------------- |
+| `NODE_ENV` | `production`    | Node/Express production mode (Render always uses this at runtime)               |
+| `APP_ENV`  | `dev` or `prod` | Circuit environment — controls mock OTP guards, logging tone, `GET /app/config` |
+
+- **`APP_ENV=dev`** — shared dev/preview API (can use `MOCK` OTP providers).
+- **`APP_ENV=prod`** — production API (`EMAIL_OTP_PROVIDER=RESEND`, `PHONE_OTP_PROVIDER=MSG91`, etc.).
+
+`NODE_ENV` and `APP_ENV` are independent: local API uses `NODE_ENV=development` + `APP_ENV=local`; Render uses `NODE_ENV=production` + `APP_ENV=dev|prod`.
+
+---
+
 ## Workflow C — Production
 
 | Layer    | Config                                                                                             |
@@ -145,36 +166,46 @@ See [`apps/api/docs/DEPLOYMENT.md`](../apps/api/docs/DEPLOYMENT.md) for Render d
 | Mode                 | Mobile API URL          | Backend           | Database                       | OTP                                                     |
 | -------------------- | ----------------------- | ----------------- | ------------------------------ | ------------------------------------------------------- |
 | **Local full stack** | `http://localhost:3009` | `npm run api:dev` | Docker Postgres / Supabase dev | `EMAIL_OTP_PROVIDER=MOCK`, `PHONE_OTP_PROVIDER=MOCK`    |
-| **Mobile → Render**  | Render URL              | Render (remote)   | Render / Supabase (remote)     | Render env (see dev example below)                      |
+| **Mobile → Render**  | Render URL              | Render (remote)   | Supabase (dev project)         | Render env (see dev example below)                      |
 | **Production**       | Custom domain           | Render paid       | Supabase prod                  | `EMAIL_OTP_PROVIDER=RESEND`, `PHONE_OTP_PROVIDER=MSG91` |
 
 ---
 
 ## Resend email OTP
 
-Use when `EMAIL_OTP_PROVIDER=RESEND` (or legacy `OTP_PROVIDER=RESEND_EMAIL`).
+Use when `EMAIL_OTP_PROVIDER=RESEND`. The **From address and Subject** live in your **Resend dashboard template** — the API only needs the template id/alias and variables (`CODE`, `EXPIRES_MINUTES`, `APP_NAME`).
 
-**Render dashboard** (production source of truth — do not commit secrets):
+**Render dashboard** (deployed API — do not commit secrets):
 
-| Variable                                | Required | Notes                                                          |
-| --------------------------------------- | -------- | -------------------------------------------------------------- |
-| `APP_ENV`                               | Yes      | `prod` for production                                          |
-| `EMAIL_OTP_PROVIDER`                    | Yes      | Set to `RESEND`                                                |
-| `RESEND_API_KEY`                        | Yes      | From [resend.com](https://resend.com) → API Keys               |
-| `OTP_FROM_EMAIL` or `RESEND_FROM_EMAIL` | Yes      | Verified domain, e.g. `Circuit <noreply@yourdomain.com>`       |
-| `RESEND_REPLY_TO`                       | No       | Optional reply-to address                                      |
-| `OTP_SECRET`                            | Yes      | Min 32 chars — HMAC key for OTP hashes (never store plain OTP) |
+| Variable                     | Required | Notes                                                     |
+| ---------------------------- | -------- | --------------------------------------------------------- |
+| `EMAIL_OTP_PROVIDER`         | Yes      | Set to `RESEND`                                           |
+| `RESEND_API_KEY`             | Yes      | From [resend.com](https://resend.com) → API Keys          |
+| `RESEND_OTP_TEMPLATE_ID`     | Yes      | Published template id or alias (e.g. `circuit-email-otp`) |
+| `RESEND_OTP_EXPIRES_MINUTES` | No       | Default `5` — passed to template as `EXPIRES_MINUTES`     |
+| `OTP_SECRET`                 | Yes      | Min 32 chars — HMAC key for OTP hashes                    |
 
-**Render dev example** (shared dev API):
+**Local default:** `EMAIL_OTP_PROVIDER=MOCK` (code `111111`).
+
+**Real local Resend testing (opt-in):**
 
 ```bash
+EMAIL_OTP_PROVIDER=RESEND
+RESEND_API_KEY=re_xxxxx
+RESEND_OTP_TEMPLATE_ID=circuit-email-otp
+```
+
+**Render dev example** (shared dev API — set `NODE_ENV=production` on Render, `APP_ENV=dev`):
+
+```bash
+NODE_ENV=production
 APP_ENV=dev
 SIGNUP_VERIFICATION_CHANNEL=EMAIL
-LOGIN_IDENTIFIER=BOTH
+LOGIN_IDENTIFIER=EMAIL
 EMAIL_OTP_PROVIDER=RESEND
-PHONE_OTP_PROVIDER=MOCK
 RESEND_API_KEY=re_...
-OTP_FROM_EMAIL=Circuit <no-reply@your-verified-domain.com>
+RESEND_OTP_TEMPLATE_ID=circuit-email-otp
+PHONE_OTP_PROVIDER=MOCK
 ```
 
 **Production guard:** if `APP_ENV=prod` and any active OTP provider is `MOCK`, the API refuses to start unless `ALLOW_MOCK_OTP_IN_PROD=true`.

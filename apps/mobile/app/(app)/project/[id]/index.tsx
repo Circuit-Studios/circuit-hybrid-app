@@ -119,9 +119,9 @@ export default function ProjectWorkspaceScreen() {
   }
 
   const segments: HealthRingSegment[] = health.departments
-    .filter(d => d.required)
+    .filter((d) => d.required)
     .slice(0, 6)
-    .map(d => ({
+    .map((d) => ({
       id: d.id,
       label: d.displayName,
       value: d.progress,
@@ -201,14 +201,12 @@ export default function ProjectWorkspaceScreen() {
                 centerSub="Pre-production"
               />
               <View style={[styles.legend, isWide && styles.legendTablet]}>
-                {segments.map(seg => (
+                {segments.map((seg) => (
                   <Pressable
                     key={seg.id}
                     accessibilityRole="button"
                     accessibilityLabel={`View tasks for ${seg.label}`}
-                    onPress={() =>
-                      router.push(`/(app)/project/${project.id}/tasks?dept=${seg.id}`)
-                    }
+                    onPress={() => router.push(`/(app)/project/${project.id}/tasks?dept=${seg.id}`)}
                     style={({ pressed }) => [styles.legendRow, pressed && styles.legendRowPressed]}
                   >
                     <View style={[styles.legendDot, { backgroundColor: seg.color }]} />
@@ -234,7 +232,7 @@ export default function ProjectWorkspaceScreen() {
           <FlatList
             scrollEnabled={false}
             data={conflictsQ.data.slice(0, 5)}
-            keyExtractor={c => c.id}
+            keyExtractor={(c) => c.id}
             renderItem={({ item }) => <ConflictRow alert={item} />}
             ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
           />

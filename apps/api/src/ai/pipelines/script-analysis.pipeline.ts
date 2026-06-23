@@ -66,7 +66,7 @@ export async function analyzeScript(scriptId: string): Promise<void> {
       systemPrompt: CIRCUIT_SYSTEM_PROMPT,
       userPrompt: buildScenesPrompt(
         rawText,
-        characters.characters.map(c => c.name),
+        characters.characters.map((c) => c.name),
       ),
     });
     log.info({ count: scenes.scenes.length }, 'Scenes mapped');
@@ -200,7 +200,7 @@ async function persistSummary(
   projectId: string,
   summary: AIScriptSummary,
 ): Promise<void> {
-  await prisma.$transaction(async tx => {
+  await prisma.$transaction(async (tx) => {
     await tx.sceneAppearance.deleteMany({ where: { projectId } });
     await tx.scene.deleteMany({ where: { projectId } });
     await tx.character.deleteMany({ where: { projectId } });
@@ -208,7 +208,7 @@ async function persistSummary(
 
     // Characters
     const characterRecords = await Promise.all(
-      summary.characters.characters.map(c =>
+      summary.characters.characters.map((c) =>
         tx.character.create({
           data: {
             projectId,
@@ -220,7 +220,7 @@ async function persistSummary(
         }),
       ),
     );
-    const charByName = new Map(characterRecords.map(c => [c.name, c.id]));
+    const charByName = new Map(characterRecords.map((c) => [c.name, c.id]));
 
     // Scenes + scene appearances
     for (const [index, scene] of summary.scenes.scenes.entries()) {
@@ -241,9 +241,9 @@ async function persistSummary(
         },
       });
       const appearanceData: Prisma.SceneAppearanceCreateManyInput[] = scene.charactersPresent
-        .map(name => charByName.get(name))
+        .map((name) => charByName.get(name))
         .filter((id): id is string => Boolean(id))
-        .map(characterId => ({ projectId, sceneId: sceneRecord.id, characterId }));
+        .map((characterId) => ({ projectId, sceneId: sceneRecord.id, characterId }));
       if (appearanceData.length > 0) {
         await tx.sceneAppearance.createMany({ data: appearanceData });
       }
@@ -276,7 +276,7 @@ async function persistSummary(
     // Budget lines
     if (summary.budget.lines.length > 0) {
       await tx.budgetLine.createMany({
-        data: summary.budget.lines.map(line => ({
+        data: summary.budget.lines.map((line) => ({
           projectId,
           department: line.department,
           label: line.label,
@@ -301,5 +301,5 @@ async function persistSummary(
 
 function formatProjectLanguages(languages: ProjectLanguage[], fallback: ProjectLanguage): string {
   const list = languages.length > 0 ? languages : [fallback];
-  return list.map(l => l.charAt(0) + l.slice(1).toLowerCase()).join(', ');
+  return list.map((l) => l.charAt(0) + l.slice(1).toLowerCase()).join(', ');
 }

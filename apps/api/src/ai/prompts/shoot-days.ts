@@ -13,7 +13,7 @@ export function buildShootDaysPrompt(
     }
   }
   const lines = characters.map(
-    c => `- ${c.name} (${c.importance}) - appears in ${sceneCountByChar.get(c.name) ?? 0} scenes`,
+    (c) => `- ${c.name} (${c.importance}) - appears in ${sceneCountByChar.get(c.name) ?? 0} scenes`,
   );
 
   return `Genre: ${projectGenre}
@@ -26,7 +26,7 @@ ${lines.join('\n')}
 COMBINATION GROUPS (already optimised):
 ${combinations
   .map(
-    g =>
+    (g) =>
       `- ${g.groupLabel}: chars=[${g.characters.join(', ')}] saves ${(g.estimatedDaysIfShotSeparately - g.estimatedDaysIfShotTogether).toFixed(1)} days`,
   )
   .join('\n')}

@@ -22,8 +22,8 @@ vi.mock('../../src/config/features.js', () => ({
   isFeatureEnabled: vi.fn().mockResolvedValue(true),
 }));
 
-vi.mock('../../src/modules/auth/providers/email-otp.provider.js', () => ({
-  getEmailOtpProvider: () => ({ send: vi.fn().mockResolvedValue(undefined) }),
+vi.mock('../../src/modules/auth/providers/otp-delivery.js', () => ({
+  getOtpDeliveryProvider: () => ({ send: vi.fn().mockResolvedValue(undefined) }),
 }));
 
 describe('email-otp.service', () => {

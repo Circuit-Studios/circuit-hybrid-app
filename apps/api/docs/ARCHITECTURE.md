@@ -124,8 +124,9 @@ apps/api/
 │   │   │   ├── auth.routes.ts
 │   │   │   ├── otp.service.ts
 │   │   │   └── providers/
-│   │   │       ├── phone-otp.provider.ts    # MSG91 / MOCK (channel=PHONE)
-│   │   │       └── resend-email-otp.provider.ts  # Resend / MOCK (channel=EMAIL)
+│   │   │       ├── otp-delivery.ts          # MOCK / MSG91 / TWILIO + provider selection
+│   │   │       ├── resend-email.provider.ts # Resend hosted template (channel=EMAIL)
+│   │   │       └── types.ts
 │   │   ├── projects/                # /projects/* — create + list
 │   │   ├── scripts/                 # /projects/:id/scripts upload + analyze
 │   │   ├── members/                 # invite / accept / remove

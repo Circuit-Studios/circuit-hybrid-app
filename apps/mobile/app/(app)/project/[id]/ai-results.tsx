@@ -163,7 +163,7 @@ export default function AIResultsScreen() {
 
   const totalScenes = summary.scenes.scenes.length;
   const totalChars = summary.characters.characters.length;
-  const leadCount = summary.characters.characters.filter(c => c.importance === 'LEAD').length;
+  const leadCount = summary.characters.characters.filter((c) => c.importance === 'LEAD').length;
   const totalShootDays = summary.shootDays.totalShootDaysEstimate;
   const savings = summary.combinations.totalEstimatedSavingsDays;
   const budgetTotal = summary.budget.totalINR;
@@ -206,7 +206,7 @@ export default function AIResultsScreen() {
         trailing={canEdit ? <Text style={styles.editHint}>Tap to edit</Text> : null}
       />
       <Card>
-        {summary.characters.characters.slice(0, 8).map(c => {
+        {summary.characters.characters.slice(0, 8).map((c) => {
           const record = characterByName.get(c.name);
           return (
             <CharacterRow
@@ -231,7 +231,7 @@ export default function AIResultsScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View>
             <SceneHeader />
-            {summary.scenes.scenes.slice(0, 10).map(scene => {
+            {summary.scenes.scenes.slice(0, 10).map((scene) => {
               const record = sceneByNumber.get(scene.sceneNumber);
               return (
                 <SceneRow
@@ -249,7 +249,7 @@ export default function AIResultsScreen() {
       {summary.combinations.groups.length > 0 ? (
         <>
           <SectionHeader title="Combination scenes" sub="Bundle these to shave shoot days" />
-          {summary.combinations.groups.slice(0, 5).map(group => (
+          {summary.combinations.groups.slice(0, 5).map((group) => (
             <CombinationCard key={group.groupLabel} group={group} />
           ))}
         </>
@@ -261,7 +261,7 @@ export default function AIResultsScreen() {
         trailing={canEdit ? <Text style={styles.editHint}>Tap to edit</Text> : null}
       />
       <View style={styles.deptGrid}>
-        {summary.departments.departments.map(dept => {
+        {summary.departments.departments.map((dept) => {
           const record = departmentByKind.get(dept.kind);
           return (
             <DepartmentCard
@@ -277,7 +277,7 @@ export default function AIResultsScreen() {
 
       <SectionHeader title="Shoot days per actor" />
       <Card>
-        {summary.shootDays.perActor.slice(0, 8).map(item => (
+        {summary.shootDays.perActor.slice(0, 8).map((item) => (
           <View key={item.character} style={styles.actorRow}>
             <Text style={styles.actorName}>{item.character}</Text>
             <View style={styles.actorMeta}>
@@ -288,7 +288,7 @@ export default function AIResultsScreen() {
         ))}
         {summary.shootDays.optimizationHints.length > 0 ? (
           <View style={styles.hintsBox}>
-            {summary.shootDays.optimizationHints.slice(0, 4).map(hint => (
+            {summary.shootDays.optimizationHints.slice(0, 4).map((hint) => (
               <Text key={hint} style={styles.hint}>
                 · {hint}
               </Text>
@@ -306,7 +306,7 @@ export default function AIResultsScreen() {
         <Text style={styles.budgetTotal}>{formatCurrencyINR(budgetTotal)}</Text>
         <Text style={styles.budgetCaption}>Total across all departments</Text>
         <View style={styles.budgetList}>
-          {summary.budget.lines.slice(0, 10).map(line => {
+          {summary.budget.lines.slice(0, 10).map((line) => {
             const record = budgetByLabel.get(`${line.department}::${line.label}`);
             return (
               <BudgetRow
@@ -321,7 +321,7 @@ export default function AIResultsScreen() {
         {summary.budget.caveats.length > 0 ? (
           <View style={styles.caveatsBox}>
             <Text style={styles.caveatsTitle}>Caveats</Text>
-            {summary.budget.caveats.map(c => (
+            {summary.budget.caveats.map((c) => (
               <Text key={c} style={styles.caveat}>
                 · {c}
               </Text>

@@ -100,14 +100,14 @@ JWT_EXPIRES_IN=7d
 OTP_SECRET=your_otp_hmac_secret_min_32_chars
 
 SIGNUP_VERIFICATION_CHANNEL=EMAIL
-LOGIN_IDENTIFIER=PHONE
+LOGIN_IDENTIFIER=EMAIL
 EMAIL_OTP_PROVIDER=RESEND
 PHONE_OTP_PROVIDER=MSG91
 ALLOW_MOCK_OTP_IN_PROD=false
 
 RESEND_API_KEY=re_...
-RESEND_FROM_EMAIL=Circuit <noreply@your-verified-domain.com>
-RESEND_REPLY_TO=support@yourdomain.com
+RESEND_OTP_TEMPLATE_ID=circuit-email-otp
+RESEND_OTP_EXPIRES_MINUTES=5
 
 OPENAI_API_KEY=your_openai_key
 OPENAI_MODEL=gpt-4o
@@ -118,15 +118,18 @@ EXPO_PUSH_PROVIDER=EXPO
 CORS_ORIGINS=
 ```
 
-| Variable             | Notes                                         |
-| -------------------- | --------------------------------------------- |
-| `DATABASE_URL`       | Supabase pooler URL (recommended)             |
-| `APP_ENV`            | `prod` in production                          |
-| `EMAIL_OTP_PROVIDER` | `RESEND` for real email OTP                   |
-| `PHONE_OTP_PROVIDER` | `MSG91` for real SMS                          |
-| `OTP_SECRET`         | HMAC key for OTP hashes (≥ 32 chars)          |
-| `REDIS_URL`          | **Omit** unless using Redis — never set empty |
-| `OTP_PROVIDER`       | Legacy alias; prefer split providers above    |
+| Variable                 | Notes                                           |
+| ------------------------ | ----------------------------------------------- |
+| `NODE_ENV`               | `production` on Render (set by `npm start`)     |
+| `APP_ENV`                | `dev` (shared dev API) or `prod` (production)   |
+| `DATABASE_URL`           | Supabase pooler URL (recommended)               |
+| `EMAIL_OTP_PROVIDER`     | `RESEND` for real email OTP (hosted template)   |
+| `RESEND_API_KEY`         | Resend API key (Render Environment only)        |
+| `RESEND_OTP_TEMPLATE_ID` | Published template id/alias in Resend dashboard |
+| `PHONE_OTP_PROVIDER`     | `MSG91` for real SMS                            |
+| `OTP_SECRET`             | HMAC key for OTP hashes (≥ 32 chars)            |
+| `REDIS_URL`              | **Omit** unless using Redis — never set empty   |
+| `OTP_PROVIDER`           | Legacy alias; prefer split providers above      |
 
 Dev/preview can use `EMAIL_OTP_PROVIDER=MOCK` and `PHONE_OTP_PROVIDER=MOCK` (code `111111`).
 
@@ -184,7 +187,7 @@ GitHub Actions runs `npm ci` from the repo root, then workspace scripts (`mobile
 
 - [ ] `OPENAI_API_KEY`, `JWT_SECRET`, `OTP_SECRET` set on Render
 - [ ] `DATABASE_URL` = Supabase pooler (or chosen Postgres)
-- [ ] `EMAIL_OTP_PROVIDER=RESEND` + `RESEND_API_KEY` + `RESEND_FROM_EMAIL`
+- [ ] `EMAIL_OTP_PROVIDER=RESEND` + `RESEND_API_KEY` + `RESEND_OTP_TEMPLATE_ID`
 - [ ] `PHONE_OTP_PROVIDER=MSG91` + MSG91 keys (if phone signup enabled)
 - [ ] `APP_ENV=prod` and `ALLOW_MOCK_OTP_IN_PROD=false`
 - [ ] Migrations applied via `npm run prisma:deploy` (not in Render build/start)

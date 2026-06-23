@@ -41,8 +41,8 @@ export default function WelcomeScreen() {
             <View style={styles.copyBlock}>
               <Text style={styles.headline}>One workspace for your entire production.</Text>
               <Text style={styles.body}>
-                Upload scripts, map departments, track tasks, schedule shoot days, and keep your crew
-                aligned — before cameras roll.
+                Upload scripts, map departments, track tasks, schedule shoot days, and keep your
+                crew aligned — before cameras roll.
               </Text>
             </View>
 
@@ -57,7 +57,10 @@ export default function WelcomeScreen() {
               <Pressable
                 accessibilityRole="button"
                 onPress={() => router.push({ pathname: '/(auth)/auth', params: { tab: 'signin' } })}
-                style={({ pressed }) => [styles.secondaryBtn, pressed && styles.secondaryBtnPressed]}
+                style={({ pressed }) => [
+                  styles.secondaryBtn,
+                  pressed && styles.secondaryBtnPressed,
+                ]}
               >
                 <Text style={styles.secondaryBtnText}>Sign in</Text>
               </Pressable>

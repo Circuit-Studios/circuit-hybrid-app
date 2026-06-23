@@ -3,6 +3,17 @@ import { env } from '../../config/env.js';
 import { logger } from '../../lib/logger.js';
 import { maskOtpTarget } from './otp-target.js';
 
+export function logOtpRequested(channel: OtpChannel, target: string, purpose: string): void {
+  logger.info(
+    {
+      channel,
+      target: maskOtpTarget(channel, target),
+      purpose,
+    },
+    'auth.otp_requested',
+  );
+}
+
 export function logOtpDispatched(channel: OtpChannel, target: string, provider: string): void {
   logger.info(
     {
@@ -10,7 +21,29 @@ export function logOtpDispatched(channel: OtpChannel, target: string, provider: 
       target: maskOtpTarget(channel, target),
       provider,
     },
-    'OTP dispatched',
+    'auth.otp_dispatched',
+  );
+}
+
+export function logOtpVerified(channel: OtpChannel, target: string, purpose: string): void {
+  logger.info(
+    {
+      channel,
+      target: maskOtpTarget(channel, target),
+      purpose,
+    },
+    'auth.otp_verified',
+  );
+}
+
+export function logOtpFailed(channel: OtpChannel, target: string, reason: string): void {
+  logger.warn(
+    {
+      channel,
+      target: maskOtpTarget(channel, target),
+      reason,
+    },
+    'auth.otp_failed',
   );
 }
 

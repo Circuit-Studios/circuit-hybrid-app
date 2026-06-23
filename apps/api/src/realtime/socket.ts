@@ -64,7 +64,7 @@ export function initSocket(httpServer: HttpServer, corsOrigins: string[]): Authe
     }
   });
 
-  io.on('connection', socket => {
+  io.on('connection', (socket) => {
     void socket.join(`user:${socket.data.userId}`);
     logger.info({ userId: socket.data.userId, sid: socket.id }, 'Socket connected');
 
@@ -91,7 +91,7 @@ export function initSocket(httpServer: HttpServer, corsOrigins: string[]): Authe
       ack?.({ ok: true });
     });
 
-    socket.on('disconnect', reason => {
+    socket.on('disconnect', (reason) => {
       logger.info({ userId: socket.data.userId, sid: socket.id, reason }, 'Socket disconnected');
     });
   });

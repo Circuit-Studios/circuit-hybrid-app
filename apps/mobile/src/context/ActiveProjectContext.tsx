@@ -13,7 +13,7 @@ export function ActiveProjectProvider({ children }: { children: ReactNode }) {
   const [overrideId, setOverrideId] = useState<string | null>(null);
 
   const projectId = useMemo(() => {
-    if (overrideId && projects?.some(p => p.id === overrideId)) return overrideId;
+    if (overrideId && projects?.some((p) => p.id === overrideId)) return overrideId;
     return projects?.[0]?.id ?? null;
   }, [overrideId, projects]);
 

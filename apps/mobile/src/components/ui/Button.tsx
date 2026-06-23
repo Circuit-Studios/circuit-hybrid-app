@@ -32,7 +32,7 @@ export function Button({
 }: ButtonProps) {
   const isDisabled = disabled || loading;
 
-  const handlePress: NonNullable<PressableProps['onPress']> = event => {
+  const handlePress: NonNullable<PressableProps['onPress']> = (event) => {
     logger.debug('button press', { title });
     onPress?.(event);
   };

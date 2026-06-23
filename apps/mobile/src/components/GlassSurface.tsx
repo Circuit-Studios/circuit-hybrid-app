@@ -77,17 +77,9 @@ export function GlassSurface({
       />
       <View
         pointerEvents="none"
-        style={[
-          styles.specular,
-          { borderRadius: cornerRadius, borderTopColor: preset.specular },
-        ]}
+        style={[styles.specular, { borderRadius: cornerRadius, borderTopColor: preset.specular }]}
       />
-      <View
-        style={[
-          styles.content,
-          { borderRadius: cornerRadius, borderColor: preset.border },
-        ]}
-      >
+      <View style={[styles.content, { borderRadius: cornerRadius, borderColor: preset.border }]}>
         {children}
       </View>
     </View>

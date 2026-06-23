@@ -44,7 +44,7 @@ export function RolePicker({
   placeholder = 'Select a role',
 }: RolePickerProps) {
   const roles = ROLES_BY_CTX[signupContext];
-  const options = roles.map(role => ({ value: role, label: formatRole(role) }));
+  const options = roles.map((role) => ({ value: role, label: formatRole(role) }));
 
   if (variant === 'dropdown') {
     return (

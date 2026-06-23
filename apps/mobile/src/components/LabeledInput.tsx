@@ -38,11 +38,11 @@ export const LabeledInput = forwardRef<TextInput, LabeledInputProps>(function La
           style={styles.input}
           placeholderTextColor={colors.textMuted}
           selectionColor={colors.accent}
-          onFocus={e => {
+          onFocus={(e) => {
             setFocused(true);
             onFocus?.(e);
           }}
-          onBlur={e => {
+          onBlur={(e) => {
             setFocused(false);
             onBlur?.(e);
           }}

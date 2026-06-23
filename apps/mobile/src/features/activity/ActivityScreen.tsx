@@ -81,7 +81,7 @@ export default function ActivityScreen() {
       </View>
 
       <View style={styles.filters}>
-        {FILTERS.map(f => (
+        {FILTERS.map((f) => (
           <GlassFilterChip
             key={f.id}
             label={f.label}
@@ -125,7 +125,7 @@ export default function ActivityScreen() {
             renderItem={({ item: [label, items] }) => (
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>{label}</Text>
-                {items.map(row => (
+                {items.map((row) => (
                   <Card key={row.id} style={styles.feedCard}>
                     <View style={styles.feedHead}>
                       <View style={styles.avatar}>

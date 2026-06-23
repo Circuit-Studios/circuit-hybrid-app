@@ -121,7 +121,7 @@ router.get(
       tasksByDept.set(row.departmentId, bucket);
     }
 
-    const segments = departments.map(d => ({
+    const segments = departments.map((d) => ({
       ...d,
       tasks: tasksByDept.get(d.id) ?? { todo: 0, inProgress: 0, done: 0, blocked: 0 },
     }));
@@ -129,7 +129,7 @@ router.get(
     // Weighted average across required departments only — optional depts
     // (like POST_DI in early pre-prod) shouldn't drag the headline number
     // down before they've started.
-    const required = segments.filter(s => s.required);
+    const required = segments.filter((s) => s.required);
     const overallProgress = required.length
       ? Math.round(required.reduce((sum, s) => sum + s.progress, 0) / required.length)
       : 0;

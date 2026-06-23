@@ -176,7 +176,7 @@ export function PhoneField({
           />
           <FlatList
             data={countries}
-            keyExtractor={item => item}
+            keyExtractor={(item) => item}
             keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => {
               const active = item === country;

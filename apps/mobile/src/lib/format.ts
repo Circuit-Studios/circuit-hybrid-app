@@ -56,7 +56,7 @@ export function formatProjectLanguages(project: {
 export function formatRole(role: string): string {
   return role
     .split('_')
-    .map(w => w.charAt(0) + w.slice(1).toLowerCase())
+    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
     .join(' ');
 }
 
@@ -75,7 +75,7 @@ export function formatUserInitials(user: { firstName: string; lastName: string }
 export function formatStatus(status: string): string {
   return status
     .split('_')
-    .map(w => w.charAt(0) + w.slice(1).toLowerCase())
+    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
     .join(' ');
 }
 

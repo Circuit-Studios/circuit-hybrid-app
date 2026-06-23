@@ -1,11 +1,7 @@
 import { useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useContentFrame } from '@/hooks/useContentFrame';
-import {
-  getAppTabBarReserve,
-  getProjectTabBarReserve,
-  isTabletWidth,
-} from '@/theme/layout';
+import { getAppTabBarReserve, getProjectTabBarReserve, isTabletWidth } from '@/theme/layout';
 import { spacing } from '@/theme';
 
 /**

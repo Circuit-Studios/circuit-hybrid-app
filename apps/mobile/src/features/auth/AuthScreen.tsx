@@ -7,13 +7,11 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
-  type TextInputProps,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { CircuitLogo } from '@/components/CircuitLogo';
+import { AuthField } from '@/components/auth/AuthField';
 import { usePhoneFieldState } from '@/components/PhoneField';
 import { PasswordField } from '@/components/auth/PasswordField';
 import { SignupFormFields } from '@/features/auth/SignupFormFields';
@@ -256,7 +254,7 @@ export default function AuthScreen() {
                 attempted={attempted}
                 signupPhoneRequired={signupPhoneRequired}
                 onRoleDropdownOpen={handleRoleDropdownOpen}
-                onRoleFieldLayout={y => {
+                onRoleFieldLayout={(y) => {
                   roleFieldY.current = y;
                 }}
                 compact={compact || isSignup}
@@ -329,40 +327,6 @@ export default function AuthScreen() {
   );
 }
 
-function AuthField({
-  label,
-  placeholder,
-  value,
-  onChangeText,
-  icon,
-  compact = false,
-  ...rest
-}: {
-  label: string;
-  placeholder: string;
-  value: string;
-  onChangeText: (v: string) => void;
-  icon: keyof typeof Ionicons.glyphMap;
-  compact?: boolean;
-} & TextInputProps) {
-  return (
-    <View style={[styles.fieldBlock, compact && styles.fieldBlockCompact]}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <View style={styles.fieldInputWrap}>
-        <TextInput
-          style={styles.fieldInput}
-          placeholder={placeholder}
-          placeholderTextColor={colors.textMuted}
-          value={value}
-          onChangeText={onChangeText}
-          {...rest}
-        />
-        <Ionicons name={icon} size={18} color={colors.textMuted} style={styles.fieldIcon} />
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F3F0EA' },
   flex: { flex: 1 },
@@ -411,27 +375,6 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: colors.surface },
   tabText: { ...typography.bodyStrong, color: colors.textMuted },
   tabTextActive: { color: colors.textPrimary },
-  fieldBlock: { marginBottom: spacing.lg },
-  fieldBlockCompact: { marginBottom: spacing.md },
-  fieldLabel: { ...typography.micro, color: colors.textMuted, marginBottom: spacing.xs },
-  fieldInputWrap: {
-    backgroundColor: colors.glass,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    borderRadius: radius.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    minHeight: 52,
-  },
-  fieldInput: {
-    flex: 1,
-    ...typography.body,
-    color: colors.textPrimary,
-    paddingVertical: spacing.md,
-  },
-  fieldIcon: { marginLeft: spacing.sm },
-  phoneBlock: { marginBottom: spacing.lg },
   passwordBlock: { marginBottom: spacing.lg },
   cta: {
     backgroundColor: colors.brand,

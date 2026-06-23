@@ -40,8 +40,8 @@ export default function TeamScreen() {
     },
   });
 
-  const active = (membersQ.data ?? []).filter(m => m.status === 'ACTIVE');
-  const invited = (membersQ.data ?? []).filter(m => m.status === 'INVITED');
+  const active = (membersQ.data ?? []).filter((m) => m.status === 'ACTIVE');
+  const invited = (membersQ.data ?? []).filter((m) => m.status === 'INVITED');
 
   function confirmRemove(member: ProjectMember) {
     if (!canRemoveMember(member)) return;
@@ -103,7 +103,7 @@ export default function TeamScreen() {
               <Text style={styles.empty}>No active members yet.</Text>
             </Card>
           ) : (
-            active.map(m => (
+            active.map((m) => (
               <MemberRow
                 key={m.id}
                 member={m}
@@ -116,7 +116,7 @@ export default function TeamScreen() {
           {invited.length > 0 ? (
             <>
               <Text style={styles.sectionLabel}>Pending invites ({invited.length})</Text>
-              {invited.map(m => (
+              {invited.map((m) => (
                 <MemberRow
                   key={m.id}
                   member={m}

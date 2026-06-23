@@ -62,7 +62,7 @@ export default function NotificationsScreen() {
         limit: 30,
       }),
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: last => last.nextCursor ?? undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
   });
 
   const markRead = useMutation({
@@ -82,7 +82,7 @@ export default function NotificationsScreen() {
   });
 
   const items = useMemo(
-    () => infinite.data?.pages.flatMap(p => p.items) ?? [],
+    () => infinite.data?.pages.flatMap((p) => p.items) ?? [],
     [infinite.data?.pages],
   );
 
@@ -130,7 +130,7 @@ export default function NotificationsScreen() {
       ) : (
         <FlatList
           data={listData}
-          keyExtractor={entry =>
+          keyExtractor={(entry) =>
             entry.type === 'header' ? `header-${entry.title}` : entry.item.id
           }
           renderItem={({ item: entry }) =>

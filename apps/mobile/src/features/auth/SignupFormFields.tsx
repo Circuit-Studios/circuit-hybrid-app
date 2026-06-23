@@ -1,11 +1,10 @@
-import { View, Text, TextInput, StyleSheet } from 'react-native';
-import type { TextInputProps } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, StyleSheet } from 'react-native';
 import { PhoneField, usePhoneFieldState } from '@/components/PhoneField';
 import { DropdownPicker } from '@/components/pickers/DropdownPicker';
+import { AuthField } from '@/components/auth/AuthField';
 import { PasswordField } from '@/components/auth/PasswordField';
 import type { UserRole } from '@/api/types';
-import { colors, radius, spacing, typography } from '@/theme';
+import { spacing } from '@/theme';
 
 export type SignupVerificationChannel = 'EMAIL' | 'PHONE';
 
@@ -36,44 +35,7 @@ export interface SignupFormFieldsProps {
   compact?: boolean;
 }
 
-function AuthField({
-  label,
-  placeholder,
-  value,
-  onChangeText,
-  icon,
-  compact = false,
-  ...rest
-}: {
-  label: string;
-  placeholder: string;
-  value: string;
-  onChangeText: (v: string) => void;
-  icon: keyof typeof Ionicons.glyphMap;
-  compact?: boolean;
-} & TextInputProps) {
-  return (
-    <View style={[styles.field, compact && styles.fieldCompact]}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      <View style={styles.fieldRow}>
-        <Ionicons name={icon} size={18} color={colors.textMuted} style={styles.fieldIcon} />
-        <TextInput
-          placeholder={placeholder}
-          placeholderTextColor={colors.textMuted}
-          value={value}
-          onChangeText={onChangeText}
-          style={styles.fieldInput}
-          {...rest}
-        />
-      </View>
-    </View>
-  );
-}
-
-/**
- * Channel-aware signup fields. PHONE verifies by SMS today; EMAIL slot is ready
- * for a future verification channel without restructuring the screen.
- */
+/** Channel-aware signup fields. EMAIL verifies via Resend; PHONE via SMS OTP. */
 export function SignupFormFields({
   channel,
   fullName,
@@ -92,7 +54,9 @@ export function SignupFormFields({
   compact,
 }: SignupFormFieldsProps) {
   const otpTargetHint =
-    channel === 'EMAIL' ? "We'll email your verification code." : 'OTP is sent to your phone.';
+    channel === 'EMAIL'
+      ? "We'll email a 6-digit code to verify your account."
+      : 'OTP is sent to your phone.';
 
   return (
     <>
@@ -129,7 +93,7 @@ export function SignupFormFields({
             nationalNumber={phoneField.nationalNumber}
             onCountryChange={phoneField.setCountry}
             onNationalNumberChange={phoneField.setNationalNumber}
-            hint="Used for crew invites — we'll email your verification code."
+            hint="Used for crew invites — optional contact number."
             showError={attempted && !!phoneField.nationalNumber && !phoneField.isValid}
             error={phoneField.error ?? undefined}
           />
@@ -167,14 +131,14 @@ export function SignupFormFields({
       ) : null}
 
       <View
-        onLayout={event => {
+        onLayout={(event) => {
           onRoleFieldLayout(event.nativeEvent.layout.y);
         }}
       >
         <DropdownPicker
           label="I am a"
           placeholder="Select your role"
-          options={SIGNUP_ROLES.map(item => ({ value: item.id, label: item.label }))}
+          options={SIGNUP_ROLES.map((item) => ({ value: item.id, label: item.label }))}
           value={role}
           onChange={onRoleChange}
           onOpenChange={onRoleDropdownOpen}
@@ -189,30 +153,6 @@ export function SignupFormFields({
 }
 
 const styles = StyleSheet.create({
-  field: { marginBottom: spacing.lg },
-  fieldCompact: { marginBottom: spacing.md },
-  fieldLabel: {
-    ...typography.micro,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  fieldRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.glass,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    borderRadius: radius.lg,
-    minHeight: 52,
-    paddingHorizontal: spacing.md,
-  },
-  fieldIcon: { marginRight: spacing.sm },
-  fieldInput: {
-    flex: 1,
-    color: colors.textPrimary,
-    ...typography.body,
-    paddingVertical: spacing.md,
-  },
   phoneBlock: { marginBottom: spacing.lg },
   passwordBlock: { marginBottom: spacing.lg },
 });

@@ -74,7 +74,7 @@ export default function ProjectList() {
         <FlatList
           contentContainerStyle={styles.list}
           data={projects}
-          keyExtractor={p => p.id}
+          keyExtractor={(p) => p.id}
           renderItem={({ item }) => <ProjectCard project={item} />}
           onRefresh={() => {
             void refetch();
@@ -88,7 +88,7 @@ export default function ProjectList() {
                 <Text style={styles.inviteHeader}>
                   Pending invite{invites.length === 1 ? '' : 's'} ({invites.length})
                 </Text>
-                {invites.map(inv => (
+                {invites.map((inv) => (
                   <InviteCard
                     key={inv.id}
                     invite={inv}

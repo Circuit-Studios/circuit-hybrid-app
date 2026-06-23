@@ -101,7 +101,7 @@ router.post(
 
     // Fire-and-forget. The pipeline emits its own progress updates which
     // the workspace screens listen to over Socket.IO.
-    void analyzeScript(scriptId).catch(err => {
+    void analyzeScript(scriptId).catch((err) => {
       logger.error({ err, scriptId }, 'analyzeScript background failure');
     });
 

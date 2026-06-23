@@ -2,8 +2,9 @@ import { EmailOtpPurpose, OtpChannel } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { badRequest, unauthorized } from '../../lib/http.js';
 import { generateSixDigitOtp, hashOtpCode, normalizeEmail, verifyOtpCode } from './otp-crypto.js';
-import { getEmailOtpProvider } from './providers/email-otp.provider.js';
+import { getOtpDeliveryProvider } from './providers/otp-delivery.js';
 import { assertOtpChannelEnabled } from './verification-policy.js';
+import { logOtpFailed, logOtpRequested, logOtpVerified } from './otp-logging.js';
 
 export const EMAIL_OTP_TTL_MS = 5 * 60 * 1000;
 export const EMAIL_OTP_MAX_ATTEMPTS = 5;
@@ -12,6 +13,10 @@ export const EMAIL_OTP_COOLDOWN_SECONDS = 45;
 export const GENERIC_SEND_SUCCESS = 'If the email is valid, a verification code has been sent.';
 
 const GENERIC_VERIFY_FAILURE = 'Invalid or expired verification code.';
+
+function toOtpDeliveryPurpose(purpose: EmailOtpPurpose): 'signup' | 'login' {
+  return purpose === EmailOtpPurpose.LOGIN ? 'login' : 'signup';
+}
 
 export function toEmailOtpPurpose(purpose?: string): EmailOtpPurpose {
   switch (purpose?.toLowerCase()) {
@@ -75,7 +80,20 @@ export async function sendEmailOtp(
     },
   });
 
-  await getEmailOtpProvider().send(normalized, plainOtp);
+  const deliveryPurpose = toOtpDeliveryPurpose(purpose);
+  logOtpRequested(OtpChannel.EMAIL, normalized, deliveryPurpose);
+
+  try {
+    await getOtpDeliveryProvider('EMAIL').send({
+      channel: 'EMAIL',
+      target: normalized,
+      code: plainOtp,
+      purpose: deliveryPurpose,
+    });
+  } catch (err) {
+    logOtpFailed(OtpChannel.EMAIL, normalized, err instanceof Error ? err.message : 'send_failed');
+    throw err;
+  }
 }
 
 export async function verifyEmailOtp(
@@ -105,6 +123,7 @@ export async function verifyEmailOtp(
       where: { id: record.id },
       data: { attempts: { increment: 1 } },
     });
+    logOtpFailed(OtpChannel.EMAIL, normalized, 'invalid_code');
     throw unauthorized(GENERIC_VERIFY_FAILURE);
   }
 
@@ -119,4 +138,6 @@ export async function verifyEmailOtp(
       data: { emailVerified: true },
     }),
   ]);
+
+  logOtpVerified(OtpChannel.EMAIL, normalized, purposeToApiLabel(purpose));
 }

@@ -47,7 +47,7 @@ export default function ScheduleTabScreen() {
   const today = new Date();
   const cards = useMemo(() => {
     const days = scheduleQ.data ?? [];
-    return days.map(day => {
+    return days.map((day) => {
       const date = new Date(day.date);
       let state: DayState = 'soon';
       if (date < today && !isSameDay(date, today)) state = 'done';
@@ -58,9 +58,9 @@ export default function ScheduleTabScreen() {
   }, [scheduleQ.data, today]);
 
   const summary = useMemo(() => {
-    const done = cards.filter(c => c.state === 'done').length;
-    const shooting = cards.filter(c => c.state === 'today').length;
-    const upcoming = cards.filter(c => c.state === 'soon').length;
+    const done = cards.filter((c) => c.state === 'done').length;
+    const shooting = cards.filter((c) => c.state === 'today').length;
+    const upcoming = cards.filter((c) => c.state === 'soon').length;
     return { done, shooting, upcoming };
   }, [cards]);
 
@@ -93,7 +93,7 @@ export default function ScheduleTabScreen() {
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.weekStrip}>
-        {weekDays.map(d => {
+        {weekDays.map((d) => {
           const selected = isSameDay(d, today);
           return (
             <View key={d.toISOString()} style={styles.weekCell}>
@@ -126,7 +126,7 @@ export default function ScheduleTabScreen() {
       ) : (
         <>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.cards}>
-            {cards.map(card => (
+            {cards.map((card) => (
               <View
                 key={card.id}
                 style={[

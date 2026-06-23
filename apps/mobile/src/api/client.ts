@@ -59,7 +59,7 @@ export function setAuthToken(token: string | null): void {
   authToken = token;
 }
 
-api.interceptors.request.use(async config => {
+api.interceptors.request.use(async (config) => {
   config.headers = config.headers ?? {};
   const { requestId, headers: idHeaders } = withRequestId();
   for (const [key, value] of Object.entries(idHeaders)) {
@@ -86,7 +86,7 @@ api.interceptors.request.use(async config => {
 
 function isPublicAuthRequest(config: InternalAxiosRequestConfig | undefined): boolean {
   const url = config?.url ?? '';
-  return PUBLIC_AUTH_PATHS.some(path => url.includes(path));
+  return PUBLIC_AUTH_PATHS.some((path) => url.includes(path));
 }
 
 function requestHadAuthHeader(config: InternalAxiosRequestConfig | undefined): boolean {
@@ -111,7 +111,7 @@ function logTrackedResponse(
 }
 
 api.interceptors.response.use(
-  res => {
+  (res) => {
     if (res.config.circuitMeta) {
       logTrackedResponse(
         res.config.circuitMeta,

@@ -7,7 +7,7 @@ export default function TabsLayout() {
   return (
     <ActiveProjectProvider>
       <Tabs
-        tabBar={props => <AppTabBar {...(props as AppTabBarProps)} />}
+        tabBar={(props) => <AppTabBar {...(props as AppTabBarProps)} />}
         screenOptions={{
           headerShown: false,
           sceneStyle: { backgroundColor: colors.bg },

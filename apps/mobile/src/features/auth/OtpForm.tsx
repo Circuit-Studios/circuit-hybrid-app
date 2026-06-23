@@ -71,7 +71,7 @@ export default function OtpForm() {
 
   useEffect(() => {
     if (cooldown <= 0) return;
-    const t = setTimeout(() => setCooldown(c => c - 1), 1000);
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [cooldown]);
 
@@ -138,17 +138,18 @@ export default function OtpForm() {
     setResending(true);
     setError(null);
     try {
+      const otpPurpose = session.mode === 'login' ? 'login' : 'signup';
       const { ttlSeconds } =
         channel === 'EMAIL'
           ? await requestOtp({
               channel: 'EMAIL',
               email: session.email!,
-              purpose: 'signup',
+              purpose: otpPurpose,
             })
           : await requestOtp({
               channel: 'PHONE',
               phone: session.phone!,
-              purpose: 'signup',
+              purpose: otpPurpose,
             });
       extendSession(Date.now() + ttlSeconds * 1000);
       setCooldown(RESEND_COOLDOWN);
@@ -209,7 +210,7 @@ export default function OtpForm() {
         <TextInput
           ref={inputRef}
           value={code}
-          onChangeText={value => {
+          onChangeText={(value) => {
             const next = value.replace(/[^0-9]/g, '').slice(0, 6);
             setCode(next);
             if (next.length === 6) void handleVerify(next);

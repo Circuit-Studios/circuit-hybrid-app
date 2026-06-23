@@ -8,12 +8,12 @@ export function buildCombinationsPrompt(
   return `Genre: ${projectGenre}
 
 CHARACTERS:
-${characters.map(c => `- ${c.name} (${c.importance})`).join('\n')}
+${characters.map((c) => `- ${c.name} (${c.importance})`).join('\n')}
 
 SCENES (sceneNumber → characters):
 ${scenes
   .map(
-    s =>
+    (s) =>
       `${s.sceneNumber}: [${s.charactersPresent.join(', ')}] ${s.locationType} ${s.timeOfDay}${s.hasSong ? ' SONG' : ''}${s.hasStunts ? ' STUNTS' : ''}`,
   )
   .join('\n')}

@@ -110,7 +110,7 @@ router.get(
       orderBy: [{ department: 'asc' }, { label: 'asc' }],
     });
     res.json(
-      rows.map(r => ({
+      rows.map((r) => ({
         ...r,
         amountINR: r.amountINR.toString(),
       })),
@@ -122,7 +122,7 @@ router.get(
 // BigInt manually so we can give a friendly error.
 const amountINRSchema = z
   .union([z.number().int().nonnegative(), z.string().regex(/^\d+$/)])
-  .transform(v => BigInt(typeof v === 'number' ? v : v));
+  .transform((v) => BigInt(typeof v === 'number' ? v : v));
 
 const patchBudgetLineSchema = z.object({
   label: z.string().trim().min(1).max(200).optional(),

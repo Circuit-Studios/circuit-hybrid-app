@@ -136,7 +136,7 @@ router.patch(
       }
       const allowedKeys: Array<keyof typeof input> = ['status'];
       const restricted = Object.keys(input).filter(
-        k => !allowedKeys.includes(k as keyof typeof input),
+        (k) => !allowedKeys.includes(k as keyof typeof input),
       );
       if (restricted.length > 0) {
         throw forbidden(`Cannot modify fields: ${restricted.join(', ')} as an assignee`);
@@ -171,7 +171,7 @@ router.patch(
       deptsToRecompute.add(existing.departmentId);
       deptsToRecompute.add(input.departmentId);
     }
-    await Promise.all([...deptsToRecompute].map(id => recomputeDepartmentProgress(id)));
+    await Promise.all([...deptsToRecompute].map((id) => recomputeDepartmentProgress(id)));
 
     emitToProject(existing.projectId, 'task.updated', {
       taskId: updated.id,

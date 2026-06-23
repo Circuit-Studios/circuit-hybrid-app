@@ -27,8 +27,10 @@ vi.mock('../../src/modules/auth/email-otp.service.js', () => ({
     p === 'signup' ? 'SIGNUP' : p === 'login' ? 'LOGIN' : 'VERIFY_EMAIL',
 }));
 
-vi.mock('../../src/modules/auth/providers/phone-otp.provider.js', () => ({
-  getPhoneOtpProvider: () => ({ send: vi.fn().mockResolvedValue(undefined) }),
+vi.mock('../../src/modules/auth/providers/otp-delivery.js', () => ({
+  getOtpDeliveryProvider: () => ({
+    send: vi.fn().mockResolvedValue(undefined),
+  }),
 }));
 
 describe('otp.service', () => {

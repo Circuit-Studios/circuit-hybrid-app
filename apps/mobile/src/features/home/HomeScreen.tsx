@@ -144,7 +144,7 @@ export default function HomeScreen() {
             </Pressable>
           </View>
 
-          {data.productions.map(p => (
+          {data.productions.map((p) => (
             <Card key={p.id} style={styles.productionCard}>
               <Pressable
                 onPress={() => router.push(`/(app)/project/${p.id}`)}
