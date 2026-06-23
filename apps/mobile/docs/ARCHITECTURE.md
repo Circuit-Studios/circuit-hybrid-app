@@ -145,13 +145,13 @@ src/
 
 **Rules:**
 
-| Layer | Responsibility |
-|-------|----------------|
-| `app/` routes | Navigation + screen composition only (re-export feature screens) |
-| `src/features/*` | Reusable business UI, forms, hooks |
-| `src/api/*` | HTTP clients and shared types — no React |
-| `src/components/ui/*` | Generic buttons, inputs, empty/error/loading states |
-| `src/components/project/*` | Project workspace chrome (tab bar, scaffold) |
+| Layer                      | Responsibility                                                   |
+| -------------------------- | ---------------------------------------------------------------- |
+| `app/` routes              | Navigation + screen composition only (re-export feature screens) |
+| `src/features/*`           | Reusable business UI, forms, hooks                               |
+| `src/api/*`                | HTTP clients and shared types — no React                         |
+| `src/components/ui/*`      | Generic buttons, inputs, empty/error/loading states              |
+| `src/components/project/*` | Project workspace chrome (tab bar, scaffold)                     |
 
 **Migration status:** auth, projects list, and form sheets (`TaskSheet`, `ShootDaySheet`, `InviteMemberSheet`, `CreateProjectSheet`) extracted; `qk` query key factory and `components/ui/` in place; task board / schedule timeline / team list UI still in route files — move incrementally.
 
@@ -159,19 +159,19 @@ src/
 
 ## 5. v1 screens
 
-| Screen | v1 | Content source |
-|---|---|---|
-| Welcome / Login / Signup / OTP | ✅ | existing flow, restyled |
-| Projects list | ✅ | existing, restyled |
-| Create project | ✅ | existing, restyled |
-| Project workspace (overview + Health Ring) | ✅ | existing, restyled |
-| Tasks board | ✅ | existing, restyled |
-| Schedule | ✅ | existing, restyled |
-| Conflict / alerts (in‑app + notifications) | ✅ | Module 5, restyled |
-| Team (members/invite) | ✅ basic | existing; advanced roles deferred |
-| Notifications | ✅ | existing, restyled |
-| Account / settings | ✅ | existing, restyled |
-| Upload script / AI progress / AI results | ⏳ deferred | kept, not shipped in v1 |
+| Screen                                     | v1          | Content source                    |
+| ------------------------------------------ | ----------- | --------------------------------- |
+| Welcome / Login / Signup / OTP             | ✅          | existing flow, restyled           |
+| Projects list                              | ✅          | existing, restyled                |
+| Create project                             | ✅          | existing, restyled                |
+| Project workspace (overview + Health Ring) | ✅          | existing, restyled                |
+| Tasks board                                | ✅          | existing, restyled                |
+| Schedule                                   | ✅          | existing, restyled                |
+| Conflict / alerts (in‑app + notifications) | ✅          | Module 5, restyled                |
+| Team (members/invite)                      | ✅ basic    | existing; advanced roles deferred |
+| Notifications                              | ✅          | existing, restyled                |
+| Account / settings                         | ✅          | existing, restyled                |
+| Upload script / AI progress / AI results   | ⏳ deferred | kept, not shipped in v1           |
 
 Per‑screen field lists and copy follow the **PDF** — **TBD**.
 

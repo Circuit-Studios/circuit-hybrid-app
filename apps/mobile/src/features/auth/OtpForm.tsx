@@ -35,8 +35,7 @@ export default function OtpForm() {
 
   const boxSize = useMemo(() => getOtpBoxSize(contentWidth), [contentWidth]);
   const channel = session?.channel ?? 'EMAIL';
-  const destination =
-    channel === 'EMAIL' ? session?.email ?? '' : session?.phone ?? '';
+  const destination = channel === 'EMAIL' ? (session?.email ?? '') : (session?.phone ?? '');
 
   useEffect(() => {
     if (!session) {

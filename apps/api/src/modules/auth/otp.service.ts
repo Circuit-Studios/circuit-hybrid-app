@@ -5,11 +5,7 @@ import { OTP_TTL_SECONDS } from './auth.constants.js';
 import { normalizeOtpTarget } from './otp-target.js';
 import { getPhoneOtpProvider } from './providers/phone-otp.provider.js';
 import { generateSixDigitOtp, hashOtpCode, verifyOtpCode } from './otp-crypto.js';
-import {
-  sendEmailOtp,
-  toEmailOtpPurpose,
-  verifyEmailOtp,
-} from './email-otp.service.js';
+import { sendEmailOtp, toEmailOtpPurpose, verifyEmailOtp } from './email-otp.service.js';
 import { assertOtpChannelEnabled } from './verification-policy.js';
 
 export const OTP_RESEND_COOLDOWN_SECONDS = 30;
@@ -41,10 +37,7 @@ export async function requestOtp({ channel, target, purpose }: RequestOtpInput):
     where: { channel, target: normalized, consumed: false },
     orderBy: { createdAt: 'desc' },
   });
-  if (
-    recent &&
-    Date.now() - recent.createdAt.getTime() < OTP_RESEND_COOLDOWN_SECONDS * 1000
-  ) {
+  if (recent && Date.now() - recent.createdAt.getTime() < OTP_RESEND_COOLDOWN_SECONDS * 1000) {
     throw badRequest(
       `Please wait before requesting another code (${OTP_RESEND_COOLDOWN_SECONDS}s).`,
     );
@@ -67,12 +60,7 @@ export async function requestOtp({ channel, target, purpose }: RequestOtpInput):
   await getPhoneOtpProvider().send(normalized, plainOtp);
 }
 
-export async function verifyOtp({
-  channel,
-  target,
-  code,
-  purpose,
-}: VerifyOtpInput): Promise<true> {
+export async function verifyOtp({ channel, target, code, purpose }: VerifyOtpInput): Promise<true> {
   await assertOtpChannelEnabled(channel);
 
   if (channel === OtpChannel.EMAIL) {

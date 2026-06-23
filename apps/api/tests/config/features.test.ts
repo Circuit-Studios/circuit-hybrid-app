@@ -21,9 +21,8 @@ describe('features service', () => {
       { key: 'scripts.upload', enabled: false, configJson: null },
     ]);
 
-    const { isFeatureEnabled, clearFeatureFlagCacheForTests } = await import(
-      '../../src/config/features.js'
-    );
+    const { isFeatureEnabled, clearFeatureFlagCacheForTests } =
+      await import('../../src/config/features.js');
     clearFeatureFlagCacheForTests();
     await expect(isFeatureEnabled('scripts.upload')).resolves.toBe(false);
   });
@@ -31,9 +30,8 @@ describe('features service', () => {
   it('falls back to safe defaults when key missing', async () => {
     prismaMock.featureFlag.findMany.mockResolvedValue([]);
 
-    const { isFeatureEnabled, clearFeatureFlagCacheForTests } = await import(
-      '../../src/config/features.js'
-    );
+    const { isFeatureEnabled, clearFeatureFlagCacheForTests } =
+      await import('../../src/config/features.js');
     clearFeatureFlagCacheForTests();
     await expect(isFeatureEnabled('team.invites')).resolves.toBe(true);
   });

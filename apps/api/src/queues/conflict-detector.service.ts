@@ -14,12 +14,7 @@
 //      MVP we just flag stunt/VFX scenes without a DONE task in the
 //      respective department.)
 
-import {
-  ConflictKind,
-  ConflictSeverity,
-  MembershipStatus,
-  UserRole,
-} from '@prisma/client';
+import { ConflictKind, ConflictSeverity, MembershipStatus, UserRole } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { logger } from '../lib/logger.js';
 import { formatUserName } from '../lib/user-name.js';
@@ -154,8 +149,8 @@ export async function scanProjectConflicts(input: ConflictScanInput): Promise<{
             daysUntilShoot <= 14
               ? ConflictSeverity.CRITICAL
               : daysUntilShoot <= 30
-              ? ConflictSeverity.WARNING
-              : ConflictSeverity.INFO;
+                ? ConflictSeverity.WARNING
+                : ConflictSeverity.INFO;
           candidates.push({
             kind: ConflictKind.DEPT_BEHIND,
             severity,
@@ -184,7 +179,9 @@ export async function scanProjectConflicts(input: ConflictScanInput): Promise<{
     },
     include: {
       scenes: {
-        include: { scene: { select: { id: true, sceneNumber: true, hasStunts: true, hasVFX: true } } },
+        include: {
+          scene: { select: { id: true, sceneNumber: true, hasStunts: true, hasVFX: true } },
+        },
       },
     },
   });

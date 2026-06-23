@@ -11,9 +11,7 @@ export default function Index() {
 
   useEffect(() => {
     if (status === 'loading') return;
-    router.replace(
-      status === 'signedIn' ? '/(app)/(tabs)/home' : '/(auth)/splash',
-    );
+    router.replace(status === 'signedIn' ? '/(app)/(tabs)/home' : '/(auth)/splash');
   }, [router, status]);
 
   return (

@@ -4,12 +4,12 @@ Circuit uses **four separate config surfaces**. Do not mix them.
 
 > **All documentation:** [docs/README.md](./README.md) — architecture, database, env, deploy.
 
-| Surface | File / location | Used when |
-|---------|-----------------|-----------|
-| **Local mobile** | `apps/mobile/.env` | Expo Metro on your machine |
-| **Local API** | `apps/api/.env.development` | `npm run api:dev` only |
-| **Deployed API** | Render → Environment | Production / shared dev backend |
-| **Cloud mobile builds** | EAS Environment Variables | `eas build` profiles |
+| Surface                 | File / location             | Used when                       |
+| ----------------------- | --------------------------- | ------------------------------- |
+| **Local mobile**        | `apps/mobile/.env`          | Expo Metro on your machine      |
+| **Local API**           | `apps/api/.env.development` | `npm run api:dev` only          |
+| **Deployed API**        | Render → Environment        | Production / shared dev backend |
+| **Cloud mobile builds** | EAS Environment Variables   | `eas build` profiles            |
 
 Git tracks **`.env.example` only** — never commit real secrets.
 
@@ -130,11 +130,11 @@ npm run mobile           # second terminal
 
 ## Workflow C — Production
 
-| Layer | Config |
-|-------|--------|
-| Mobile | EAS env: `EXPO_PUBLIC_APP_ENV=production`, production API URL |
-| API | Render dashboard: unique `JWT_SECRET`, `OTP_PROVIDER=MSG91` or `RESEND_EMAIL`, real `DATABASE_URL` |
-| Database | Supabase **production** project (separate from dev/test) |
+| Layer    | Config                                                                                             |
+| -------- | -------------------------------------------------------------------------------------------------- |
+| Mobile   | EAS env: `EXPO_PUBLIC_APP_ENV=production`, production API URL                                      |
+| API      | Render dashboard: unique `JWT_SECRET`, `OTP_PROVIDER=MSG91` or `RESEND_EMAIL`, real `DATABASE_URL` |
+| Database | Supabase **production** project (separate from dev/test)                                           |
 
 See [`apps/api/docs/DEPLOYMENT.md`](../apps/api/docs/DEPLOYMENT.md) for Render deploy.
 
@@ -142,11 +142,11 @@ See [`apps/api/docs/DEPLOYMENT.md`](../apps/api/docs/DEPLOYMENT.md) for Render d
 
 ## Environment matrix
 
-| Mode | Mobile API URL | Backend | Database | OTP |
-|------|----------------|---------|----------|-----|
-| **Local full stack** | `http://localhost:3009` | `npm run api:dev` | Docker Postgres / Supabase dev | `EMAIL_OTP_PROVIDER=MOCK`, `PHONE_OTP_PROVIDER=MOCK` |
-| **Mobile → Render** | Render URL | Render (remote) | Render / Supabase (remote) | Render env (see dev example below) |
-| **Production** | Custom domain | Render paid | Supabase prod | `EMAIL_OTP_PROVIDER=RESEND`, `PHONE_OTP_PROVIDER=MSG91` |
+| Mode                 | Mobile API URL          | Backend           | Database                       | OTP                                                     |
+| -------------------- | ----------------------- | ----------------- | ------------------------------ | ------------------------------------------------------- |
+| **Local full stack** | `http://localhost:3009` | `npm run api:dev` | Docker Postgres / Supabase dev | `EMAIL_OTP_PROVIDER=MOCK`, `PHONE_OTP_PROVIDER=MOCK`    |
+| **Mobile → Render**  | Render URL              | Render (remote)   | Render / Supabase (remote)     | Render env (see dev example below)                      |
+| **Production**       | Custom domain           | Render paid       | Supabase prod                  | `EMAIL_OTP_PROVIDER=RESEND`, `PHONE_OTP_PROVIDER=MSG91` |
 
 ---
 
@@ -156,14 +156,14 @@ Use when `EMAIL_OTP_PROVIDER=RESEND` (or legacy `OTP_PROVIDER=RESEND_EMAIL`).
 
 **Render dashboard** (production source of truth — do not commit secrets):
 
-| Variable | Required | Notes |
-|----------|----------|-------|
-| `APP_ENV` | Yes | `prod` for production |
-| `EMAIL_OTP_PROVIDER` | Yes | Set to `RESEND` |
-| `RESEND_API_KEY` | Yes | From [resend.com](https://resend.com) → API Keys |
-| `OTP_FROM_EMAIL` or `RESEND_FROM_EMAIL` | Yes | Verified domain, e.g. `Circuit <noreply@yourdomain.com>` |
-| `RESEND_REPLY_TO` | No | Optional reply-to address |
-| `OTP_SECRET` | Yes | Min 32 chars — HMAC key for OTP hashes (never store plain OTP) |
+| Variable                                | Required | Notes                                                          |
+| --------------------------------------- | -------- | -------------------------------------------------------------- |
+| `APP_ENV`                               | Yes      | `prod` for production                                          |
+| `EMAIL_OTP_PROVIDER`                    | Yes      | Set to `RESEND`                                                |
+| `RESEND_API_KEY`                        | Yes      | From [resend.com](https://resend.com) → API Keys               |
+| `OTP_FROM_EMAIL` or `RESEND_FROM_EMAIL` | Yes      | Verified domain, e.g. `Circuit <noreply@yourdomain.com>`       |
+| `RESEND_REPLY_TO`                       | No       | Optional reply-to address                                      |
+| `OTP_SECRET`                            | Yes      | Min 32 chars — HMAC key for OTP hashes (never store plain OTP) |
 
 **Render dev example** (shared dev API):
 
@@ -197,14 +197,14 @@ Returns `appEnv`, `signupVerificationChannel`, `loginIdentifier`, and `features`
 
 Toggle modules without a mobile rebuild. Backend enforces via `requireFeature()`; mobile hides UI from `GET /app/config`.
 
-| Key | Default | Routes affected |
-|-----|---------|-----------------|
-| `scripts.upload` | on | `POST /projects/:id/scripts` |
-| `scripts.aiAnalysis` | on | `POST /scripts/:id/analyze` |
-| `team.invites` | on | `POST /projects/:id/members` |
-| `auth.emailOtp` | on | Email OTP send/verify |
-| `auth.phoneOtp` | on | Phone OTP send/verify |
-| `notifications.push` | on | Mobile push registration |
+| Key                  | Default | Routes affected              |
+| -------------------- | ------- | ---------------------------- |
+| `scripts.upload`     | on      | `POST /projects/:id/scripts` |
+| `scripts.aiAnalysis` | on      | `POST /scripts/:id/analyze`  |
+| `team.invites`       | on      | `POST /projects/:id/members` |
+| `auth.emailOtp`      | on      | Email OTP send/verify        |
+| `auth.phoneOtp`      | on      | Phone OTP send/verify        |
+| `notifications.push` | on      | Mobile push registration     |
 
 Example — disable script upload in dev:
 

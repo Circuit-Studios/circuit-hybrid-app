@@ -10,11 +10,7 @@ import {
   formSheetStyles,
 } from '@/components/ui/FormSheet';
 import { readApiError } from '@/api/client';
-import {
-  useCreateTask,
-  useDeleteTask,
-  useUpdateTask,
-} from '@/features/tasks/hooks';
+import { useCreateTask, useDeleteTask, useUpdateTask } from '@/features/tasks/hooks';
 import { formatStatus } from '@/lib/format';
 import type { DepartmentSummary, Task, TaskPriority, TaskStatus } from '@/api/types';
 
@@ -137,14 +133,23 @@ export function TaskSheet({
       />
 
       <FormSheetFieldLabel>Department</FormSheetFieldLabel>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={formSheetStyles.chipRow}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={formSheetStyles.chipRow}
+      >
         {departments.map(d => (
           <Pressable
             key={d.id}
             onPress={() => setDepartmentId(d.id)}
             style={[formSheetStyles.chip, departmentId === d.id && formSheetStyles.chipActive]}
           >
-            <Text style={[formSheetStyles.chipText, departmentId === d.id && formSheetStyles.chipTextActive]}>
+            <Text
+              style={[
+                formSheetStyles.chipText,
+                departmentId === d.id && formSheetStyles.chipTextActive,
+              ]}
+            >
               {d.displayName}
             </Text>
           </Pressable>
@@ -159,7 +164,9 @@ export function TaskSheet({
             onPress={() => setPriority(p)}
             style={[formSheetStyles.chip, priority === p && formSheetStyles.chipActive]}
           >
-            <Text style={[formSheetStyles.chipText, priority === p && formSheetStyles.chipTextActive]}>
+            <Text
+              style={[formSheetStyles.chipText, priority === p && formSheetStyles.chipTextActive]}
+            >
               {p}
             </Text>
           </Pressable>
@@ -174,7 +181,9 @@ export function TaskSheet({
             onPress={() => setStatus(s.id)}
             style={[formSheetStyles.chip, status === s.id && formSheetStyles.chipActive]}
           >
-            <Text style={[formSheetStyles.chipText, status === s.id && formSheetStyles.chipTextActive]}>
+            <Text
+              style={[formSheetStyles.chipText, status === s.id && formSheetStyles.chipTextActive]}
+            >
               {formatStatus(s.id)}
             </Text>
           </Pressable>

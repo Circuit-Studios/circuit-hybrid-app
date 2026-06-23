@@ -23,9 +23,7 @@ describe('Expo push provider (mock mode)', () => {
 
   it('preserves recipient mapping in result order', async () => {
     const tokens = ['ExponentPushToken[A]', 'ExponentPushToken[B]', 'ExponentPushToken[C]'];
-    const out = await sendExpoPush(
-      tokens.map(to => ({ to, title: 'x', body: 'y' })),
-    );
+    const out = await sendExpoPush(tokens.map(to => ({ to, title: 'x', body: 'y' })));
     expect(out.map(r => r.to)).toEqual(tokens);
   });
 

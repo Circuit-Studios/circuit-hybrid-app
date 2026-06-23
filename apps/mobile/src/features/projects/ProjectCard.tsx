@@ -31,9 +31,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
             </Text>
             <View style={styles.rowBottom}>
               <StatusBadge label={formatStatus(project.currentStage)} tone="info" />
-              {project.role ? (
-                <StatusBadge label={formatRole(project.role)} tone="accent" />
-              ) : null}
+              {project.role ? <StatusBadge label={formatRole(project.role)} tone="accent" /> : null}
             </View>
           </View>
           <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />

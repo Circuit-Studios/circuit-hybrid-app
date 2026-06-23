@@ -85,7 +85,11 @@ export function PhoneField({
 
     // Backspace on a formatting character (space, dash, parens) does not change
     // digitsOnly(text) — treat that as deleting the last digit instead.
-    if (text.length < nationalNumber.length && nextDigits.length === prevDigits.length && prevDigits.length > 0) {
+    if (
+      text.length < nationalNumber.length &&
+      nextDigits.length === prevDigits.length &&
+      prevDigits.length > 0
+    ) {
       nextDigits = prevDigits.slice(0, -1);
     }
 

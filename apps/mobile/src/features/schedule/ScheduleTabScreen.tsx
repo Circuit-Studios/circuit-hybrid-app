@@ -51,8 +51,7 @@ export default function ScheduleTabScreen() {
       let state: DayState = 'soon';
       if (date < today && !isSameDay(date, today)) state = 'done';
       else if (isSameDay(date, today)) state = 'today';
-      const progress =
-        state === 'done' ? 100 : state === 'today' ? 60 : 0;
+      const progress = state === 'done' ? 100 : state === 'today' ? 60 : 0;
       return { ...day, state, progress, date };
     });
   }, [scheduleQ.data, today]);
@@ -106,7 +105,10 @@ export default function ScheduleTabScreen() {
       </ScrollView>
 
       {!projectId ? (
-        <EmptyState title="No project yet" body="Create or join a project to see the shoot schedule." />
+        <EmptyState
+          title="No project yet"
+          body="Create or join a project to see the shoot schedule."
+        />
       ) : scheduleQ.isLoading ? (
         <LoadingState />
       ) : scheduleQ.error ? (

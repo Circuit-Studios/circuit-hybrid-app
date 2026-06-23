@@ -35,8 +35,7 @@ export function maskOtpTarget(channel: OtpChannel, target: string): string {
     const domain = target.slice(at + 1);
     const maskedLocal = local.length <= 2 ? '*'.repeat(local.length) : `${local[0]}***`;
     const dot = domain.lastIndexOf('.');
-    const maskedDomain =
-      dot > 0 ? `***${domain.slice(dot)}` : '***';
+    const maskedDomain = dot > 0 ? `***${domain.slice(dot)}` : '***';
     return `${maskedLocal}@${maskedDomain}`;
   }
   if (target.length <= 4) return '****';

@@ -31,9 +31,7 @@ export function NotificationBell({ onPress, tint }: Props) {
       onPress={onPress ?? (() => router.push('/notifications'))}
       style={({ pressed }) => [styles.button, pressed && { opacity: 0.6 }]}
       accessibilityRole="button"
-      accessibilityLabel={
-        count > 0 ? `Notifications, ${count} unread` : 'Notifications'
-      }
+      accessibilityLabel={count > 0 ? `Notifications, ${count} unread` : 'Notifications'}
       hitSlop={10}
     >
       <Ionicons name="notifications-outline" size={22} color={tint ?? colors.textPrimary} />

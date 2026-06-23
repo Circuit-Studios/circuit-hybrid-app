@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { CircuitLogo } from '@/components/CircuitLogo';
 import { PhoneField, usePhoneFieldState } from '@/components/PhoneField';
+import { DropdownPicker } from '@/components/pickers/DropdownPicker';
 import { PasswordField } from '@/components/auth/PasswordField';
 import { useOtpSession } from '@/auth/OtpSessionContext';
 import { useAuthSubmit } from '@/features/auth/hooks';
@@ -55,8 +56,11 @@ export default function AuthScreen() {
   const activeChannel = tab === 'signup' ? signupChannel : signinChannel;
 
   const emailValid = !email.trim() || isValidEmail(email);
-  const emailRequired = activeChannel === 'EMAIL' || (tab === 'signup' && signupChannel === 'EMAIL');
-  const phoneRequired = activeChannel === 'PHONE' || (tab === 'signup' && signupChannel === 'PHONE');
+  const _emailValid = emailValid;
+  const emailRequired =
+    activeChannel === 'EMAIL' || (tab === 'signup' && signupChannel === 'EMAIL');
+  const phoneRequired =
+    activeChannel === 'PHONE' || (tab === 'signup' && signupChannel === 'PHONE');
   const nameValid = tab === 'signin' || fullName.trim().length >= 1;
   const roleValid = tab === 'signin' || role !== null;
   const passwordValid = tab === 'signin' || !password || isValidPassword(password);
@@ -73,10 +77,12 @@ export default function AuthScreen() {
   const submitHint = (() => {
     if (!attempted || canSubmit) return null;
     if (emailRequired && !isValidEmail(email)) return 'Enter a valid email address.';
-    if (phoneRequired && !phoneField.isValid) return phoneField.error ?? 'Enter a valid phone number.';
+    if (phoneRequired && !phoneField.isValid)
+      return phoneField.error ?? 'Enter a valid phone number.';
     if (tab === 'signup' && !nameValid) return 'Enter your name.';
     if (tab === 'signup' && !roleValid) return 'Pick your role.';
-    if (tab === 'signup' && password && !passwordValid) return 'Password must be at least 8 characters.';
+    if (tab === 'signup' && password && !passwordValid)
+      return 'Password must be at least 8 characters.';
     return null;
   })();
 
@@ -100,7 +106,7 @@ export default function AuthScreen() {
         mode: purpose,
         firstName: tab === 'signup' ? firstName : undefined,
         lastName: tab === 'signup' ? lastName : undefined,
-        role: tab === 'signup' ? role ?? undefined : undefined,
+        role: tab === 'signup' ? (role ?? undefined) : undefined,
         expiresAtMs: Date.now() + ttlSeconds * 1000,
       });
     } else {
@@ -118,23 +124,13 @@ export default function AuthScreen() {
         mode: purpose,
         firstName: tab === 'signup' ? firstName : undefined,
         lastName: tab === 'signup' ? lastName : undefined,
-        role: tab === 'signup' ? role ?? undefined : undefined,
+        role: tab === 'signup' ? (role ?? undefined) : undefined,
         expiresAtMs: Date.now() + ttlSeconds * 1000,
       });
     }
 
     router.push({ pathname: '/(auth)/otp', params: { mode: purpose } });
-  }, [
-    activeChannel,
-    email,
-    fullName,
-    password,
-    phoneField.e164,
-    role,
-    router,
-    setSession,
-    tab,
-  ]);
+  }, [activeChannel, email, fullName, password, phoneField.e164, role, router, setSession, tab]);
 
   const { submitting, error, handleSubmit } = useAuthSubmit({
     canSubmit,
@@ -192,7 +188,7 @@ export default function AuthScreen() {
           />
         ) : null}
 
-        {(activeChannel === 'EMAIL' || config.loginIdentifier === 'BOTH' || tab === 'signup') ? (
+        {activeChannel === 'EMAIL' || config.loginIdentifier === 'BOTH' || tab === 'signup' ? (
           <AuthField
             label={emailRequired ? 'Email' : 'Email (optional)'}
             placeholder="you@studio.com"
@@ -230,7 +226,9 @@ export default function AuthScreen() {
               onCountryChange={phoneField.setCountry}
               onNationalNumberChange={phoneField.setNationalNumber}
               hint={tab === 'signup' ? otpTargetHint : undefined}
-              showError={attempted && phoneRequired && !!phoneField.nationalNumber && !phoneField.isValid}
+              showError={
+                attempted && phoneRequired && !!phoneField.nationalNumber && !phoneField.isValid
+              }
               error={phoneField.error ?? undefined}
             />
           </View>
@@ -238,36 +236,18 @@ export default function AuthScreen() {
 
         {tab === 'signup' ? (
           <View style={styles.passwordBlock}>
-            <PasswordField
-              value={password}
-              onChangeText={setPassword}
-              mode="new"
-            />
+            <PasswordField value={password} onChangeText={setPassword} mode="new" />
           </View>
         ) : null}
 
         {tab === 'signup' ? (
-          <View style={styles.roleBlock}>
-            <Text style={styles.fieldLabel}>I AM A</Text>
-            <View style={styles.roleRow}>
-              {SIGNUP_ROLES.map(item => {
-                const active = role === item.id;
-                return (
-                  <Pressable
-                    key={item.id}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                    onPress={() => setRole(item.id)}
-                    style={[styles.roleChip, active && styles.roleChipActive]}
-                  >
-                    <Text style={[styles.roleChipText, active && styles.roleChipTextActive]}>
-                      {item.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
+          <DropdownPicker
+            label="I am a"
+            placeholder="Select your role"
+            options={SIGNUP_ROLES.map(item => ({ value: item.id, label: item.label }))}
+            value={role}
+            onChange={setRole}
+          />
         ) : null}
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -337,7 +317,12 @@ function AuthField({
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F3F0EA' },
-  inner: { flex: 1, paddingHorizontal: spacing.xl, paddingTop: spacing.xxxl, paddingBottom: spacing.xl },
+  inner: {
+    flex: 1,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xxxl,
+    paddingBottom: spacing.xl,
+  },
   brandBlock: { alignItems: 'center', marginBottom: spacing.xl },
   wordmark: {
     marginTop: spacing.md,
@@ -381,21 +366,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   fieldIcon: { marginLeft: spacing.sm },
-  roleBlock: { marginBottom: spacing.lg },
   phoneBlock: { marginBottom: spacing.lg },
   passwordBlock: { marginBottom: spacing.lg },
-  roleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  roleChip: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm + 2,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  roleChipActive: { borderColor: colors.brand, backgroundColor: colors.accentSoft },
-  roleChipText: { ...typography.bodyStrong, color: colors.textSecondary },
-  roleChipTextActive: { color: colors.brand },
   cta: {
     marginTop: spacing.md,
     backgroundColor: colors.brand,

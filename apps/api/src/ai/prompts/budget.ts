@@ -22,7 +22,10 @@ export function buildBudgetPrompt(opts: {
 Language: ${opts.projectLanguage}
 Director's budget hint: ${hintRange}
 Total shoot days estimate: ${opts.shootDays.totalShootDaysEstimate}
-Required departments: ${opts.departments.filter(d => d.required).map(d => d.kind).join(', ')}
+Required departments: ${opts.departments
+    .filter(d => d.required)
+    .map(d => d.kind)
+    .join(', ')}
 
 TASK: Draft a department-wise budget. Allocate INR amounts to each REQUIRED
 department from the list above. Respect Indian-industry-standard ratios:

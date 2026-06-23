@@ -50,7 +50,11 @@ export function resolveContentMaxWidth(
   return isTabletWidth(width) ? CONTENT_MAX_WIDTH.app : undefined;
 }
 
-export function getContentWidth(width: number, horizontalPadding: number, maxWidth?: number): number {
+export function getContentWidth(
+  width: number,
+  horizontalPadding: number,
+  maxWidth?: number,
+): number {
   const padded = width - horizontalPadding * 2;
   if (maxWidth == null) return padded;
   return Math.min(padded, maxWidth);

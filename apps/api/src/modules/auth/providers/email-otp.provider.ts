@@ -46,7 +46,9 @@ export class ResendEmailOtpProvider implements EmailOtpProvider {
 
     const from = resolveFromEmail();
     if (!from) {
-      throw new Error('OTP_FROM_EMAIL or RESEND_FROM_EMAIL is required when EMAIL_OTP_PROVIDER=RESEND');
+      throw new Error(
+        'OTP_FROM_EMAIL or RESEND_FROM_EMAIL is required when EMAIL_OTP_PROVIDER=RESEND',
+      );
     }
 
     const client = new Resend(env.RESEND_API_KEY);

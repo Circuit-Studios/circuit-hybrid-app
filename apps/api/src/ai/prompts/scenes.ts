@@ -1,7 +1,4 @@
-export function buildScenesPrompt(
-  scriptText: string,
-  knownCharacterNames: string[],
-): string {
+export function buildScenesPrompt(scriptText: string, knownCharacterNames: string[]): string {
   return `KNOWN CHARACTERS (from previous extraction):
 ${knownCharacterNames.join(', ')}
 

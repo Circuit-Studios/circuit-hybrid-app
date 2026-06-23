@@ -63,7 +63,7 @@ export default function ActivityScreen() {
       map.set(key, bucket);
     }
     return [...map.entries()];
-  }, [data?.items]);
+  }, [data]);
 
   return (
     <ScreenContainer topAligned edges={['top', 'left', 'right']} contentStyle={styles.pad}>
@@ -145,7 +145,10 @@ export default function ActivityScreen() {
               </View>
             )}
             ListEmptyComponent={
-              <EmptyState title="No activity yet" body="Updates from your team will show up here." />
+              <EmptyState
+                title="No activity yet"
+                body="Updates from your team will show up here."
+              />
             }
           />
         </View>
@@ -184,7 +187,12 @@ const styles = StyleSheet.create({
   chipText: { ...typography.bodyStrong, color: colors.textSecondary },
   chipTextActive: { color: colors.textPrimary },
   pulse: { marginBottom: spacing.lg },
-  pulseHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
+  pulseHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
   pulseTitle: { ...typography.bodyStrong, color: colors.brand },
   pulseRow: { flexDirection: 'row', justifyContent: 'space-around' },
   pulseStat: { alignItems: 'center' },

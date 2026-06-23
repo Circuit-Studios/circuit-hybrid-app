@@ -21,11 +21,7 @@ import type { NotificationChannel, NotificationKind, Prisma } from '@prisma/clie
 import { prisma } from '../lib/prisma.js';
 import { logger } from '../lib/logger.js';
 import { emitToUser } from '../realtime/socket.js';
-import {
-  FATAL_PUSH_ERRORS,
-  sendExpoPush,
-  type ExpoPushMessage,
-} from './expo-push.provider.js';
+import { FATAL_PUSH_ERRORS, sendExpoPush, type ExpoPushMessage } from './expo-push.provider.js';
 
 export interface DispatchNotificationInput {
   userIds: string[];
@@ -143,7 +139,10 @@ export async function dispatchNotification(input: DispatchNotificationInput): Pr
     }
   } catch (err) {
     // Never let notification failures bubble up to the caller.
-    logger.error({ err, kind: input.kind, recipients: recipients.length }, 'dispatchNotification failed');
+    logger.error(
+      { err, kind: input.kind, recipients: recipients.length },
+      'dispatchNotification failed',
+    );
   }
 }
 

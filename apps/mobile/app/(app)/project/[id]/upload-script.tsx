@@ -89,8 +89,8 @@ export default function UploadScriptScreen() {
 
       <Text style={styles.title}>Upload your script</Text>
       <Text style={styles.body}>
-        We accept clean PDFs up to 25MB. Final-draft or screenplay-style formatting works best.
-        Once uploaded, our AI maps characters, scenes, departments, shoot days and a budget draft.
+        We accept clean PDFs up to 25MB. Final-draft or screenplay-style formatting works best. Once
+        uploaded, our AI maps characters, scenes, departments, shoot days and a budget draft.
       </Text>
 
       {!uploadEnabled ? (
@@ -112,11 +112,7 @@ export default function UploadScriptScreen() {
           </Pressable>
         </Card>
       ) : (
-        <Pressable
-          onPress={handlePick}
-          accessibilityRole="button"
-          style={styles.dropzone}
-        >
+        <Pressable onPress={handlePick} accessibilityRole="button" style={styles.dropzone}>
           <Text style={styles.dropzoneIcon}>↑</Text>
           <Text style={styles.dropzoneTitle}>Tap to choose a PDF</Text>
           <Text style={styles.dropzoneSub}>Up to 25MB</Text>

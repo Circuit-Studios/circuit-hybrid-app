@@ -34,9 +34,7 @@ vi.mock('openai', () => {
 const { chatJson } = await import('../../src/ai/openai.client.js');
 
 const schema = z.object({
-  characters: z.array(
-    z.object({ name: z.string(), importance: z.enum(['LEAD', 'SUPPORT']) }),
-  ),
+  characters: z.array(z.object({ name: z.string(), importance: z.enum(['LEAD', 'SUPPORT']) })),
 });
 
 function respond(payload: unknown) {

@@ -1,10 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UserRole } from '@prisma/client';
-import {
-  assertDeptHeadDepartmentScope,
-  can,
-  rolePermissions,
-} from '../../src/auth/permissions.js';
+import { assertDeptHeadDepartmentScope, can, rolePermissions } from '../../src/auth/permissions.js';
 
 describe('permissions', () => {
   it('grants task create to directors', () => {

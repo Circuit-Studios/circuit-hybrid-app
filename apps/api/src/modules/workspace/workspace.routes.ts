@@ -12,10 +12,7 @@ interface Membership {
   projectDepartmentId: string | null;
 }
 
-async function getMembershipOrThrow(
-  userId: string,
-  projectId: string,
-): Promise<Membership> {
+async function getMembershipOrThrow(userId: string, projectId: string): Promise<Membership> {
   const m = await prisma.projectMember.findFirst({
     where: { projectId, userId, status: MembershipStatus.ACTIVE },
     select: { id: true, role: true, projectDepartmentId: true },
@@ -96,7 +93,10 @@ router.get(
     ]);
 
     // Fold the groupBy result into a per-department task count map.
-    const tasksByDept = new Map<string, { todo: number; inProgress: number; done: number; blocked: number }>();
+    const tasksByDept = new Map<
+      string,
+      { todo: number; inProgress: number; done: number; blocked: number }
+    >();
     for (const row of taskAgg) {
       const bucket = tasksByDept.get(row.departmentId) ?? {
         todo: 0,
@@ -105,10 +105,18 @@ router.get(
         blocked: 0,
       };
       switch (row.status) {
-        case 'TODO': bucket.todo += row._count; break;
-        case 'IN_PROGRESS': bucket.inProgress += row._count; break;
-        case 'DONE': bucket.done += row._count; break;
-        case 'BLOCKED': bucket.blocked += row._count; break;
+        case 'TODO':
+          bucket.todo += row._count;
+          break;
+        case 'IN_PROGRESS':
+          bucket.inProgress += row._count;
+          break;
+        case 'DONE':
+          bucket.done += row._count;
+          break;
+        case 'BLOCKED':
+          bucket.blocked += row._count;
+          break;
       }
       tasksByDept.set(row.departmentId, bucket);
     }
@@ -154,9 +162,7 @@ router.get(
     // Dept head: see only their department.
     // Leadership: unscoped (default).
     const crewScope =
-      !FULL_VISIBILITY_ROLES.includes(me.role) && me.role !== UserRole.DEPT_HEAD
-        ? userId
-        : null;
+      !FULL_VISIBILITY_ROLES.includes(me.role) && me.role !== UserRole.DEPT_HEAD ? userId : null;
 
     const tasks = await prisma.task.findMany({
       where: {

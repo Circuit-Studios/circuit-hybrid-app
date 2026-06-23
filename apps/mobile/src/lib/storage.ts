@@ -81,11 +81,7 @@ function normalizeStoredUser(raw: StoredUser & { name?: string }): StoredUser {
 }
 
 export const storage = {
-  async saveSession(
-    token: string,
-    user: StoredUser,
-    expiresAtMs: number,
-  ): Promise<void> {
+  async saveSession(token: string, user: StoredUser, expiresAtMs: number): Promise<void> {
     const now = String(Date.now());
     lastTouchWriteMs = Date.now();
     await Promise.all([
@@ -122,7 +118,7 @@ export const storage = {
       removeItem(ACTIVITY_KEY),
     ]);
   },
-/** Persists last user interaction time — not called from API/network code. */
+  /** Persists last user interaction time — not called from API/network code. */
   async touchActivity(atMs = Date.now()): Promise<void> {
     if (atMs - lastTouchWriteMs < TOUCH_DEBOUNCE_MS) return;
     lastTouchWriteMs = atMs;

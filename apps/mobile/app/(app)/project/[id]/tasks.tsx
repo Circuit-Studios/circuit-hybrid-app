@@ -1,13 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Card } from '@/components/Card';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -18,11 +11,7 @@ import {
   projectScreenStyles,
 } from '@/components/project/ProjectScreenScaffold';
 import { readApiError } from '@/api/client';
-import {
-  useMoveTask,
-  useProjectHealth,
-  useProjectTasks,
-} from '@/features/tasks/hooks';
+import { useMoveTask, useProjectHealth, useProjectTasks } from '@/features/tasks/hooks';
 import { TaskSheet } from '@/features/tasks/TaskSheet';
 import { useContentFrame } from '@/hooks/useContentFrame';
 import { getKanbanColumnWidth, colors, radius, spacing, typography } from '@/theme';
@@ -44,12 +33,7 @@ export default function TasksScreen() {
 
   const pid = projectId ?? '';
   const healthQ = useProjectHealth(pid);
-  const {
-    data: tasks = [],
-    isLoading,
-    error,
-    refetch,
-  } = useProjectTasks(pid, filterDept);
+  const { data: tasks = [], isLoading, error, refetch } = useProjectTasks(pid, filterDept);
   const moveTask = useMoveTask(pid);
 
   const departments = healthQ.data?.departments ?? [];

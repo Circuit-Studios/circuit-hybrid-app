@@ -1,14 +1,14 @@
 # Backend — Docs
 
-| Doc | Contents |
-|---|---|
-| [PRODUCT.md](./PRODUCT.md) | v1 scope — in vs deferred |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | System map, modules, request lifecycle |
-| [DATABASE.md](./DATABASE.md) | **Database mapping** — Prisma schema, ER diagram, tables |
-| [MIGRATION.md](./MIGRATION.md) | v1 scope & deferred features |
-| [DEPLOYMENT.md](./DEPLOYMENT.md) | Local dev + **Render** production |
-| [../README.md](../README.md) | API quick start |
-| [../prisma/README.md](../prisma/README.md) | Migrations |
+| Doc                                        | Contents                                                     |
+| ------------------------------------------ | ------------------------------------------------------------ |
+| [PRODUCT.md](./PRODUCT.md)                 | v1 scope — in vs deferred                                    |
+| [ARCHITECTURE.md](./ARCHITECTURE.md)       | System map, modules, request lifecycle                       |
+| [DATABASE.md](./DATABASE.md)               | **Database mapping** — Prisma schema, ER diagram, tables     |
+| [MIGRATION.md](./MIGRATION.md)             | v1 scope & deferred features                                 |
+| [DEPLOYMENT.md](./DEPLOYMENT.md)           | Local dev + **Render dashboard** deploy (manual web service) |
+| [../README.md](../README.md)               | API quick start                                              |
+| [../prisma/README.md](../prisma/README.md) | Migrations                                                   |
 
 **Monorepo index:** [`../../docs/README.md`](../../docs/README.md) · **Env:** [`../../docs/ENVIRONMENT.md`](../../docs/ENVIRONMENT.md)
 

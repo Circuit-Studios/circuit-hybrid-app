@@ -9,7 +9,7 @@
 --   npm run prisma:deploy
 --
 -- Regenerate after schema changes:
---   npm run db:sql
+--   npm run prisma:migrate
 --
 
 -- CreateEnum

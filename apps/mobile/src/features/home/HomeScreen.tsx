@@ -27,8 +27,7 @@ export default function HomeScreen() {
   const { projectId } = useActiveProject();
   const { data, isLoading, error, refetch } = useHomeQuery(projectId);
 
-  const canStartProject =
-    user?.defaultRole === 'DIRECTOR' || user?.defaultRole === 'PRODUCER';
+  const canStartProject = user?.defaultRole === 'DIRECTOR' || user?.defaultRole === 'PRODUCER';
 
   if (!projectId && !isLoading) {
     return (
@@ -76,11 +75,32 @@ export default function HomeScreen() {
           </Text>
           <Text style={styles.title}>Film command centre</Text>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.actionsScroll}>
-            <QuickAction icon="document-text-outline" label="New film" onPress={() => router.push('/(app)/create-project')} />
-            <QuickAction icon="person-add-outline" label="Invite team" onPress={() => router.push('/(app)/(tabs)/team')} />
-            <QuickAction icon="calendar-outline" label="Add shoot day" onPress={() => router.push('/(app)/(tabs)/schedule')} />
-            <QuickAction icon="add" label="Add task" accent onPress={() => projectId && router.push(`/(app)/project/${projectId}/tasks`)} />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.actionsScroll}
+          >
+            <QuickAction
+              icon="document-text-outline"
+              label="New film"
+              onPress={() => router.push('/(app)/create-project')}
+            />
+            <QuickAction
+              icon="person-add-outline"
+              label="Invite team"
+              onPress={() => router.push('/(app)/(tabs)/team')}
+            />
+            <QuickAction
+              icon="calendar-outline"
+              label="Add shoot day"
+              onPress={() => router.push('/(app)/(tabs)/schedule')}
+            />
+            <QuickAction
+              icon="add"
+              label="Add task"
+              accent
+              onPress={() => projectId && router.push(`/(app)/project/${projectId}/tasks`)}
+            />
           </ScrollView>
 
           <View style={styles.statsRow}>
@@ -88,9 +108,7 @@ export default function HomeScreen() {
               value={String(data.stats.tasksDone).padStart(2, '0')}
               label="Tasks done"
               progress={
-                data.stats.tasksTotal
-                  ? (data.stats.tasksDone / data.stats.tasksTotal) * 100
-                  : 0
+                data.stats.tasksTotal ? (data.stats.tasksDone / data.stats.tasksTotal) * 100 : 0
               }
             />
             <StatRing
@@ -135,10 +153,7 @@ export default function HomeScreen() {
           ))}
 
           {canStartProject ? (
-            <Pressable
-              style={styles.addCard}
-              onPress={() => router.push('/(app)/create-project')}
-            >
+            <Pressable style={styles.addCard} onPress={() => router.push('/(app)/create-project')}>
               <Ionicons name="add" size={22} color={colors.textMuted} />
               <Text style={styles.addCardText}>Start new film</Text>
             </Pressable>

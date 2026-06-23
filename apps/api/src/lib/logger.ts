@@ -3,15 +3,10 @@ import { env } from '../config/env.js';
 
 const isProduction = env.NODE_ENV === 'production';
 
-const appEnvironment =
-  process.env.APP_ENV ??
-  process.env.CIRCUIT_ENV ??
-  env.NODE_ENV;
+const appEnvironment = process.env.APP_ENV ?? process.env.CIRCUIT_ENV ?? env.NODE_ENV;
 
 const release =
-  process.env.RENDER_GIT_COMMIT ??
-  process.env.GIT_SHA ??
-  process.env.npm_package_version;
+  process.env.RENDER_GIT_COMMIT ?? process.env.GIT_SHA ?? process.env.npm_package_version;
 
 const loggerOptions: LoggerOptions = {
   level: env.LOG_LEVEL ?? (isProduction ? 'info' : 'debug'),

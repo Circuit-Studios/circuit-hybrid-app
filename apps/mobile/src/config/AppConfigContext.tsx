@@ -49,8 +49,21 @@ export function AppConfigProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    let cancelled = false;
+    void (async () => {
+      try {
+        const next = await fetchAppConfig();
+        if (!cancelled) setConfig(next);
+      } catch {
+        if (!cancelled) setConfig(DEFAULT_CONFIG);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const isFeatureEnabled = useCallback(
     (feature: string) => canUseFeature({ feature: feature as never, flags: config.features }),

@@ -7,12 +7,7 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
-import {
-  MembershipStatus,
-  SceneLocationType,
-  SceneTimeOfDay,
-  UserRole,
-} from '@prisma/client';
+import { MembershipStatus, SceneLocationType, SceneTimeOfDay, UserRole } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { asyncHandler, forbidden, notFound } from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';

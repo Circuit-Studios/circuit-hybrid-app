@@ -23,7 +23,11 @@ interface TabBarProps {
 
 const TAB_META: Record<
   TabKey,
-  { label: string; icon: keyof typeof Ionicons.glyphMap; activeIcon: keyof typeof Ionicons.glyphMap }
+  {
+    label: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    activeIcon: keyof typeof Ionicons.glyphMap;
+  }
 > = {
   home: { label: 'Home', icon: 'home-outline', activeIcon: 'home' },
   activity: { label: 'Activity', icon: 'pulse-outline', activeIcon: 'pulse' },

@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import { useProjectsQuery } from '@/features/projects/hooks';
 
 interface ActiveProjectContextValue {
@@ -30,9 +23,7 @@ export function ActiveProjectProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => ({ projectId, setProjectId }), [projectId, setProjectId]);
 
-  return (
-    <ActiveProjectContext.Provider value={value}>{children}</ActiveProjectContext.Provider>
-  );
+  return <ActiveProjectContext.Provider value={value}>{children}</ActiveProjectContext.Provider>;
 }
 
 export function useActiveProject(): ActiveProjectContextValue {

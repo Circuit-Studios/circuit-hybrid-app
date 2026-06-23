@@ -1,14 +1,7 @@
 import { useMemo } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import {
-  ActivityIndicator,
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Card } from '@/components/Card';
@@ -100,8 +93,8 @@ export default function ProjectWorkspaceScreen() {
             projectQ.error
               ? readApiError(projectQ.error)
               : healthQ.error
-              ? readApiError(healthQ.error)
-              : 'It may have been removed.'
+                ? readApiError(healthQ.error)
+                : 'It may have been removed.'
           }
           action={
             <View style={{ gap: spacing.sm }}>

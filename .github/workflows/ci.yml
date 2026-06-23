@@ -14,13 +14,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prettier check
+        run: npm run format:check
+
   mobile:
     name: Mobile
     runs-on: ubuntu-latest
     timeout-minutes: 12
-    defaults:
-      run:
-        working-directory: apps/mobile
+    needs: format
 
     steps:
       - uses: actions/checkout@v4
@@ -33,21 +51,21 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        working-directory: .
 
       - name: Typecheck
-        run: npm run typecheck
+        run: npm run mobile:typecheck
 
       - name: Lint
-        run: npm run lint
+        run: npm run mobile:lint
 
       - name: Test
-        run: npm test
+        run: npm run mobile:test
 
   api:
     name: API
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: format
 
     services:
       postgres:
@@ -66,14 +84,15 @@ jobs:
 
     env:
       NODE_ENV: test
+      APP_ENV: local
       DATABASE_URL: postgresql://circuit:circuit@localhost:5432/circuit_test
       JWT_SECRET: ci_jwt_secret_at_least_32_characters_long_for_zod
+      OTP_SECRET: ci_otp_secret_at_least_32_characters_long
       OPENAI_API_KEY: dummy_for_ci_no_calls_are_made_in_unit_tests
+      EMAIL_OTP_PROVIDER: MOCK
+      PHONE_OTP_PROVIDER: MOCK
       OTP_PROVIDER: MOCK
-
-    defaults:
-      run:
-        working-directory: apps/api
+      EXPO_PUSH_PROVIDER: MOCK
 
     steps:
       - uses: actions/checkout@v4
@@ -86,28 +105,29 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        working-directory: .
 
       - name: Validate Prisma schema
+        working-directory: apps/api
         run: npx prisma validate
 
       - name: Generate Prisma client
-        run: npx prisma generate
+        run: npm run prisma:generate -w circuit-backend
 
       - name: Apply migrations
+        working-directory: apps/api
         run: npx prisma migrate deploy
 
       - name: Lint
-        run: npm run lint
+        run: npm run api:lint
 
-      - name: Typecheck (src)
-        run: npm run typecheck
+      - name: Typecheck
+        run: npm run api:typecheck
 
-      - name: Typecheck (tests)
-        run: npm run typecheck:tests
+      - name: Typecheck tests
+        run: npm run typecheck:tests -w circuit-backend
 
       - name: Build
-        run: npm run build
+        run: npm run api:build
 
-      - name: Tests
-        run: npm test
+      - name: Test
+        run: npm run api:test

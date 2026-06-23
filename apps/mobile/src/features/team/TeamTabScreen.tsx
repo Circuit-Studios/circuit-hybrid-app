@@ -14,10 +14,7 @@ import type { ProjectMember, SetStatus } from '@/api/types';
 import { formatRole, formatUserInitials, formatUserName } from '@/lib/format';
 import { colors, radius, spacing, typography } from '@/theme';
 
-const STATUS_META: Record<
-  SetStatus,
-  { label: string; color: string; dot: string }
-> = {
+const STATUS_META: Record<SetStatus, { label: string; color: string; dot: string }> = {
   ON_SET: { label: 'On set', color: colors.brand, dot: colors.brand },
   EN_ROUTE: { label: 'En route', color: '#E0A24A', dot: '#E0A24A' },
   DONE: { label: 'Done', color: '#C9A227', dot: '#C9A227' },
@@ -62,11 +59,7 @@ export default function TeamTabScreen() {
         />
       ) : (
         members.map(member => (
-          <MemberCard
-            key={member.id}
-            member={member}
-            isYou={member.userId === user?.id}
-          />
+          <MemberCard key={member.id} member={member} isYou={member.userId === user?.id} />
         ))
       )}
     </ScreenContainer>
@@ -77,9 +70,7 @@ function MemberCard({ member, isYou }: { member: ProjectMember; isYou: boolean }
   const status = member.setStatus ?? 'OFF';
   const meta = STATUS_META[status];
   const person = member.user;
-  const name = person
-    ? formatUserName(person)
-    : member.inviteeName ?? 'Invited member';
+  const name = person ? formatUserName(person) : (member.inviteeName ?? 'Invited member');
   const initials = person
     ? formatUserInitials(person)
     : (member.inviteeName?.slice(0, 2).toUpperCase() ?? '??');

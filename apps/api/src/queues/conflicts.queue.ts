@@ -8,10 +8,7 @@
 import { Queue, Worker, type ConnectionOptions, type Job } from 'bullmq';
 import { getProducerConnection, getWorkerConnection } from './redis.js';
 import { logger } from '../lib/logger.js';
-import {
-  scanProjectConflicts,
-  type ConflictScanInput,
-} from './conflict-detector.service.js';
+import { scanProjectConflicts, type ConflictScanInput } from './conflict-detector.service.js';
 
 const QUEUE_NAME = 'circuit.conflicts';
 

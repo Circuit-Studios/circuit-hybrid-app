@@ -139,10 +139,7 @@ export function DropdownPicker<T extends string>(props: DropdownPickerProps<T>) 
   );
 }
 
-function formatDefaultLabels<T extends string>(
-  values: T[],
-  options: PickerOption<T>[],
-): string {
+function formatDefaultLabels<T extends string>(values: T[], options: PickerOption<T>[]): string {
   return values
     .map(value => options.find(option => option.value === value)?.label ?? value)
     .join(', ');

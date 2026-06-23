@@ -50,7 +50,11 @@ export const LabeledInput = forwardRef<TextInput, LabeledInputProps>(function La
         />
         {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
       </View>
-      {error ? <Text style={styles.errorText}>{error}</Text> : hint ? <Text style={styles.hint}>{hint}</Text> : null}
+      {error ? (
+        <Text style={styles.errorText}>{error}</Text>
+      ) : hint ? (
+        <Text style={styles.hint}>{hint}</Text>
+      ) : null}
     </View>
   );
 });

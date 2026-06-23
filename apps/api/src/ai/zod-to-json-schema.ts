@@ -4,7 +4,21 @@
 // `additionalProperties: false`). This implementation covers what our
 // `ai/schemas.ts` actually uses.
 
-import { z, type ZodTypeAny, ZodObject, ZodArray, ZodEnum, ZodNativeEnum, ZodNullable, ZodOptional, ZodString, ZodNumber, ZodBoolean, ZodLiteral, ZodUnion } from 'zod';
+import {
+  z,
+  type ZodTypeAny,
+  ZodObject,
+  ZodArray,
+  ZodEnum,
+  ZodNativeEnum,
+  ZodNullable,
+  ZodOptional,
+  ZodString,
+  ZodNumber,
+  ZodBoolean,
+  ZodLiteral,
+  ZodUnion,
+} from 'zod';
 
 // The OpenAI SDK accepts `Record<string, unknown>` for `json_schema.schema`.
 // We declare an index signature so our typed node is structurally compatible
@@ -58,7 +72,9 @@ function convert(schema: ZodTypeAny): JsonSchemaNode {
 
   if (schema instanceof ZodString) {
     const node: JsonSchemaNode = { type: 'string' };
-    const checks = (schema as unknown as { _def: { checks?: Array<{ kind: string; value?: number }> } })._def.checks ?? [];
+    const checks =
+      (schema as unknown as { _def: { checks?: Array<{ kind: string; value?: number }> } })._def
+        .checks ?? [];
     for (const check of checks) {
       if (check.kind === 'min' && typeof check.value === 'number') node.minLength = check.value;
       if (check.kind === 'max' && typeof check.value === 'number') node.maxLength = check.value;
@@ -68,7 +84,9 @@ function convert(schema: ZodTypeAny): JsonSchemaNode {
 
   if (schema instanceof ZodNumber) {
     const node: JsonSchemaNode = { type: 'number' };
-    const checks = (schema as unknown as { _def: { checks?: Array<{ kind: string; value?: number }> } })._def.checks ?? [];
+    const checks =
+      (schema as unknown as { _def: { checks?: Array<{ kind: string; value?: number }> } })._def
+        .checks ?? [];
     for (const check of checks) {
       if (check.kind === 'min' && typeof check.value === 'number') node.minimum = check.value;
       if (check.kind === 'max' && typeof check.value === 'number') node.maximum = check.value;
@@ -85,7 +103,9 @@ function convert(schema: ZodTypeAny): JsonSchemaNode {
   }
 
   if (schema instanceof ZodNativeEnum) {
-    const values = Object.values((schema as unknown as { _def: { values: Record<string, string | number> } })._def.values);
+    const values = Object.values(
+      (schema as unknown as { _def: { values: Record<string, string | number> } })._def.values,
+    );
     return { type: 'string', enum: values };
   }
 
@@ -95,7 +115,9 @@ function convert(schema: ZodTypeAny): JsonSchemaNode {
   }
 
   if (schema instanceof ZodNullable) {
-    const inner = convert((schema as unknown as { _def: { innerType: ZodTypeAny } })._def.innerType);
+    const inner = convert(
+      (schema as unknown as { _def: { innerType: ZodTypeAny } })._def.innerType,
+    );
     if (Array.isArray(inner.type)) {
       inner.type = [...inner.type, 'null'];
     } else if (typeof inner.type === 'string') {
@@ -108,7 +130,9 @@ function convert(schema: ZodTypeAny): JsonSchemaNode {
 
   if (schema instanceof ZodOptional) {
     // Treat optional as nullable for OpenAI strict mode purposes.
-    return convert(z.nullable((schema as unknown as { _def: { innerType: ZodTypeAny } })._def.innerType));
+    return convert(
+      z.nullable((schema as unknown as { _def: { innerType: ZodTypeAny } })._def.innerType),
+    );
   }
 
   if (schema instanceof ZodUnion) {

@@ -8,11 +8,7 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
-import {
-  DepartmentKind,
-  MembershipStatus,
-  UserRole,
-} from '@prisma/client';
+import { DepartmentKind, MembershipStatus, UserRole } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { asyncHandler, forbidden, notFound } from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';

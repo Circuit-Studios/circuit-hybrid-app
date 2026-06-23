@@ -3,11 +3,7 @@ import { env } from '../../config/env.js';
 import { logger } from '../../lib/logger.js';
 import { maskOtpTarget } from './otp-target.js';
 
-export function logOtpDispatched(
-  channel: OtpChannel,
-  target: string,
-  provider: string,
-): void {
+export function logOtpDispatched(channel: OtpChannel, target: string, provider: string): void {
   logger.info(
     {
       channel,

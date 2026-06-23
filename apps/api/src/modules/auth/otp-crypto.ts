@@ -26,14 +26,9 @@ export function verifyOtpCode(plainOtp: string, storedHash: string): boolean {
 
 export function generateSixDigitOtp(channel: 'EMAIL' | 'PHONE'): string {
   const providerIsMock =
-    channel === 'EMAIL'
-      ? env.EMAIL_OTP_PROVIDER === 'MOCK'
-      : env.PHONE_OTP_PROVIDER === 'MOCK';
+    channel === 'EMAIL' ? env.EMAIL_OTP_PROVIDER === 'MOCK' : env.PHONE_OTP_PROVIDER === 'MOCK';
 
-  if (
-    providerIsMock &&
-    (env.APP_ENV !== 'prod' || env.ALLOW_MOCK_OTP_IN_PROD)
-  ) {
+  if (providerIsMock && (env.APP_ENV !== 'prod' || env.ALLOW_MOCK_OTP_IN_PROD)) {
     return DEV_FIXED_OTP;
   }
   return randomInt(100_000, 1_000_000).toString();

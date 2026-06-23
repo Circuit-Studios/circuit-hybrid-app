@@ -79,16 +79,16 @@ flowchart LR
 
 ### Why these choices
 
-| Concern | Decision | Reason |
-|---|---|---|
-| API framework | **Express 4** | Minimal, battle-tested, easy to host on Render/Railway |
-| ORM | **Prisma** | Typed schema, painless migrations, strong dev ergonomics |
-| Realtime | **Socket.IO** | Built-in JWT handshake, rooms, auto-reconnect, RN-friendly |
-| Background jobs | **BullMQ + Redis** | Per-event conflict scans without a 1-minute cron lag |
-| AI calls | **OpenAI strict JSON schema + Zod** | Removes 90% of "AI returned garbage" failures |
-| File storage | **Local disk (`uploads/`)** | Simple on Render; add persistent disk for prod uploads |
-| OTP | **MSG91 / Twilio adapters behind one interface** | Swap providers without touching routes |
-| Push | **Expo Push API** | Single endpoint for iOS + Android dev clients |
+| Concern         | Decision                                         | Reason                                                     |
+| --------------- | ------------------------------------------------ | ---------------------------------------------------------- |
+| API framework   | **Express 4**                                    | Minimal, battle-tested, easy to host on Render/Railway     |
+| ORM             | **Prisma**                                       | Typed schema, painless migrations, strong dev ergonomics   |
+| Realtime        | **Socket.IO**                                    | Built-in JWT handshake, rooms, auto-reconnect, RN-friendly |
+| Background jobs | **BullMQ + Redis**                               | Per-event conflict scans without a 1-minute cron lag       |
+| AI calls        | **OpenAI strict JSON schema + Zod**              | Removes 90% of "AI returned garbage" failures              |
+| File storage    | **Local disk (`uploads/`)**                      | Simple on Render; add persistent disk for prod uploads     |
+| OTP             | **MSG91 / Twilio adapters behind one interface** | Swap providers without touching routes                     |
+| Push            | **Expo Push API**                                | Single endpoint for iOS + Android dev clients              |
 
 ---
 
@@ -291,15 +291,15 @@ flowchart LR
 
 ### Per-stage contract
 
-| Stage | Prompt builder | Output schema | Persisted to |
-|---|---|---|---|
-| 0 | n/a | raw text | `Script.rawText`, `Script.pageCount` |
-| 1 | `buildCharactersPrompt` | `aiCharactersResponseSchema` | `Character` |
-| 2 | `buildScenesPrompt` | `aiScenesResponseSchema` | `Scene` + `SceneAppearance` |
-| 3 | `buildCombinationsPrompt` | `aiCombinationsResponseSchema` | `Script.aiSummary.combinations` |
-| 4 | `buildDepartmentsPrompt` | `aiDepartmentsResponseSchema` | `ProjectDepartment` |
-| 5 | `buildShootDaysPrompt` | `aiShootDaysResponseSchema` | `Script.aiSummary.estimatedShootDays` |
-| 6 | `buildBudgetPrompt` | `aiBudgetResponseSchema` | `BudgetLine` |
+| Stage | Prompt builder            | Output schema                  | Persisted to                          |
+| ----- | ------------------------- | ------------------------------ | ------------------------------------- |
+| 0     | n/a                       | raw text                       | `Script.rawText`, `Script.pageCount`  |
+| 1     | `buildCharactersPrompt`   | `aiCharactersResponseSchema`   | `Character`                           |
+| 2     | `buildScenesPrompt`       | `aiScenesResponseSchema`       | `Scene` + `SceneAppearance`           |
+| 3     | `buildCombinationsPrompt` | `aiCombinationsResponseSchema` | `Script.aiSummary.combinations`       |
+| 4     | `buildDepartmentsPrompt`  | `aiDepartmentsResponseSchema`  | `ProjectDepartment`                   |
+| 5     | `buildShootDaysPrompt`    | `aiShootDaysResponseSchema`    | `Script.aiSummary.estimatedShootDays` |
+| 6     | `buildBudgetPrompt`       | `aiBudgetResponseSchema`       | `BudgetLine`                          |
 
 - **`chatJson()`** uses OpenAI **strict JSON Schema** + Zod parse as a safety
   net. On a schema mismatch it retries once with a tighter system prompt
@@ -439,13 +439,13 @@ it:
 
 Wired call sites:
 
-| Trigger | Kind |
-|---|---|
-| Conflict detector | `CONFLICT_ALERT` |
-| Shoot-day call upsert | `SHOOT_DAY_CALL` |
-| Member invite (existing user) | `PROJECT_INVITE` |
-| Task create / reassignment | `TASK_ASSIGNED` |
-| AI pipeline COMPLETED | `AI_ANALYSIS_DONE` |
+| Trigger                       | Kind               |
+| ----------------------------- | ------------------ |
+| Conflict detector             | `CONFLICT_ALERT`   |
+| Shoot-day call upsert         | `SHOOT_DAY_CALL`   |
+| Member invite (existing user) | `PROJECT_INVITE`   |
+| Task create / reassignment    | `TASK_ASSIGNED`    |
+| AI pipeline COMPLETED         | `AI_ANALYSIS_DONE` |
 
 ---
 
@@ -465,16 +465,16 @@ Cross-stack view (mobile + backend + DB + OTP): see [DEPLOYMENT.md § Recommende
 
 Backend-only variables by tier:
 
-| Variable | Dev (Docker) | Prod (Render) |
-|---|---|---|
-| `NODE_ENV` | `development` | `production` |
-| `DATABASE_URL` | `postgresql://circuit@localhost:5432/circuit_dev` | Supabase pooler or Render Postgres |
-| `REDIS_URL` | `redis://localhost:6379` *(optional)* | Render Redis URL *(optional)* |
-| `JWT_SECRET` | dev placeholder | strong random ≥ 32 chars |
-| `OTP_PROVIDER` | `MOCK` (fixed code `111111`) | `MSG91` / `TWILIO` |
-| `EXPO_PUSH_PROVIDER` | `MOCK` | `EXPO` |
-| `OPENAI_API_KEY` | dev key | real key |
-| `CORS_ORIGINS` | localhost origins | empty OK for mobile-only |
+| Variable             | Dev (Docker)                                      | Prod (Render)                      |
+| -------------------- | ------------------------------------------------- | ---------------------------------- |
+| `NODE_ENV`           | `development`                                     | `production`                       |
+| `DATABASE_URL`       | `postgresql://circuit@localhost:5432/circuit_dev` | Supabase pooler or Render Postgres |
+| `REDIS_URL`          | `redis://localhost:6379` _(optional)_             | Render Redis URL _(optional)_      |
+| `JWT_SECRET`         | dev placeholder                                   | strong random ≥ 32 chars           |
+| `OTP_PROVIDER`       | `MOCK` (fixed code `111111`)                      | `MSG91` / `TWILIO`                 |
+| `EXPO_PUSH_PROVIDER` | `MOCK`                                            | `EXPO`                             |
+| `OPENAI_API_KEY`     | dev key                                           | real key                           |
+| `CORS_ORIGINS`       | localhost origins                                 | empty OK for mobile-only           |
 
 Full schema lives in `src/config/env.ts` — invalid envs **fail boot** with
 a printed list of missing/invalid values.
@@ -518,14 +518,14 @@ tests/
 
 ## 14. Operational playbook
 
-| Symptom | Look at |
-|---|---|
-| Sign-in stuck "Sending code" | `auth.routes.ts` log; check `OTP_PROVIDER` env |
-| Script stuck "ANALYZING_…" | `script-analysis.pipeline.ts` log line; OpenAI quota |
-| Conflict alerts not firing | `conflicts.queue.ts` worker log; `REDIS_URL` reachable? |
-| Push not delivered | `expo-push.provider.ts` ticket result + `PushToken.pushError` |
-| Realtime not updating UI | confirm client joined `project:{id}` room; check JWT in handshake |
-| 401 loop on mobile | `requireAuth` rejected the JWT — likely `JWT_SECRET` rotated |
+| Symptom                      | Look at                                                           |
+| ---------------------------- | ----------------------------------------------------------------- |
+| Sign-in stuck "Sending code" | `auth.routes.ts` log; check `OTP_PROVIDER` env                    |
+| Script stuck "ANALYZING\_…"  | `script-analysis.pipeline.ts` log line; OpenAI quota              |
+| Conflict alerts not firing   | `conflicts.queue.ts` worker log; `REDIS_URL` reachable?           |
+| Push not delivered           | `expo-push.provider.ts` ticket result + `PushToken.pushError`     |
+| Realtime not updating UI     | confirm client joined `project:{id}` room; check JWT in handshake |
+| 401 loop on mobile           | `requireAuth` rejected the JWT — likely `JWT_SECRET` rotated      |
 
 ---
 

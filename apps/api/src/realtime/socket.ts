@@ -92,10 +92,7 @@ export function initSocket(httpServer: HttpServer, corsOrigins: string[]): Authe
     });
 
     socket.on('disconnect', reason => {
-      logger.info(
-        { userId: socket.data.userId, sid: socket.id, reason },
-        'Socket disconnected',
-      );
+      logger.info({ userId: socket.data.userId, sid: socket.id, reason }, 'Socket disconnected');
     });
   });
 

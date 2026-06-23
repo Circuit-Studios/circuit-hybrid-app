@@ -35,11 +35,7 @@ export type LanguagePickerProps = LanguagePickerBase &
   );
 
 export function LanguagePicker(props: LanguagePickerProps) {
-  const {
-    variant = 'chips',
-    placeholder = 'Select a Language',
-    multiple = false,
-  } = props;
+  const { variant = 'chips', placeholder = 'Select a Language', multiple = false } = props;
 
   if (variant === 'dropdown' && props.multiple) {
     return (

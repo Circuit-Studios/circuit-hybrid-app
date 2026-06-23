@@ -29,15 +29,15 @@ features are simply **not surfaced** in v1 (and may be feature‑flagged).
 
 ### v1 scope (confirmed; screen‑level details still TBD pending PDF)
 
-| Module | v1 | Notes |
-|---|---|---|
-| **1 — Onboarding & projects** | ✅ In | Phone OTP auth, create/join project, profile |
-| **3 — Workspace** | ✅ In | Tasks board + Schedule + **Health Ring** |
-| **4 — Team** | ✅ In | Members + invite‑by‑phone (basic role scoping) |
-| **5 — Conflict & alert engine** | ✅ In | Cross‑project conflicts + alerts |
-| **2 — AI script intelligence** | ⏳ Deferred | PDF upload + analysis → future release (the only deferred module) |
-| AI row edits/overrides | ⏳ Deferred | Depends on Module 2 |
-| Spider mode / multi‑project | ⏳ Deferred | Future |
+| Module                          | v1          | Notes                                                             |
+| ------------------------------- | ----------- | ----------------------------------------------------------------- |
+| **1 — Onboarding & projects**   | ✅ In       | Phone OTP auth, create/join project, profile                      |
+| **3 — Workspace**               | ✅ In       | Tasks board + Schedule + **Health Ring**                          |
+| **4 — Team**                    | ✅ In       | Members + invite‑by‑phone (basic role scoping)                    |
+| **5 — Conflict & alert engine** | ✅ In       | Cross‑project conflicts + alerts                                  |
+| **2 — AI script intelligence**  | ⏳ Deferred | PDF upload + analysis → future release (the only deferred module) |
+| AI row edits/overrides          | ⏳ Deferred | Depends on Module 2                                               |
+| Spider mode / multi‑project     | ⏳ Deferred | Future                                                            |
 
 > v1 includes everything **except AI script intelligence** (Module 2) and the features that
 > depend on it. Per‑screen field lists/copy are still **TBD** until the PDF lands.

@@ -20,9 +20,7 @@ export const POPULAR_COUNTRIES: CountryCode[] = [
   'JP',
 ];
 
-const ALL_COUNTRIES = getCountries().sort((a, b) =>
-  countryName(a).localeCompare(countryName(b)),
-);
+const ALL_COUNTRIES = getCountries().sort((a, b) => countryName(a).localeCompare(countryName(b)));
 
 export function listCountries(search = ''): CountryCode[] {
   const q = search.trim().toLowerCase();

@@ -106,7 +106,6 @@ function loadEnv(): Env {
 
 export const env = loadEnv();
 
-export const corsOrigins: string[] = env.CORS_ORIGINS
-  .split(',')
+export const corsOrigins: string[] = env.CORS_ORIGINS.split(',')
   .map(s => s.trim())
   .filter(Boolean);

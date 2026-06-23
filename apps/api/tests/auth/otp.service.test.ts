@@ -23,7 +23,8 @@ const verifyEmailOtp = vi.fn().mockResolvedValue(undefined);
 vi.mock('../../src/modules/auth/email-otp.service.js', () => ({
   sendEmailOtp,
   verifyEmailOtp,
-  toEmailOtpPurpose: (p?: string) => (p === 'signup' ? 'SIGNUP' : p === 'login' ? 'LOGIN' : 'VERIFY_EMAIL'),
+  toEmailOtpPurpose: (p?: string) =>
+    p === 'signup' ? 'SIGNUP' : p === 'login' ? 'LOGIN' : 'VERIFY_EMAIL',
 }));
 
 vi.mock('../../src/modules/auth/providers/phone-otp.provider.js', () => ({

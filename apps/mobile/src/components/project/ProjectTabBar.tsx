@@ -35,10 +35,7 @@ export function ProjectTabBar({ projectId, active }: ProjectTabBarProps) {
   return (
     <View style={[styles.outer, { paddingHorizontal: horizontalPadding }]}>
       <View
-        style={[
-          styles.frame,
-          maxWidth != null && { maxWidth, width: '100%', alignSelf: 'center' },
-        ]}
+        style={[styles.frame, maxWidth != null && { maxWidth, width: '100%', alignSelf: 'center' }]}
       >
         <View style={[styles.bar, shadows.md]}>
           {TABS.map(tab => {

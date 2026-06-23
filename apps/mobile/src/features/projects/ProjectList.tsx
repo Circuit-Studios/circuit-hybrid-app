@@ -14,11 +14,7 @@ import { colors, spacing, typography } from '@/theme';
 import { formatRole } from '@/lib/format';
 import type { ProjectInvite } from '@/api/types';
 import { ProjectCard } from './ProjectCard';
-import {
-  useAcceptInviteMutation,
-  useMyInvitesQuery,
-  useProjectsQuery,
-} from './hooks';
+import { useAcceptInviteMutation, useMyInvitesQuery, useProjectsQuery } from './hooks';
 
 export default function ProjectList() {
   const router = useRouter();
@@ -37,12 +33,8 @@ export default function ProjectList() {
     <ScreenContainer topAligned edges={['top', 'left', 'right']}>
       <ScreenHeader
         eyebrow={`Hi ${user?.firstName?.trim() || 'there'}`}
-        title={
-          inSpiderMode ? 'Your projects' : projects.length === 1 ? 'Your project' : 'Welcome'
-        }
-        subtitle={
-          inSpiderMode ? 'Spider mode — tap a project to open its workspace.' : undefined
-        }
+        title={inSpiderMode ? 'Your projects' : projects.length === 1 ? 'Your project' : 'Welcome'}
+        subtitle={inSpiderMode ? 'Spider mode — tap a project to open its workspace.' : undefined}
         trailing={<AppHeaderActions />}
       />
 
@@ -64,7 +56,10 @@ export default function ProjectList() {
           }
           action={
             canStartProject ? (
-              <Button title="Start a film project" onPress={() => router.push('/(app)/create-project')} />
+              <Button
+                title="Start a film project"
+                onPress={() => router.push('/(app)/create-project')}
+              />
             ) : null
           }
         />

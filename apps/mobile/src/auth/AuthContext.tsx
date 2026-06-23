@@ -10,17 +10,9 @@ import {
 import { logger } from '@/lib/logger';
 import { storage } from '@/lib/storage';
 import { setUnauthorizedHandler, setAuthToken, wakeApi } from '@/api/client';
-import {
-  getMe,
-  verifyOtp as apiVerifyOtp,
-  type VerifyOtpInput,
-} from '@/api/auth';
+import { getMe, verifyOtp as apiVerifyOtp, type VerifyOtpInput } from '@/api/auth';
 import { teardownPushRegistration } from '@/realtime/push';
-import {
-  isIdleSessionExpired,
-  isSessionExpired,
-  resolveSessionExpiresAtMs,
-} from '@/lib/session';
+import { isIdleSessionExpired, isSessionExpired, resolveSessionExpiresAtMs } from '@/lib/session';
 import { useIdleSessionMonitor } from '@/auth/useIdleSessionMonitor';
 import type { AuthUser, VerifyOtpResponse } from '@/api/types';
 import type { StoredUser } from '@/lib/storage';

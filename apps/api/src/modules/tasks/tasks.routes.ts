@@ -135,7 +135,9 @@ router.patch(
         throw forbidden('Your role cannot update task status');
       }
       const allowedKeys: Array<keyof typeof input> = ['status'];
-      const restricted = Object.keys(input).filter(k => !allowedKeys.includes(k as keyof typeof input));
+      const restricted = Object.keys(input).filter(
+        k => !allowedKeys.includes(k as keyof typeof input),
+      );
       if (restricted.length > 0) {
         throw forbidden(`Cannot modify fields: ${restricted.join(', ')} as an assignee`);
       }
@@ -194,7 +196,11 @@ router.patch(
         body: dept ? `In ${dept.displayName}.` : 'You picked up a new task.',
         projectId: existing.projectId,
         deepLink: `/project/${existing.projectId}/tasks`,
-        context: { taskId: updated.id, departmentId: updated.departmentId, priority: updated.priority },
+        context: {
+          taskId: updated.id,
+          departmentId: updated.departmentId,
+          priority: updated.priority,
+        },
       });
     }
 

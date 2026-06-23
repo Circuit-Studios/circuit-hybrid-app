@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { OtpChannel } from '@prisma/client';
-import { isValidOtpTarget, maskOtpTarget, normalizeOtpTarget } from '../../src/modules/auth/otp-target.js';
+import {
+  isValidOtpTarget,
+  maskOtpTarget,
+  normalizeOtpTarget,
+} from '../../src/modules/auth/otp-target.js';
 
 describe('otp-target', () => {
   it('normalizes email to lowercase', () => {

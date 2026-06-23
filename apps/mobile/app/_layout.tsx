@@ -35,20 +35,20 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <AppConfigProvider>
             <AuthProvider>
-            <IdleActivityCapture>
-              <RealtimeProvider>
-                <StatusBar style="dark" />
-                <SplashGate>
-                  <Stack
-                    screenOptions={{
-                      headerShown: false,
-                      contentStyle: { backgroundColor: colors.bg },
-                      animation: 'slide_from_right',
-                    }}
-                  />
-                </SplashGate>
-              </RealtimeProvider>
-            </IdleActivityCapture>
+              <IdleActivityCapture>
+                <RealtimeProvider>
+                  <StatusBar style="dark" />
+                  <SplashGate>
+                    <Stack
+                      screenOptions={{
+                        headerShown: false,
+                        contentStyle: { backgroundColor: colors.bg },
+                        animation: 'slide_from_right',
+                      }}
+                    />
+                  </SplashGate>
+                </RealtimeProvider>
+              </IdleActivityCapture>
             </AuthProvider>
           </AppConfigProvider>
         </QueryClientProvider>

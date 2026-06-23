@@ -1,7 +1,14 @@
 import { Router } from 'express';
 import { OtpChannel } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
-import { asyncHandler, badRequest, conflict, forbidden, notFound, unauthorized } from '../../lib/http.js';
+import {
+  asyncHandler,
+  badRequest,
+  conflict,
+  forbidden,
+  notFound,
+  unauthorized,
+} from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { buildAuthResponse } from './auth-response.js';
 import { hashPassword, verifyPassword } from './password.service.js';
@@ -9,10 +16,7 @@ import { requestOtp, verifyOtp } from './otp.service.js';
 import { OTP_TTL_SECONDS } from './auth.constants.js';
 import { EMAIL_OTP_TTL_MS } from './email-otp.service.js';
 import { env } from '../../config/env.js';
-import {
-  assertLoginChannel,
-  assertSignupChannel,
-} from './verification-policy.js';
+import { assertLoginChannel, assertSignupChannel } from './verification-policy.js';
 import {
   loginSchema,
   requestOtpSchema,
@@ -24,7 +28,11 @@ import {
 export const authPublicRouter: Router = Router();
 export const authProtectedRouter: Router = Router();
 
-async function linkPendingInvites(userId: string, phone?: string | null, email?: string | null): Promise<void> {
+async function linkPendingInvites(
+  userId: string,
+  phone?: string | null,
+  email?: string | null,
+): Promise<void> {
   const or: Array<{ inviteePhone?: string; inviteeEmail?: string }> = [];
   if (phone) or.push({ inviteePhone: phone });
   if (email) or.push({ inviteeEmail: email });
@@ -165,19 +173,17 @@ authPublicRouter.post(
       return;
     }
 
-      await verifyOtp({
-        channel: OtpChannel.PHONE,
-        target: input.phone,
-        code: input.code,
-        purpose: input.signup ? 'signup' : 'login',
-      });
+    await verifyOtp({
+      channel: OtpChannel.PHONE,
+      target: input.phone,
+      code: input.code,
+      purpose: input.signup ? 'signup' : 'login',
+    });
 
     let user = await prisma.user.findUnique({ where: { phone: input.phone } });
     if (!user) {
       if (!input.signup) {
-        throw badRequest(
-          'First-time sign-in requires signup payload (firstName, lastName, role)',
-        );
+        throw badRequest('First-time sign-in requires signup payload (firstName, lastName, role)');
       }
       const passwordHash = input.signup.password
         ? await hashPassword(input.signup.password)

@@ -23,12 +23,7 @@ import {
   SceneEditSheet,
 } from '@/components/EditSheets';
 import { getAnalysis } from '@/api/scripts';
-import {
-  listBudgetLines,
-  listCharacters,
-  listDepartments,
-  listScenes,
-} from '@/api/edits';
+import { listBudgetLines, listCharacters, listDepartments, listScenes } from '@/api/edits';
 import { readApiError } from '@/api/client';
 import { qk } from '@/api/queryKeys';
 import { useAuth } from '@/auth/AuthContext';
@@ -148,9 +143,7 @@ export default function AIResultsScreen() {
     return (
       <ScreenContainer>
         <EmptyState
-          title={
-            script.analysisStatus === 'FAILED' ? 'Analysis failed' : 'Analysis not ready'
-          }
+          title={script.analysisStatus === 'FAILED' ? 'Analysis failed' : 'Analysis not ready'}
           body={
             script.analysisError ??
             'Head back to the progress screen — we may still be working on it.'
@@ -225,9 +218,7 @@ export default function AIResultsScreen() {
           );
         })}
         {summary.characters.characters.length > 8 ? (
-          <Text style={styles.moreLink}>
-            +{summary.characters.characters.length - 8} more
-          </Text>
+          <Text style={styles.moreLink}>+{summary.characters.characters.length - 8} more</Text>
         ) : null}
       </Card>
 
@@ -257,10 +248,7 @@ export default function AIResultsScreen() {
 
       {summary.combinations.groups.length > 0 ? (
         <>
-          <SectionHeader
-            title="Combination scenes"
-            sub="Bundle these to shave shoot days"
-          />
+          <SectionHeader title="Combination scenes" sub="Bundle these to shave shoot days" />
           {summary.combinations.groups.slice(0, 5).map(group => (
             <CombinationCard key={group.groupLabel} group={group} />
           ))}
@@ -301,7 +289,9 @@ export default function AIResultsScreen() {
         {summary.shootDays.optimizationHints.length > 0 ? (
           <View style={styles.hintsBox}>
             {summary.shootDays.optimizationHints.slice(0, 4).map(hint => (
-              <Text key={hint} style={styles.hint}>· {hint}</Text>
+              <Text key={hint} style={styles.hint}>
+                · {hint}
+              </Text>
             ))}
           </View>
         ) : null}
@@ -332,7 +322,9 @@ export default function AIResultsScreen() {
           <View style={styles.caveatsBox}>
             <Text style={styles.caveatsTitle}>Caveats</Text>
             {summary.budget.caveats.map(c => (
-              <Text key={c} style={styles.caveat}>· {c}</Text>
+              <Text key={c} style={styles.caveat}>
+                · {c}
+              </Text>
             ))}
           </View>
         ) : null}
@@ -345,19 +337,13 @@ export default function AIResultsScreen() {
         />
       </View>
 
-      <CharacterEditSheet
-        character={editingCharacter}
-        onClose={() => setEditingCharacter(null)}
-      />
+      <CharacterEditSheet character={editingCharacter} onClose={() => setEditingCharacter(null)} />
       <SceneEditSheet scene={editingScene} onClose={() => setEditingScene(null)} />
       <DepartmentEditSheet
         department={editingDepartment}
         onClose={() => setEditingDepartment(null)}
       />
-      <BudgetLineEditSheet
-        line={editingBudgetLine}
-        onClose={() => setEditingBudgetLine(null)}
-      />
+      <BudgetLineEditSheet line={editingBudgetLine} onClose={() => setEditingBudgetLine(null)} />
     </ScreenContainer>
   );
 }
@@ -385,8 +371,8 @@ function CharacterRow({
     character.importance === 'LEAD'
       ? 'accent'
       : character.importance === 'SUPPORT'
-      ? 'info'
-      : 'neutral';
+        ? 'info'
+        : 'neutral';
   const content = (
     <View style={styles.charRow}>
       <View style={{ flex: 1 }}>
@@ -403,9 +389,7 @@ function CharacterRow({
       <View style={styles.charRight}>
         <StatusBadge label={character.importance.replace('_', ' ')} tone={tone} />
         {character.estimatedScreenTimeMinutes != null ? (
-          <Text style={styles.charScreenTime}>
-            ~{character.estimatedScreenTimeMinutes}m
-          </Text>
+          <Text style={styles.charScreenTime}>~{character.estimatedScreenTimeMinutes}m</Text>
         ) : null}
       </View>
     </View>
@@ -476,9 +460,7 @@ function CombinationCard({ group }: { group: AICombinationGroup }) {
   return (
     <Card style={styles.comboCard}>
       <Text style={styles.comboLabel}>{group.groupLabel}</Text>
-      <Text style={styles.comboMeta}>
-        {group.characters.join(' · ')}
-      </Text>
+      <Text style={styles.comboMeta}>{group.characters.join(' · ')}</Text>
       <View style={styles.comboRow}>
         <View>
           <Text style={styles.comboStatBig}>
@@ -499,9 +481,7 @@ function CombinationCard({ group }: { group: AICombinationGroup }) {
           <Text style={styles.comboStatLabel}>Saved</Text>
         </View>
       </View>
-      <Text style={styles.comboScenes}>
-        Scenes: {group.sceneNumbers.join(', ')}
-      </Text>
+      <Text style={styles.comboScenes}>Scenes: {group.sceneNumbers.join(', ')}</Text>
     </Card>
   );
 }
@@ -528,13 +508,19 @@ function DepartmentCard({
       ) : (
         <StatusBadge label="Optional" tone="neutral" />
       )}
-      <Text style={styles.deptReason} numberOfLines={3}>{dept.reasoning}</Text>
+      <Text style={styles.deptReason} numberOfLines={3}>
+        {dept.reasoning}
+      </Text>
     </View>
   );
   // Outer wrapper always carries the 48% grid sizing so we don't break the
   // two-column layout whether or not the card is tappable.
   return onPress ? (
-    <Pressable onPress={onPress} accessibilityRole="button" style={[styles.deptCardWrap, wrapStyle]}>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={[styles.deptCardWrap, wrapStyle]}
+    >
       {inner}
     </Pressable>
   ) : (
@@ -595,7 +581,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statBig: { ...typography.display, color: colors.accent },
-  statLabel: { ...typography.caption, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.6 },
+  statLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
   statSub: { ...typography.caption, color: colors.textMuted },
   savingsCard: {
     marginTop: spacing.xl,
@@ -623,7 +614,12 @@ const styles = StyleSheet.create({
   sceneRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
   sceneRowBody: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   sceneCell: { ...typography.body, color: colors.textPrimary, paddingHorizontal: spacing.xs },
-  sceneCellHead: { ...typography.micro, color: colors.textSecondary, textTransform: 'uppercase', paddingHorizontal: spacing.xs },
+  sceneCellHead: {
+    ...typography.micro,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    paddingHorizontal: spacing.xs,
+  },
   sceneCellFlags: { flexDirection: 'row', gap: 4, flexWrap: 'wrap' },
   comboCard: { marginTop: spacing.md, gap: spacing.xs },
   comboLabel: { ...typography.heading, color: colors.textPrimary },
@@ -644,7 +640,13 @@ const styles = StyleSheet.create({
   },
   deptName: { ...typography.heading, color: colors.textPrimary },
   deptReason: { ...typography.caption, color: colors.textSecondary },
-  actorRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  actorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
   actorName: { ...typography.bodyStrong, color: colors.textPrimary, flex: 1 },
   actorMeta: { flexDirection: 'row', gap: spacing.lg, alignItems: 'center' },
   actorScenes: { ...typography.caption, color: colors.textMuted },

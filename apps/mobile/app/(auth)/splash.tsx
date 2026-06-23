@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useRouter } from 'expo-router';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { CircuitLogo } from '@/components/CircuitLogo';
@@ -8,7 +8,7 @@ const SPLASH_MS = 2200;
 
 export default function SplashScreen() {
   const router = useRouter();
-  const progress = useRef(new Animated.Value(0)).current;
+  const progress = useMemo(() => new Animated.Value(0), []);
 
   useEffect(() => {
     Animated.timing(progress, {
@@ -81,9 +81,20 @@ const styles = StyleSheet.create({
   },
   wordmark: { fontSize: 34, fontWeight: '800', color: colors.textPrimary, letterSpacing: 0.5 },
   wordmarkAccent: { color: colors.brand },
-  rule: { width: 48, height: 3, borderRadius: 2, backgroundColor: colors.brand, marginVertical: spacing.sm },
+  rule: {
+    width: 48,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.brand,
+    marginVertical: spacing.sm,
+  },
   for: { ...typography.micro, color: colors.textMuted },
-  tagline: { ...typography.body, color: colors.textSecondary, fontStyle: 'italic', marginTop: spacing.xs },
+  tagline: {
+    ...typography.body,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+    marginTop: spacing.xs,
+  },
   footer: { gap: spacing.md },
   progressTrack: {
     height: 4,

@@ -42,9 +42,7 @@ export default function AccountScreen() {
 
       <Card variant="hero" style={styles.profileCard}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {user ? formatUserInitials(user) : '?'}
-          </Text>
+          <Text style={styles.avatarText}>{user ? formatUserInitials(user) : '?'}</Text>
         </View>
         <Text style={styles.name}>{user ? formatUserName(user) : 'Circuit user'}</Text>
         {user?.phone ? <Text style={styles.meta}>{user.phone}</Text> : null}
@@ -60,7 +58,10 @@ export default function AccountScreen() {
       <Card variant="glass">
         <InfoRow label="Signed in as" value={user ? formatUserName(user) : '—'} />
         <View style={styles.divider} />
-        <InfoRow label="Default role" value={user?.defaultRole ? formatRole(user.defaultRole) : '—'} />
+        <InfoRow
+          label="Default role"
+          value={user?.defaultRole ? formatRole(user.defaultRole) : '—'}
+        />
         <View style={styles.divider} />
         <InfoRow label="API server" value={API_BASE_URL} mono />
       </Card>
@@ -77,15 +78,7 @@ export default function AccountScreen() {
   );
 }
 
-function InfoRow({
-  label,
-  value,
-  mono,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
+function InfoRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>

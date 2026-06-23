@@ -80,8 +80,7 @@ export default function NotificationsScreen() {
     },
   });
 
-  const items: NotificationRecord[] =
-    infinite.data?.pages.flatMap(p => p.items) ?? [];
+  const items: NotificationRecord[] = infinite.data?.pages.flatMap(p => p.items) ?? [];
 
   return (
     <ScreenContainer>
@@ -145,10 +144,7 @@ export default function NotificationsScreen() {
           onEndReachedThreshold={0.4}
           ListFooterComponent={
             infinite.isFetchingNextPage ? (
-              <ActivityIndicator
-                color={colors.accent}
-                style={{ marginVertical: spacing.lg }}
-              />
+              <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.lg }} />
             ) : null
           }
           refreshControl={
@@ -184,13 +180,7 @@ function FilterPill({
   );
 }
 
-function NotificationRow({
-  n,
-  onPress,
-}: {
-  n: NotificationRecord;
-  onPress: () => void;
-}) {
+function NotificationRow({ n, onPress }: { n: NotificationRecord; onPress: () => void }) {
   const meta = KIND_META[n.kind] ?? KIND_META.GENERIC;
   const unread = !n.readAt;
   return (

@@ -1,12 +1,7 @@
 import { EmailOtpPurpose, OtpChannel } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { badRequest, unauthorized } from '../../lib/http.js';
-import {
-  generateSixDigitOtp,
-  hashOtpCode,
-  normalizeEmail,
-  verifyOtpCode,
-} from './otp-crypto.js';
+import { generateSixDigitOtp, hashOtpCode, normalizeEmail, verifyOtpCode } from './otp-crypto.js';
 import { getEmailOtpProvider } from './providers/email-otp.provider.js';
 import { assertOtpChannelEnabled } from './verification-policy.js';
 
@@ -14,8 +9,7 @@ export const EMAIL_OTP_TTL_MS = 5 * 60 * 1000;
 export const EMAIL_OTP_MAX_ATTEMPTS = 5;
 export const EMAIL_OTP_COOLDOWN_SECONDS = 45;
 
-export const GENERIC_SEND_SUCCESS =
-  'If the email is valid, a verification code has been sent.';
+export const GENERIC_SEND_SUCCESS = 'If the email is valid, a verification code has been sent.';
 
 const GENERIC_VERIFY_FAILURE = 'Invalid or expired verification code.';
 
@@ -57,10 +51,7 @@ export async function sendEmailOtp(
     where: { email: normalized, purpose, consumedAt: null },
     orderBy: { createdAt: 'desc' },
   });
-  if (
-    recent &&
-    Date.now() - recent.createdAt.getTime() < EMAIL_OTP_COOLDOWN_SECONDS * 1000
-  ) {
+  if (recent && Date.now() - recent.createdAt.getTime() < EMAIL_OTP_COOLDOWN_SECONDS * 1000) {
     throw badRequest(
       `Please wait ${EMAIL_OTP_COOLDOWN_SECONDS} seconds before requesting another code.`,
     );

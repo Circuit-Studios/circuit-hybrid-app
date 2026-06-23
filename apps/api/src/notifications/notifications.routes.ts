@@ -116,7 +116,7 @@ router.get(
         createdAt: n.createdAt.toISOString(),
         contextJson: n.contextJson ?? null,
       })),
-      nextCursor: hasMore ? items[items.length - 1]?.id ?? null : null,
+      nextCursor: hasMore ? (items[items.length - 1]?.id ?? null) : null,
     });
   }),
 );

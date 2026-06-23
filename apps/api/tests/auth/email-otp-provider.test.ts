@@ -19,9 +19,8 @@ describe('ResendEmailOtpProvider', () => {
   });
 
   it('requires RESEND_API_KEY', async () => {
-    const { ResendEmailOtpProvider, resetEmailOtpProviderForTests } = await import(
-      '../../src/modules/auth/providers/email-otp.provider.js'
-    );
+    const { ResendEmailOtpProvider, resetEmailOtpProviderForTests } =
+      await import('../../src/modules/auth/providers/email-otp.provider.js');
     resetEmailOtpProviderForTests();
     const provider = new ResendEmailOtpProvider();
     await expect(provider.send('user@studio.com', '123456')).rejects.toThrow(/RESEND_API_KEY/);
@@ -37,9 +36,8 @@ describe('ResendEmailOtpProvider', () => {
       },
     }));
 
-    const { ResendEmailOtpProvider, resetEmailOtpProviderForTests } = await import(
-      '../../src/modules/auth/providers/email-otp.provider.js'
-    );
+    const { ResendEmailOtpProvider, resetEmailOtpProviderForTests } =
+      await import('../../src/modules/auth/providers/email-otp.provider.js');
     resetEmailOtpProviderForTests();
     const provider = new ResendEmailOtpProvider();
     await expect(provider.send('user@studio.com', '123456')).rejects.toThrow(/RESEND_FROM_EMAIL/);
@@ -61,9 +59,8 @@ describe('Mock email OTP', () => {
       },
     }));
 
-    const { getEmailOtpProvider, resetEmailOtpProviderForTests } = await import(
-      '../../src/modules/auth/providers/email-otp.provider.js'
-    );
+    const { getEmailOtpProvider, resetEmailOtpProviderForTests } =
+      await import('../../src/modules/auth/providers/email-otp.provider.js');
     resetEmailOtpProviderForTests();
     await expect(getEmailOtpProvider().send('user@studio.com', '111111')).resolves.toBeUndefined();
   });

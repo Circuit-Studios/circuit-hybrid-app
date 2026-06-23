@@ -299,12 +299,7 @@ async function persistSummary(
   });
 }
 
-function formatProjectLanguages(
-  languages: ProjectLanguage[],
-  fallback: ProjectLanguage,
-): string {
+function formatProjectLanguages(languages: ProjectLanguage[], fallback: ProjectLanguage): string {
   const list = languages.length > 0 ? languages : [fallback];
-  return list
-    .map(l => l.charAt(0) + l.slice(1).toLowerCase())
-    .join(', ');
+  return list.map(l => l.charAt(0) + l.slice(1).toLowerCase()).join(', ');
 }

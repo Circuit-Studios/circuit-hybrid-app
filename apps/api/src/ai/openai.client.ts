@@ -60,7 +60,10 @@ export async function chatJson<T>(opts: JsonChatOptions<T>): Promise<T> {
 
   const result = opts.schema.safeParse(parsed);
   if (!result.success) {
-    logger.error({ issues: result.error.issues, raw: parsed }, 'AI response failed schema validation');
+    logger.error(
+      { issues: result.error.issues, raw: parsed },
+      'AI response failed schema validation',
+    );
     throw new Error('AI response did not match expected schema');
   }
   return result.data;

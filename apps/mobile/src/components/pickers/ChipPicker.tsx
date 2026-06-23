@@ -33,9 +33,7 @@ export function ChipPicker<T extends string>({
               accessibilityState={{ selected: active }}
               style={[styles.chip, active && styles.chipActive]}
             >
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                {option.label}
-              </Text>
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>{option.label}</Text>
             </Pressable>
           );
         })}

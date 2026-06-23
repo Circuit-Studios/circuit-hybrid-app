@@ -2,17 +2,17 @@
 
 ## Files
 
-| File | Purpose |
-|------|---------|
-| `schema.prisma` | Data model (edit this) |
-| `init.sql` | Reference SQL snapshot (historical) |
-| `migrations/` | Prisma incremental migrations |
+| File            | Purpose                             |
+| --------------- | ----------------------------------- |
+| `schema.prisma` | Data model (edit this)              |
+| `init.sql`      | Reference SQL snapshot (historical) |
+| `migrations/`   | Prisma incremental migrations       |
 
 ## Local dev (Docker)
 
 ```bash
 docker compose up -d
-npm run dev:db
+npm run db:prepare:dev
 ```
 
 ## Render (production)

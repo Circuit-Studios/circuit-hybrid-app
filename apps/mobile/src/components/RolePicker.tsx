@@ -59,7 +59,5 @@ export function RolePicker({
     );
   }
 
-  return (
-    <ChipPicker label="Your role" options={options} value={value} onChange={onChange} />
-  );
+  return <ChipPicker label="Your role" options={options} value={value} onChange={onChange} />;
 }

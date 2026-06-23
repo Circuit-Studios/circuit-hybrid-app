@@ -112,17 +112,14 @@ router.get(
       }),
     ]);
 
-    const tasksDone =
-      taskCounts.find(r => r.status === TaskStatus.DONE)?._count ?? 0;
+    const tasksDone = taskCounts.find(r => r.status === TaskStatus.DONE)?._count ?? 0;
     const tasksTotal = taskCounts.reduce((sum, r) => sum + r._count, 0);
 
     const now = new Date();
     const shootCompleted = shootDays.filter(d => d.date < todayStart).length;
     const shootTotal = shootDays.length;
     const nextShootDay =
-      shootDays.find(d => d.date >= todayStart) ??
-      shootDays[shootDays.length - 1] ??
-      null;
+      shootDays.find(d => d.date >= todayStart) ?? shootDays[shootDays.length - 1] ?? null;
 
     const productions = await Promise.all(
       memberships.map(async m => {
@@ -254,9 +251,7 @@ router.get(
         userName: name,
         userInitials: actor ? initials(actor.firstName, actor.lastName) : '??',
         action:
-          task.status === 'DONE'
-            ? `marked **${task.title}** done`
-            : `updated **${task.title}**`,
+          task.status === 'DONE' ? `marked **${task.title}** done` : `updated **${task.title}**`,
         targetLabel: task.title,
         statusBadge: badge,
         createdAt: task.updatedAt.toISOString(),
@@ -281,9 +276,7 @@ router.get(
 
     for (const member of members) {
       const u = member.user;
-      const name = u
-        ? `${u.firstName} ${u.lastName}`.trim()
-        : member.inviteeName ?? 'New member';
+      const name = u ? `${u.firstName} ${u.lastName}`.trim() : (member.inviteeName ?? 'New member');
       feed.push({
         id: `member-${member.id}`,
         category: 'team',

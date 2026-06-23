@@ -6,8 +6,7 @@ export const qk = {
   project: (id: string) => ['project', id] as const,
   health: (projectId: string) => ['health', projectId] as const,
 
-  tasks: (projectId: string, departmentId = 'all') =>
-    ['tasks', projectId, departmentId] as const,
+  tasks: (projectId: string, departmentId = 'all') => ['tasks', projectId, departmentId] as const,
   tasksRoot: (projectId: string) => ['tasks', projectId] as const,
 
   schedule: (projectId: string) => ['schedule', projectId] as const,

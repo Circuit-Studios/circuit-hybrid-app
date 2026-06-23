@@ -33,7 +33,10 @@ import { disconnectRedis } from '../queues/redis.js';
 function resolveRequestId(incoming: string | string[] | undefined): string {
   const raw = Array.isArray(incoming) ? incoming[0] : incoming;
   if (typeof raw === 'string') {
-    const sanitized = raw.trim().replace(/[\r\n\t]/g, '').slice(0, 128);
+    const sanitized = raw
+      .trim()
+      .replace(/[\r\n\t]/g, '')
+      .slice(0, 128);
     if (sanitized.length > 0) return sanitized;
   }
   return randomUUID();

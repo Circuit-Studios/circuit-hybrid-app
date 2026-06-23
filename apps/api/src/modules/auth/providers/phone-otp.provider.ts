@@ -11,9 +11,7 @@ const MSG91_ENDPOINT = 'https://control.msg91.com/api/v5/otp';
 class Msg91Provider implements PhoneOtpProvider {
   async send(phone: string, code: string): Promise<void> {
     if (!env.MSG91_AUTH_KEY || !env.MSG91_TEMPLATE_ID) {
-      throw new Error(
-        'MSG91 provider requires MSG91_AUTH_KEY and MSG91_TEMPLATE_ID env vars',
-      );
+      throw new Error('MSG91 provider requires MSG91_AUTH_KEY and MSG91_TEMPLATE_ID env vars');
     }
     const mobile = phone.replace(/^\+/, '');
     const url = `${MSG91_ENDPOINT}?template_id=${encodeURIComponent(
