@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import { OtpChannel } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
-import { asyncHandler, badRequest, conflict, notFound, unauthorized } from '../../lib/http.js';
+import { asyncHandler, badRequest, conflict, forbidden, notFound, unauthorized } from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { buildAuthResponse } from './auth-response.js';
 import { hashPassword, verifyPassword } from './password.service.js';
 import { requestOtp, verifyOtp } from './otp.service.js';
 import { OTP_TTL_SECONDS } from './auth.constants.js';
+import { EMAIL_OTP_TTL_MS } from './email-otp.service.js';
+import { env } from '../../config/env.js';
 import {
   assertLoginChannel,
   assertSignupChannel,
@@ -57,6 +59,18 @@ async function assertOtpPurpose(body: RequestOtpBody): Promise<void> {
   }
 }
 
+const EMAIL_OTP_TTL_SECONDS = EMAIL_OTP_TTL_MS / 1000;
+
+authPublicRouter.post(
+  '/register',
+  asyncHandler(async (_req, res) => {
+    if (env.NODE_ENV === 'production' || env.APP_ENV === 'prod') {
+      throw forbidden('Direct registration is disabled. Sign up with OTP verification.');
+    }
+    throw forbidden('Direct registration is disabled. Use /auth/request-otp and /auth/verify-otp.');
+  }),
+);
+
 authPublicRouter.post(
   '/login',
   asyncHandler(async (req, res) => {
@@ -100,7 +114,7 @@ authPublicRouter.post(
 
     res.json({
       ok: true,
-      ttlSeconds: body.channel === 'EMAIL' ? 600 : OTP_TTL_SECONDS,
+      ttlSeconds: body.channel === 'EMAIL' ? EMAIL_OTP_TTL_SECONDS : OTP_TTL_SECONDS,
     });
   }),
 );

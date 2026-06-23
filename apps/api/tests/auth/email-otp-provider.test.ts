@@ -26,6 +26,24 @@ describe('ResendEmailOtpProvider', () => {
     const provider = new ResendEmailOtpProvider();
     await expect(provider.send('user@studio.com', '123456')).rejects.toThrow(/RESEND_API_KEY/);
   });
+
+  it('requires RESEND_FROM_EMAIL when API key is set', async () => {
+    vi.doMock('../../src/config/env.js', () => ({
+      env: {
+        EMAIL_OTP_PROVIDER: 'RESEND',
+        RESEND_API_KEY: 're_test',
+        OTP_FROM_EMAIL: undefined,
+        RESEND_FROM_EMAIL: undefined,
+      },
+    }));
+
+    const { ResendEmailOtpProvider, resetEmailOtpProviderForTests } = await import(
+      '../../src/modules/auth/providers/email-otp.provider.js'
+    );
+    resetEmailOtpProviderForTests();
+    const provider = new ResendEmailOtpProvider();
+    await expect(provider.send('user@studio.com', '123456')).rejects.toThrow(/RESEND_FROM_EMAIL/);
+  });
 });
 
 describe('Mock email OTP', () => {

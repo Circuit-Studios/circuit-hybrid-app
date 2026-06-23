@@ -10,7 +10,7 @@ import {
 import { getEmailOtpProvider } from './providers/email-otp.provider.js';
 import { assertOtpChannelEnabled } from './verification-policy.js';
 
-export const EMAIL_OTP_TTL_MS = 10 * 60 * 1000;
+export const EMAIL_OTP_TTL_MS = 5 * 60 * 1000;
 export const EMAIL_OTP_MAX_ATTEMPTS = 5;
 export const EMAIL_OTP_COOLDOWN_SECONDS = 45;
 

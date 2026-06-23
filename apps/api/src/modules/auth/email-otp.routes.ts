@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { asyncHandler } from '../../lib/http.js';
 import { requireFeature } from '../../middleware/require-feature.js';
 import {
+  EMAIL_OTP_COOLDOWN_SECONDS,
+  EMAIL_OTP_TTL_MS,
   GENERIC_SEND_SUCCESS,
   sendEmailOtp,
   toEmailOtpPurpose,
@@ -37,8 +39,8 @@ router.post(
     res.json({
       ok: true,
       message: GENERIC_SEND_SUCCESS,
-      ttlSeconds: 600,
-      cooldownSeconds: 45,
+      ttlSeconds: EMAIL_OTP_TTL_MS / 1000,
+      cooldownSeconds: EMAIL_OTP_COOLDOWN_SECONDS,
     });
   }),
 );

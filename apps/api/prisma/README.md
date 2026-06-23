@@ -5,8 +5,8 @@
 | File | Purpose |
 |------|---------|
 | `schema.prisma` | Data model (edit this) |
-| `init.sql` | Full schema SQL for a fresh database |
-| `migrations/20260608120000_init/` | Prisma migration (same SQL) |
+| `init.sql` | Reference SQL snapshot (historical) |
+| `migrations/` | Prisma incremental migrations |
 
 ## Local dev (Docker)
 
@@ -17,17 +17,18 @@ npm run dev:db
 
 ## Render (production)
 
-Render Postgres is linked via `DATABASE_URL`. Migrations run in the Render **build** command:
+Render Postgres is linked via `DATABASE_URL`. Apply migrations **manually** when schema changes land:
 
 ```bash
-npx prisma migrate deploy
+cd apps/api
+npm run prisma:deploy
 ```
 
-For a one-off local run against prod: `npm run prod:bootstrap`
+Do **not** rely on Render build/start hooks for migrations unless you have explicitly configured that workflow.
 
 ## After changing `schema.prisma`
 
 ```bash
-npm run db:sql          # regenerate init.sql + migration copy
-npm run prisma:migrate  # create a new incremental migration (dev only)
+npm run prisma:migrate   # create a new incremental migration (dev only)
+npm run prisma:deploy    # apply on shared/staging/prod
 ```

@@ -142,10 +142,11 @@ export default function AuthScreen() {
     fallbackError: tab === 'signup' ? 'Could not start sign up' : 'Could not send sign-in code',
   });
 
-  const otpTargetHint =
-    activeChannel === 'EMAIL'
-      ? 'OTP is sent to your email.'
-      : 'OTP is sent to your phone.';
+  const signupUsesEmail = tab === 'signup' && signupChannel === 'EMAIL';
+
+  const otpTargetHint = signupUsesEmail
+    ? "We'll email your verification code."
+    : 'OTP is sent to your phone.';
 
   return (
     <KeyboardAvoidingView
@@ -205,7 +206,22 @@ export default function AuthScreen() {
           />
         ) : null}
 
-        {(activeChannel === 'PHONE' || tab === 'signup' || config.loginIdentifier === 'BOTH') ? (
+        {tab === 'signup' && signupChannel === 'EMAIL' ? (
+          <View style={styles.phoneBlock}>
+            <PhoneField
+              label="Phone (optional)"
+              country={phoneField.country}
+              nationalNumber={phoneField.nationalNumber}
+              onCountryChange={phoneField.setCountry}
+              onNationalNumberChange={phoneField.setNationalNumber}
+              hint="Used for crew invites — we'll email your verification code."
+              showError={attempted && !!phoneField.nationalNumber && !phoneField.isValid}
+              error={phoneField.error ?? undefined}
+            />
+          </View>
+        ) : (tab === 'signup' && signupChannel === 'PHONE') ||
+          activeChannel === 'PHONE' ||
+          (tab === 'signin' && config.loginIdentifier === 'BOTH') ? (
           <View style={styles.phoneBlock}>
             <PhoneField
               label={phoneRequired ? 'Phone' : 'Phone (optional)'}
@@ -271,7 +287,15 @@ export default function AuthScreen() {
           ]}
         >
           <Text style={styles.ctaText}>
-            {submitting ? 'Sending code…' : tab === 'signup' ? 'Get started →' : 'Send sign-in code →'}
+            {submitting
+              ? 'Sending code…'
+              : tab === 'signup'
+                ? signupUsesEmail
+                  ? 'Email verification code →'
+                  : 'Get started →'
+                : signupUsesEmail
+                  ? 'Email sign-in code →'
+                  : 'Send sign-in code →'}
           </Text>
         </Pressable>
       </View>

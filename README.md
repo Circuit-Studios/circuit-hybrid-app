@@ -17,7 +17,8 @@ Monorepo for **Circuit** — film production planning (Expo mobile + Node.js API
 git clone git@github.com:Circuit-Studios/circuit-hybrid-app.git
 cd circuit-hybrid-app
 npm install
-npm run setup:env
+npm run setup:env:mobile   # local Expo — required for mobile dev
+# npm run setup:env:api    # only when running the API locally (Workflow B)
 ```
 
 ### 2. Pick a workflow
@@ -67,7 +68,8 @@ First-time iOS native setup: [`apps/mobile/README.md`](./apps/mobile/README.md)
 | Command | Purpose |
 |---------|---------|
 | `npm install` | Install all workspace dependencies |
-| `npm run setup:env` | Create `apps/api/.env.development` + `apps/mobile/.env` from examples |
+| `npm run setup:env:api` | Create `apps/api/.env.development` from example (fails loudly if misconfigured) |
+| `npm run setup:env:mobile` | Create `apps/mobile/.env` from example |
 | `npm run api:dev` | Start API with hot reload |
 | `npm run mobile` | Start Expo Metro (alias: `npm run dev:mobile`) |
 | `npm run typecheck` | Typecheck mobile + API |
@@ -101,13 +103,18 @@ Details: [`apps/api/docs/DEPLOYMENT.md`](./apps/api/docs/DEPLOYMENT.md)
 
 ## Deploy API (Render)
 
+Configure in the **Render dashboard** — no Blueprint or `render.yaml`.
+
 1. Push to GitHub.
 2. Render → **New** → **Web Service** → connect this repo.
-3. Set **Root directory** to `apps/api` (or configure build/start per [`apps/api/docs/DEPLOYMENT.md`](./apps/api/docs/DEPLOYMENT.md)).
-4. Set secrets in the Render dashboard (`OPENAI_API_KEY`, `JWT_SECRET`, `DATABASE_URL`, etc.) — never commit them.
-5. Run migrations separately (`npm run prisma:deploy` in `apps/api`) — **not** in the Render build/start command unless you have explicitly chosen that workflow.
+3. Set **Root directory** to the monorepo root.
+4. **Build:** `npm ci --include=dev && npm run prisma:generate -w circuit-backend && npm run build -w circuit-backend`
+5. **Start:** `npm start -w circuit-backend`
+6. **Pre-Deploy:** leave empty.
+7. Set secrets in Render → **Environment** — never commit them.
+8. Run migrations separately: `cd apps/api && npm run prisma:deploy` (not in Render build/start by default).
 
-For Resend email OTP, set `OTP_PROVIDER=RESEND_EMAIL`, `RESEND_API_KEY`, and `RESEND_FROM_EMAIL` (verified domain). See [docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md#resend-email-otp).
+Full guide: [`apps/api/docs/DEPLOYMENT.md`](./apps/api/docs/DEPLOYMENT.md)
 
 ---
 

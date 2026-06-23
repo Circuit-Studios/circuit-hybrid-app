@@ -11,7 +11,7 @@ export interface EmailOtpProvider {
 }
 
 export function buildEmailOtpText(code: string): string {
-  return `Your Circuit verification code is ${code}. It expires in 10 minutes.`;
+  return `Your Circuit verification code is ${code}. It expires in 5 minutes.`;
 }
 
 export function buildEmailOtpHtml(code: string): string {
@@ -20,7 +20,7 @@ export function buildEmailOtpHtml(code: string): string {
   <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1c1c1e;">
     <p>Your Circuit verification code is:</p>
     <p style="font-size: 28px; font-weight: 700; letter-spacing: 4px;">${code}</p>
-    <p style="color: #666;">This code expires in 10 minutes. If you did not request it, you can ignore this email.</p>
+    <p style="color: #666;">This code expires in 5 minutes. If you did not request it, you can ignore this email.</p>
   </body>
 </html>`;
 }

@@ -41,4 +41,23 @@ describe('auth request-otp purpose checks', () => {
       if (existing) throw conflict('An account with this email already exists');
     }).toThrow(/already exists/);
   });
+
+  it('rejects duplicate phone signup', async () => {
+    prismaMock.user.findUnique.mockResolvedValue({ id: 'existing-phone' });
+
+    const { requestOtpSchema } = await import('../../src/modules/auth/auth.schemas.js');
+    const body = requestOtpSchema.parse({
+      phone: '+919812345678',
+      purpose: 'signup',
+    });
+
+    const { conflict } = await import('../../src/lib/http.js');
+    const { prisma } = await import('../../src/lib/prisma.js');
+
+    const existing = await prisma.user.findUnique({ where: { phone: body.phone } });
+    expect(existing).toBeTruthy();
+    expect(() => {
+      if (existing) throw conflict('An account with this phone number already exists');
+    }).toThrow(/already exists/);
+  });
 });

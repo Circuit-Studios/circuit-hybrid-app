@@ -15,6 +15,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
     "test": "jest",
+    "setup:env": "sh -c 'test -f .env || cp .env.example .env'",
     "generate:brand": "node scripts/generate-brand-assets.mjs"
   },
   "dependencies": {

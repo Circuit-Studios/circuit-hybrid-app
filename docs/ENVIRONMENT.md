@@ -20,7 +20,8 @@ Git tracks **`.env.example` only** — never commit real secrets.
 From the monorepo root:
 
 ```bash
-npm run setup:env
+npm run setup:env:api
+npm run setup:env:mobile
 ```
 
 This creates:
