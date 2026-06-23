@@ -28,12 +28,13 @@ const SCRIPT_EDITOR_ROLES: UserRole[] = [
   UserRole.LINE_PRODUCER,
 ];
 
-const INVITER_ROLES: UserRole[] = [
-  UserRole.DIRECTOR,
-  UserRole.PRODUCER,
-  UserRole.EXECUTIVE_PRODUCER,
-  UserRole.LINE_PRODUCER,
-];
+/** Director / producer tier — script upload, invites, full task management. */
+export const LEADERSHIP_ROLES: UserRole[] = SCRIPT_EDITOR_ROLES;
+
+/** Leadership + AD — schedule, scenes, workspace-wide visibility. */
+export const SCHEDULE_MANAGER_ROLES: UserRole[] = [...LEADERSHIP_ROLES, UserRole.AD];
+
+const INVITER_ROLES: UserRole[] = LEADERSHIP_ROLES;
 
 export const rolePermissions: Record<UserRole, Permission[]> = {
   [UserRole.DIRECTOR]: [
@@ -94,6 +95,14 @@ export function canInviteMembers(role: UserRole): boolean {
 
 export function canEditScripts(role: UserRole): boolean {
   return SCRIPT_EDITOR_ROLES.includes(role);
+}
+
+export function canManageSchedule(role: UserRole): boolean {
+  return SCHEDULE_MANAGER_ROLES.includes(role);
+}
+
+export function hasFullProjectVisibility(role: UserRole): boolean {
+  return SCHEDULE_MANAGER_ROLES.includes(role);
 }
 
 export interface ProjectMembershipContext {

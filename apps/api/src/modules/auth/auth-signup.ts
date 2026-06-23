@@ -26,11 +26,14 @@ export async function findOrCreateUserAfterOtp(input: VerifyOtpBody): Promise<Us
     let user = await prisma.user.findUnique({ where: { email: input.email } });
     if (!user) {
       if (!input.signup) {
-        throw badRequest('First-time sign-in requires signup payload (firstName, lastName, role)');
+        throw badRequest(
+          'First-time sign-in requires signup payload (firstName, lastName, role, password)',
+        );
       }
-      const passwordHash = input.signup.password
-        ? await hashPassword(input.signup.password)
-        : undefined;
+      if (!input.signup.password) {
+        throw badRequest('Password is required to create an account');
+      }
+      const passwordHash = await hashPassword(input.signup.password);
       user = await prisma.user.create({
         data: {
           email: input.email,
@@ -54,11 +57,14 @@ export async function findOrCreateUserAfterOtp(input: VerifyOtpBody): Promise<Us
   let user = await prisma.user.findUnique({ where: { phone: input.phone } });
   if (!user) {
     if (!input.signup) {
-      throw badRequest('First-time sign-in requires signup payload (firstName, lastName, role)');
+      throw badRequest(
+        'First-time sign-in requires signup payload (firstName, lastName, role, password)',
+      );
     }
-    const passwordHash = input.signup.password
-      ? await hashPassword(input.signup.password)
-      : undefined;
+    if (!input.signup.password) {
+      throw badRequest('Password is required to create an account');
+    }
+    const passwordHash = await hashPassword(input.signup.password);
     user = await prisma.user.create({
       data: {
         phone: input.phone,

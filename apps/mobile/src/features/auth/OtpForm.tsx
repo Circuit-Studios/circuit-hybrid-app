@@ -11,7 +11,8 @@ import { useOtpSession } from '@/auth/OtpSessionContext';
 import { requestOtp } from '@/api/auth';
 import { readApiError } from '@/api/client';
 import { useContentFrame } from '@/hooks/useContentFrame';
-import { formatRemainingSession, isSessionExpired } from '@/lib/session';
+import { formatRemainingSession } from '@/lib/session';
+import { validateOtpSession } from '@/lib/otp-session';
 import { maskEmail, maskPhone } from '@/lib/mask';
 import { getOtpBoxSize, colors, radius, spacing, typography } from '@/theme';
 
@@ -32,14 +33,15 @@ export default function OtpForm() {
   const [otpSecondsLeft, setOtpSecondsLeft] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
+  const sessionValidation = useMemo(() => validateOtpSession(session), [session]);
+
   const boxSize = useMemo(() => getOtpBoxSize(contentWidth), [contentWidth]);
-  const channel = session?.channel;
-  const destination =
-    channel === 'EMAIL'
-      ? (session?.email ?? '')
-      : channel === 'PHONE'
-        ? (session?.phone ?? '')
-        : '';
+  const channel = sessionValidation.ok ? sessionValidation.session.channel : undefined;
+  const destination = sessionValidation.ok
+    ? sessionValidation.session.channel === 'EMAIL'
+      ? sessionValidation.session.email!
+      : sessionValidation.session.phone!
+    : '';
   const maskedDestination =
     channel === 'EMAIL'
       ? maskEmail(destination)
@@ -48,16 +50,17 @@ export default function OtpForm() {
         : '';
 
   useEffect(() => {
-    if (!session) {
-      router.replace('/(auth)/auth');
-    }
-  }, [router, session]);
+    if (sessionValidation.ok) return;
+    clearSession();
+    router.replace('/(auth)/auth');
+  }, [clearSession, router, sessionValidation]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!sessionValidation.ok) return;
 
+    const activeSession = sessionValidation.session;
     const tick = () => {
-      const remainingMs = session.expiresAtMs - Date.now();
+      const remainingMs = activeSession.expiresAtMs - Date.now();
       if (remainingMs <= 0) {
         clearSession();
         router.replace('/(auth)/auth');
@@ -66,16 +69,10 @@ export default function OtpForm() {
       setOtpSecondsLeft(Math.ceil(remainingMs / 1000));
     };
 
-    if (isSessionExpired(session.expiresAtMs)) {
-      clearSession();
-      router.replace('/(auth)/auth');
-      return;
-    }
-
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [clearSession, router, session]);
+  }, [clearSession, router, sessionValidation]);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -89,39 +86,36 @@ export default function OtpForm() {
   }, []);
 
   async function handleVerify(value: string) {
-    if (value.length !== 6 || submitting || !session || !channel) return;
-    const email = session.email;
-    const phone = session.phone;
-    if (channel === 'EMAIL' && !email) {
-      setError('Missing email for verification.');
-      return;
-    }
-    if (channel === 'PHONE' && !phone) {
-      setError('Missing phone number for verification.');
-      return;
-    }
-    if (isSessionExpired(session.expiresAtMs)) {
-      setError('This code expired. Request a new one.');
+    if (value.length !== 6 || submitting) return;
+    const validation = validateOtpSession(session);
+    if (!validation.ok) {
+      setError('Your verification session expired. Start again.');
       clearSession();
       router.replace('/(auth)/auth');
       return;
     }
+
+    const activeSession = validation.session;
+    const email = activeSession.email;
+    const phone = activeSession.phone;
+    const activeChannel = activeSession.channel;
+
     setSubmitting(true);
     setError(null);
     try {
-      if (channel === 'EMAIL') {
+      if (activeChannel === 'EMAIL') {
         await verifyOtp({
           channel: 'EMAIL',
           email: email!,
           code: value,
           signup:
-            session.mode === 'signup' && session.role
+            activeSession.mode === 'signup' && activeSession.role && activeSession.password
               ? {
-                  firstName: session.firstName ?? '',
-                  lastName: session.lastName ?? '',
-                  role: session.role,
-                  phone: session.phone,
-                  password: session.password,
+                  firstName: activeSession.firstName ?? '',
+                  lastName: activeSession.lastName ?? '',
+                  role: activeSession.role,
+                  phone: activeSession.phone,
+                  password: activeSession.password,
                 }
               : undefined,
         });
@@ -131,13 +125,13 @@ export default function OtpForm() {
           phone: phone!,
           code: value,
           signup:
-            session.mode === 'signup' && session.role
+            activeSession.mode === 'signup' && activeSession.role && activeSession.password
               ? {
-                  firstName: session.firstName ?? '',
-                  lastName: session.lastName ?? '',
-                  role: session.role,
-                  email: session.email,
-                  password: session.password,
+                  firstName: activeSession.firstName ?? '',
+                  lastName: activeSession.lastName ?? '',
+                  role: activeSession.role,
+                  email: activeSession.email,
+                  password: activeSession.password,
                 }
               : undefined,
         });
@@ -152,23 +146,26 @@ export default function OtpForm() {
   }
 
   async function handleResend() {
-    if (cooldown > 0 || resending || !session || !channel) return;
-    const email = session.email;
-    const phone = session.phone;
-    if (channel === 'EMAIL' && !email) {
-      setError('Missing email for resend.');
+    if (cooldown > 0 || resending) return;
+    const validation = validateOtpSession(session);
+    if (!validation.ok) {
+      setError('Your verification session expired. Start again.');
+      clearSession();
+      router.replace('/(auth)/auth');
       return;
     }
-    if (channel === 'PHONE' && !phone) {
-      setError('Missing phone number for resend.');
-      return;
-    }
+
+    const activeSession = validation.session;
+    const email = activeSession.email;
+    const phone = activeSession.phone;
+    const activeChannel = activeSession.channel;
+
     setResending(true);
     setError(null);
     try {
-      const otpPurpose = session.mode === 'login' ? 'login' : 'signup';
+      const otpPurpose = activeSession.mode === 'login' ? 'login' : 'signup';
       const { ttlSeconds } =
-        channel === 'EMAIL'
+        activeChannel === 'EMAIL'
           ? await requestOtp({
               channel: 'EMAIL',
               email: email!,
@@ -193,7 +190,7 @@ export default function OtpForm() {
     router.back();
   }
 
-  if (!session) {
+  if (!sessionValidation.ok) {
     return (
       <ScreenContainer scroll={scroll} constrained="form">
         <LoadingState />
@@ -201,9 +198,11 @@ export default function OtpForm() {
     );
   }
 
+  const activeSession = sessionValidation.session;
+
   const digits = code.padEnd(6, ' ').slice(0, 6).split('');
   const channelLabel = channel === 'EMAIL' ? 'email' : 'text message';
-  const verifyCta = session.mode === 'login' ? 'Sign in' : 'Create account';
+  const verifyCta = activeSession.mode === 'login' ? 'Sign in' : 'Create account';
 
   return (
     <ScreenContainer scroll={scroll} constrained="form">

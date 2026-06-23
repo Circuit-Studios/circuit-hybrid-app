@@ -288,7 +288,7 @@ apps/mobile/
 │   ├── components/
 │   │   ├── ui/                # Button, TextField, EmptyState, FormSheet, …
 │   │   └── project/           # ProjectTabBar, ProjectScreenScaffold
-│   ├── auth/                  # AuthContext, SignupSessionContext
+│   ├── auth/                  # AuthContext, OtpSessionContext
 │   ├── realtime/              # socket, RealtimeProvider, push
 │   ├── lib/                   # storage, session, phone, format
 │   └── theme/

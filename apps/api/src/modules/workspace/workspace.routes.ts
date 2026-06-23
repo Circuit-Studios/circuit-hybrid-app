@@ -3,6 +3,7 @@ import { MembershipStatus, UserRole } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { asyncHandler, forbidden, notFound } from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { hasFullProjectVisibility } from '../../auth/permissions.js';
 
 const router: Router = Router();
 
@@ -23,14 +24,6 @@ async function getMembershipOrThrow(userId: string, projectId: string): Promise<
 
 // Spider mode: dept heads see *only* their department's work surface — this
 // matches Module 4 "role-scoped data view". Leadership roles get everything.
-const FULL_VISIBILITY_ROLES: UserRole[] = [
-  UserRole.DIRECTOR,
-  UserRole.PRODUCER,
-  UserRole.EXECUTIVE_PRODUCER,
-  UserRole.LINE_PRODUCER,
-  UserRole.AD,
-];
-
 function isDeptScoped(m: Membership): boolean {
   return m.role === UserRole.DEPT_HEAD && !!m.projectDepartmentId;
 }
@@ -162,7 +155,7 @@ router.get(
     // Dept head: see only their department.
     // Leadership: unscoped (default).
     const crewScope =
-      !FULL_VISIBILITY_ROLES.includes(me.role) && me.role !== UserRole.DEPT_HEAD ? userId : null;
+      !hasFullProjectVisibility(me.role) && me.role !== UserRole.DEPT_HEAD ? userId : null;
 
     const tasks = await prisma.task.findMany({
       where: {

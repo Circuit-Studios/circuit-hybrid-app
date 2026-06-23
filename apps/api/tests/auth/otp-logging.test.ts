@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
+import pino from 'pino';
 import { OtpChannel } from '@prisma/client';
+import { maskOtpTarget } from '../../src/modules/auth/otp-target.js';
 
 describe('otp logging', () => {
   it('does not log raw OTP code in production', async () => {
@@ -25,7 +27,7 @@ describe('otp logging', () => {
     expect(info).toHaveBeenCalled();
     const payload = info.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(payload).not.toHaveProperty('code');
-    expect(String(payload.target)).not.toContain('secret.user@circuit.app');
+    expect(String(payload.maskedTarget)).not.toContain('secret.user@circuit.app');
   });
 
   it('masks email in dispatch logs', async () => {
@@ -46,7 +48,54 @@ describe('otp logging', () => {
     logOtpDispatched(OtpChannel.EMAIL, 'kiran@circuit.app', 'RESEND');
 
     const payload = info.mock.calls[0]?.[0] as Record<string, unknown>;
-    expect(payload.target).toBe('k***@***.app');
+    expect(payload.maskedTarget).toBe('k***@***.app');
     expect(JSON.stringify(payload)).not.toContain('kiran@circuit.app');
+  });
+
+  it('keeps maskedTarget visible through pino redact', () => {
+    let line = '';
+    const log = pino(
+      {
+        level: 'info',
+        redact: {
+          censor: '[REDACTED]',
+          paths: [
+            'password',
+            '*.password',
+            'body.password',
+            'otp',
+            '*.otp',
+            'body.otp',
+            'code',
+            '*.code',
+            'body.code',
+            'email',
+            '*.email',
+            'body.email',
+            'phone',
+            '*.phone',
+            'body.phone',
+            'body.target',
+            'req.body.target',
+          ],
+        },
+      },
+      {
+        write(msg: string) {
+          line = msg;
+        },
+      },
+    );
+
+    log.info({
+      channel: OtpChannel.EMAIL,
+      maskedTarget: maskOtpTarget(OtpChannel.EMAIL, 'kiran@circuit.app'),
+      provider: 'RESEND',
+    });
+
+    expect(line).toContain('maskedTarget');
+    expect(line).toContain('k***@***.app');
+    expect(line).not.toContain('[REDACTED]');
+    expect(line).not.toContain('kiran@circuit.app');
   });
 });

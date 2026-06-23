@@ -117,7 +117,7 @@ export function GlassSurface({
             StyleSheet.absoluteFill,
             {
               borderRadius: cornerRadius,
-              backgroundColor: 'rgba(255,255,255,0.45)',
+              backgroundColor: tabBar.glassFallbackTint,
             },
           ]}
         />

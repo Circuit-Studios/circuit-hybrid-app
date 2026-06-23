@@ -13,11 +13,10 @@ export const emailSchema = z
   .email('Enter a valid email address')
   .max(254);
 
-export const passwordSchema = z
+export const signupPasswordSchema = z
   .string()
   .min(8, 'Password must be at least 8 characters')
-  .max(128, 'Password is too long')
-  .optional();
+  .max(128, 'Password is too long');
 
 export const personNameSchema = z.object({
   firstName: z.string().trim().min(1, 'First name is required').max(60),
@@ -26,13 +25,13 @@ export const personNameSchema = z.object({
 
 export const emailSignupPayloadSchema = personNameSchema.extend({
   role: z.nativeEnum(UserRole),
-  password: passwordSchema,
+  password: signupPasswordSchema,
   phone: phoneSchema.optional(),
 });
 
 export const phoneSignupPayloadSchema = personNameSchema.extend({
   role: z.nativeEnum(UserRole),
-  password: passwordSchema,
+  password: signupPasswordSchema,
   email: emailSchema.optional(),
 });
 
@@ -52,7 +51,7 @@ const requestOtpBaseSchema = z.object({
   channel: z.enum(['PHONE', 'EMAIL']).optional(),
   phone: phoneSchema.optional(),
   email: emailSchema.optional(),
-  purpose: z.enum(['signup', 'login']).optional(),
+  purpose: z.enum(['signup', 'login', 'verify_email']).optional(),
 });
 
 export const requestOtpSchema = requestOtpBaseSchema
@@ -93,6 +92,7 @@ const verifyOtpBaseSchema = z.object({
   phone: phoneSchema.optional(),
   email: emailSchema.optional(),
   code: z.string().regex(/^\d{6}$/, 'OTP must be 6 digits'),
+  purpose: z.enum(['signup', 'login', 'verify_email']).optional(),
   signup: z.union([emailSignupPayloadSchema, phoneSignupPayloadSchema]).optional(),
 });
 
@@ -112,6 +112,20 @@ export const verifyOtpSchema = verifyOtpBaseSchema
     if (channel === 'EMAIL' && !data.email) {
       ctx.addIssue({ code: 'custom', path: ['email'], message: 'Email is required' });
     }
+    if (data.purpose === 'verify_email' && data.signup) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'signup payload is not allowed when purpose is verify_email',
+      });
+    }
+    if (data.purpose === 'signup' && !data.signup) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['signup'],
+        message:
+          'signup payload is required (firstName, lastName, role, password) when purpose is signup',
+      });
+    }
   })
   .transform((data) => {
     const channel = resolveOtpChannel(data)!;
@@ -120,6 +134,7 @@ export const verifyOtpSchema = verifyOtpBaseSchema
         channel: 'PHONE' as const,
         phone: data.phone!,
         code: data.code,
+        purpose: data.purpose,
         signup: data.signup as z.infer<typeof phoneSignupPayloadSchema> | undefined,
       };
     }
@@ -127,6 +142,7 @@ export const verifyOtpSchema = verifyOtpBaseSchema
       channel: 'EMAIL' as const,
       email: data.email!,
       code: data.code,
+      purpose: data.purpose,
       signup: data.signup as z.infer<typeof emailSignupPayloadSchema> | undefined,
     };
   });

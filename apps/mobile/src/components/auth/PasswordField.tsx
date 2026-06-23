@@ -5,6 +5,7 @@ interface PasswordFieldProps {
   value: string;
   onChangeText: (value: string) => void;
   mode?: 'login' | 'new';
+  hint?: string;
   containerStyle?: ViewStyle;
 }
 
@@ -12,6 +13,7 @@ export function PasswordField({
   value,
   onChangeText,
   mode = 'login',
+  hint,
   containerStyle,
 }: PasswordFieldProps) {
   const isNew = mode === 'new';
@@ -26,6 +28,7 @@ export function PasswordField({
       autoCapitalize="none"
       autoComplete={isNew ? 'new-password' : 'password'}
       textContentType={isNew ? 'newPassword' : 'password'}
+      hint={hint}
       containerStyle={containerStyle}
     />
   );

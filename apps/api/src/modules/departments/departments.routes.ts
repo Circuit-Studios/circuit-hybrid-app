@@ -8,20 +8,14 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
-import { DepartmentKind, MembershipStatus, UserRole } from '@prisma/client';
+import { DepartmentKind, MembershipStatus } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { asyncHandler, forbidden, notFound } from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { LEADERSHIP_ROLES } from '../../auth/permissions.js';
 import { emitToProject } from '../../realtime/socket.js';
 
 const router: Router = Router();
-
-const EDITOR_ROLES: UserRole[] = [
-  UserRole.DIRECTOR,
-  UserRole.PRODUCER,
-  UserRole.EXECUTIVE_PRODUCER,
-  UserRole.LINE_PRODUCER,
-];
 
 async function assertCanEdit(userId: string, projectId: string): Promise<void> {
   const m = await prisma.projectMember.findFirst({
@@ -29,7 +23,7 @@ async function assertCanEdit(userId: string, projectId: string): Promise<void> {
     select: { role: true },
   });
   if (!m) throw forbidden('You are not a member of this project');
-  if (!EDITOR_ROLES.includes(m.role)) {
+  if (!LEADERSHIP_ROLES.includes(m.role)) {
     throw forbidden(`Role ${m.role} cannot edit departments or budget`);
   }
 }

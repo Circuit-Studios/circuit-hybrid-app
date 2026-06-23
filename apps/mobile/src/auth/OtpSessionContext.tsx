@@ -55,9 +55,6 @@ export function OtpSessionProvider({ children }: { children: ReactNode }) {
   return <OtpSessionContext.Provider value={value}>{children}</OtpSessionContext.Provider>;
 }
 
-/** @deprecated Use OtpSessionProvider */
-export const SignupSessionProvider = OtpSessionProvider;
-
 export function useOtpSession(): OtpSessionContextValue {
   const ctx = useContext(OtpSessionContext);
   if (!ctx) {
@@ -65,6 +62,3 @@ export function useOtpSession(): OtpSessionContextValue {
   }
   return ctx;
 }
-
-/** @deprecated Use useOtpSession */
-export const useSignupSession = useOtpSession;

@@ -89,6 +89,8 @@ enum OtpPurpose {
 }
 
 model AuthOtp {
+  /// Unified OTP storage for phone and email (channel + target + purpose).
+  /// Replaces the legacy EmailOtp / email_otps table.
   id         String     @id @default(uuid())
   userId     String?
   channel    OtpChannel @default(PHONE)
@@ -105,8 +107,6 @@ model AuthOtp {
   user       User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([channel, target, purpose, consumedAt])
-  @@index([channel, target, consumed])
-  @@index([phone, consumed])
   @@index([expiresAt])
 }
 
@@ -118,24 +118,6 @@ model FeatureFlag {
   updatedAt  DateTime @updatedAt
 
   @@map("feature_flags")
-}
-
-/// Legacy email-only OTP table. New writes go to `AuthOtp` (channel=EMAIL).
-/// TODO(otp-consolidation): drop `EmailOtp` after confirming no runtime writes and
-/// optionally migrating historical rows into `AuthOtp`.
-model EmailOtp {
-  id         String     @id @default(uuid())
-  email      String
-  otpHash    String     @map("otp_hash")
-  purpose    OtpPurpose @default(VERIFY_EMAIL)
-  expiresAt  DateTime        @map("expires_at")
-  attempts   Int             @default(0)
-  consumedAt DateTime?       @map("consumed_at")
-  createdAt  DateTime        @default(now()) @map("created_at")
-
-  @@index([email, purpose, consumedAt])
-  @@index([expiresAt])
-  @@map("email_otps")
 }
 
 // ---------------- Project ----------------

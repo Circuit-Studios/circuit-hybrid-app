@@ -18,7 +18,7 @@ import {
   FLOATING_TAB_BAR_WIDTH_RATIO,
   FLOATING_TAB_ITEM_MIN,
 } from '@/components/ui/floatingTabBarMetrics';
-import { colors, radius, spacing, tabBar, typography } from '@/theme';
+import { radius, spacing, tabBar, typography } from '@/theme';
 
 export type FloatingTabItem = {
   key: string;
@@ -79,10 +79,21 @@ export function FloatingTabBar({
                 accessibilityState={{ selected: active }}
                 accessibilityLabel={item.accessibilityLabel}
                 onPress={item.onPress}
-                style={({ pressed }) => [styles.slot, pressed && !active && styles.slotPressed]}
+                style={({ pressed }) => [
+                  styles.slot,
+                  active ? styles.slotActive : styles.slotInactive,
+                  pressed && !active && styles.slotPressed,
+                ]}
               >
                 {active ? <View style={styles.activePill} /> : null}
-                <View style={styles.iconWell}>{icon}</View>
+                <View
+                  style={[
+                    styles.iconWell,
+                    active ? styles.iconWellActive : styles.iconWellInactive,
+                  ]}
+                >
+                  {icon}
+                </View>
                 {showLabels && item.label ? (
                   <Text style={[styles.label, active && styles.labelActive]} numberOfLines={1}>
                     {item.label}
@@ -124,10 +135,16 @@ const styles = StyleSheet.create({
   },
   slot: {
     flex: 1,
-    height: FLOATING_TAB_BAR_ACTIVE_PILL_HEIGHT,
-    minWidth: FLOATING_TAB_ITEM_MIN,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  slotActive: {
+    height: FLOATING_TAB_BAR_ACTIVE_PILL_HEIGHT,
+    minWidth: FLOATING_TAB_BAR_ACTIVE_PILL_WIDTH,
+  },
+  slotInactive: {
+    minWidth: FLOATING_TAB_ITEM_MIN,
+    minHeight: FLOATING_TAB_ITEM_MIN,
   },
   activePill: {
     position: 'absolute',
@@ -139,24 +156,30 @@ const styles = StyleSheet.create({
     borderColor: tabBar.activePillBorder,
   },
   slotPressed: {
-    opacity: 0.72,
+    opacity: tabBar.slotPressedOpacity,
   },
   iconWell: {
-    width: FLOATING_TAB_BAR_ACTIVE_PILL_WIDTH,
-    height: FLOATING_TAB_BAR_ACTIVE_PILL_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
   },
+  iconWellActive: {
+    width: FLOATING_TAB_BAR_ACTIVE_PILL_WIDTH,
+    height: FLOATING_TAB_BAR_ACTIVE_PILL_HEIGHT,
+  },
+  iconWellInactive: {
+    width: FLOATING_TAB_ITEM_MIN,
+    height: FLOATING_TAB_ITEM_MIN,
+  },
   label: {
     ...typography.caption,
     fontSize: 10,
-    color: colors.textMuted,
+    color: tabBar.labelInactive,
     marginTop: 2,
     zIndex: 1,
   },
   labelActive: {
-    color: colors.textPrimary,
+    color: tabBar.labelActive,
     fontWeight: '700',
   },
 });

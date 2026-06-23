@@ -85,9 +85,18 @@ async function main() {
 
   try {
     await writeSharp(await squareLogo(1024, { background: SPLASH_BG }), IOS_ICON);
-    await writeSharp(await squareLogo(200, { background: SPLASH_BG }), join(IOS_SPLASH, 'image.png'));
-    await writeSharp(await squareLogo(400, { background: SPLASH_BG }), join(IOS_SPLASH, 'image@2x.png'));
-    await writeSharp(await squareLogo(600, { background: SPLASH_BG }), join(IOS_SPLASH, 'image@3x.png'));
+    await writeSharp(
+      await squareLogo(200, { background: SPLASH_BG }),
+      join(IOS_SPLASH, 'image.png'),
+    );
+    await writeSharp(
+      await squareLogo(400, { background: SPLASH_BG }),
+      join(IOS_SPLASH, 'image@2x.png'),
+    );
+    await writeSharp(
+      await squareLogo(600, { background: SPLASH_BG }),
+      join(IOS_SPLASH, 'image@3x.png'),
+    );
   } catch {
     // iOS folder may be absent before prebuild — Expo PNGs are enough for JS workflow.
   }
@@ -95,7 +104,7 @@ async function main() {
   console.log('Generated brand PNGs from assets/circuit-logo.png');
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error(err);
   process.exit(1);
 });

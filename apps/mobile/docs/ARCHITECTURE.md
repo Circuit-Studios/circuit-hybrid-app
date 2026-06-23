@@ -130,7 +130,7 @@ src/
 
   auth/                         # Global auth state (not feature UI)
     AuthContext.tsx
-    SignupSessionContext.tsx
+    OtpSessionContext.tsx
 
   realtime/
     RealtimeProvider.tsx

@@ -29,10 +29,38 @@ describe('auth OTP schemas', () => {
         firstName: 'Kiran',
         lastName: 'Kumar',
         role: 'DIRECTOR',
+        password: 'password123',
         phone: '+919812345678',
       },
     });
     expect(parsed.signup?.phone).toBe('+919812345678');
+    expect(parsed.signup?.password).toBe('password123');
+  });
+
+  it('rejects signup without password', () => {
+    expect(() =>
+      verifyOtpSchema.parse({
+        channel: 'EMAIL',
+        email: 'user@studio.com',
+        code: '111111',
+        signup: {
+          firstName: 'Kiran',
+          lastName: 'Kumar',
+          role: 'DIRECTOR',
+        },
+      }),
+    ).toThrow();
+  });
+
+  it('requires signup payload when purpose is signup', () => {
+    expect(() =>
+      verifyOtpSchema.parse({
+        channel: 'PHONE',
+        phone: '+919812345678',
+        code: '111111',
+        purpose: 'signup',
+      }),
+    ).toThrow(/signup payload is required/);
   });
 
   it('accepts legacy phone-only request without channel', () => {

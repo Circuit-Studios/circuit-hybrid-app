@@ -225,14 +225,12 @@ sequenceDiagram
 
 | Route                    | Purpose                                                         |
 | ------------------------ | --------------------------------------------------------------- |
-| `POST /auth/request-otp` | Signup/login OTP (email or phone)                               |
-| `POST /auth/verify-otp`  | Verify signup/login OTP → session                               |
+| `POST /auth/request-otp` | Signup/login OTP or post-account email verification (`purpose`) |
+| `POST /auth/verify-otp`  | Verify OTP → session or `emailVerified` when `verify_email`     |
 | `POST /auth/login`       | Email + password sign-in                                        |
-| `POST /send-otp`         | Post-account email verification only                            |
-| `POST /verify-otp`       | Confirm post-account email verification                         |
 | `POST /auth/register`    | Local dev only (`APP_ENV=local` + `ALLOW_DIRECT_REGISTER=true`) |
 
-6. **Public routes:** `/health`, `/auth/*` (see table above), `/send-otp`, `/verify-otp`, `/app/config`
+6. **Public routes:** `/health`, `/auth/*` (see table above), `/app/config`
    (rate-limited 10 req/min in prod)
 7. **Protected routes:** everything else, gated by `requireAuth` and (where
    relevant) `requireProjectRole`

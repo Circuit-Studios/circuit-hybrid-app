@@ -54,7 +54,7 @@ export default function AuthScreen() {
   const signupPhoneRequired = signupChannel === 'PHONE';
   const nameValid = !isSignup || fullName.trim().length >= 1;
   const roleValid = !isSignup || role !== null;
-  const signupPasswordValid = !password || isValidPassword(password);
+  const signupPasswordValid = isValidPassword(password);
   const signupPhoneValid = !signupPhoneRequired || phoneField.isValid;
   const signupEmailValid =
     signupChannel === 'EMAIL' ? isValidEmail(email) : !email.trim() || isValidEmail(email);
@@ -78,11 +78,18 @@ export default function AuthScreen() {
       return phoneField.error ?? 'Enter a valid phone number.';
     if (!nameValid) return 'Enter your name.';
     if (!roleValid) return 'Pick your role.';
-    if (password && !signupPasswordValid) return 'Password must be at least 8 characters.';
+    if (!signupPasswordValid) return 'Password must be at least 8 characters.';
     return null;
   })();
 
   const startSignupOtp = useCallback(async () => {
+    if (!isValidPassword(password)) {
+      throw new Error('Password must be at least 8 characters');
+    }
+    if (!role) {
+      throw new Error('Pick your role');
+    }
+
     const normalizedEmail = email.trim() ? normalizeEmail(email) : undefined;
     const phone = phoneField.e164 ?? undefined;
     const { firstName, lastName } = splitFullName(fullName);
@@ -97,7 +104,7 @@ export default function AuthScreen() {
         channel: 'EMAIL',
         email: normalizedEmail!,
         phone,
-        password: password || undefined,
+        password,
         mode: 'signup',
         firstName,
         lastName,
@@ -114,7 +121,7 @@ export default function AuthScreen() {
         channel: 'PHONE',
         phone: phone!,
         email: normalizedEmail,
-        password: password || undefined,
+        password,
         mode: 'signup',
         firstName,
         lastName,

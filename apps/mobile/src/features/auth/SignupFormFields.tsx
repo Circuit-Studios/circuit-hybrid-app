@@ -139,7 +139,12 @@ export function SignupFormFields({
       />
 
       <View style={styles.passwordBlock}>
-        <PasswordField value={password} onChangeText={onPasswordChange} mode="new" />
+        <PasswordField
+          value={password}
+          onChangeText={onPasswordChange}
+          mode="new"
+          hint="Required — you'll sign in with email and this password."
+        />
       </View>
     </>
   );

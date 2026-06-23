@@ -129,14 +129,9 @@ Unified OTP storage for phone and email. Plain codes are never stored — only `
 | `consumedAt` | `DateTime?`               | set when verified or superseded by a newer request |
 | `createdAt`  | `DateTime`                |                                                    |
 
-**Indexes:** `(channel, target, purpose, consumedAt)`, `(channel, target, consumed)`,
-`(phone, consumed)`, `(expiresAt)`.
+**Indexes:** `(channel, target, purpose, consumedAt)`, `(expiresAt)`.
 
-### `EmailOtp` (legacy)
-
-> **Deprecated.** New email OTP writes go to `AuthOtp` with `channel = EMAIL`.
-> Table kept temporarily for historical rows — see `TODO(otp-consolidation)` in
-> `schema.prisma` before dropping.
+Legacy columns `phone` and `consumed` remain for backward compatibility but are not used by new code paths.
 
 ---
 

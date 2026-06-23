@@ -1,8 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const fetchMock = vi.fn();
+const { sendMock } = vi.hoisted(() => ({
+  sendMock: vi.fn(),
+}));
 
-vi.stubGlobal('fetch', fetchMock);
+vi.mock('resend', () => ({
+  Resend: class MockResend {
+    emails = { send: sendMock };
+    constructor(_apiKey: string) {}
+  },
+}));
 
 vi.mock('../../src/lib/logger.js', () => ({
   logger: { debug: vi.fn(), info: vi.fn(), error: vi.fn(), warn: vi.fn() },
@@ -11,7 +18,7 @@ vi.mock('../../src/lib/logger.js', () => ({
 describe('ResendEmailOtpProvider', () => {
   beforeEach(() => {
     vi.resetModules();
-    fetchMock.mockReset();
+    sendMock.mockReset();
   });
 
   it('requires RESEND_API_KEY', async () => {
@@ -67,9 +74,9 @@ describe('ResendEmailOtpProvider', () => {
       },
     }));
 
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => ({ id: 'email-abc' }),
+    sendMock.mockResolvedValue({
+      data: { id: 'email-abc' },
+      error: null,
     });
 
     const { ResendEmailOtpProvider } =
@@ -83,26 +90,17 @@ describe('ResendEmailOtpProvider', () => {
       purpose: 'signup',
     });
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://api.resend.com/emails',
-      expect.objectContaining({
-        method: 'POST',
-        headers: expect.objectContaining({
-          Authorization: 'Bearer re_test',
-        }),
-        body: JSON.stringify({
-          to: ['user@studio.com'],
-          template: {
-            id: 'circuit-email-otp',
-            variables: {
-              CODE: '654321',
-              EXPIRES_MINUTES: '5',
-              APP_NAME: 'Circuit',
-            },
-          },
-        }),
-      }),
-    );
+    expect(sendMock).toHaveBeenCalledWith({
+      to: ['user@studio.com'],
+      template: {
+        id: 'circuit-email-otp',
+        variables: {
+          CODE: '654321',
+          EXPIRES_MINUTES: '5',
+          APP_NAME: 'Circuit',
+        },
+      },
+    });
   });
 });
 

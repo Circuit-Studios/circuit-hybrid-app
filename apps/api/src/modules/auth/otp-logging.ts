@@ -7,7 +7,7 @@ export function logOtpRequested(channel: OtpChannel, target: string, purpose: st
   logger.info(
     {
       channel,
-      target: maskOtpTarget(channel, target),
+      maskedTarget: maskOtpTarget(channel, target),
       purpose,
     },
     'auth.otp_requested',
@@ -18,7 +18,7 @@ export function logOtpDispatched(channel: OtpChannel, target: string, provider: 
   logger.info(
     {
       channel,
-      target: maskOtpTarget(channel, target),
+      maskedTarget: maskOtpTarget(channel, target),
       provider,
     },
     'auth.otp_dispatched',
@@ -29,7 +29,7 @@ export function logOtpVerified(channel: OtpChannel, target: string, purpose: str
   logger.info(
     {
       channel,
-      target: maskOtpTarget(channel, target),
+      maskedTarget: maskOtpTarget(channel, target),
       purpose,
     },
     'auth.otp_verified',
@@ -40,7 +40,7 @@ export function logOtpFailed(channel: OtpChannel, target: string, reason: string
   logger.warn(
     {
       channel,
-      target: maskOtpTarget(channel, target),
+      maskedTarget: maskOtpTarget(channel, target),
       reason,
     },
     'auth.otp_failed',
@@ -56,7 +56,7 @@ export function logOtpMock(channel: OtpChannel, target: string, code: string): v
   logger.debug(
     {
       channel,
-      target: maskOtpTarget(channel, target),
+      maskedTarget: maskOtpTarget(channel, target),
       provider: 'MOCK',
       code,
     },
