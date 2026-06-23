@@ -107,18 +107,18 @@ Active label is bold near‑black; inactive is muted gray. (See `nav-primary.png
 > Alternate variant (`nav-alt.png`): pill with active item showing a filled label
 > ("● Home"), trailing icons, and a **separate amber `＋` FAB** outside the pill. Final IA is **TBD**.
 
-#### FloatingTabBar (`src/components/navigation/FloatingTabBar.tsx`)
+#### FloatingTabBar (`src/components/ui/FloatingTabBar.tsx`)
 
-Reusable **floating glassmorphism** bottom tab bar for Circuit mobile navigation.
+Reusable **floating glassmorphism** bottom tab bar — Instagram-style neutral dock.
 
 | Aspect | Guidance |
 | --- | --- |
-| **Use case** | Primary app tabs (`AppTabBar`) or project workspace tabs (`FloatingProjectTabBar` / `ProjectTabBar`) |
-| **Pattern** | Capsule-shaped translucent bar, icon-only by default; active tab gets a soft rounded pill background |
-| **Safe area** | Uses `useSafeAreaInsets` for bottom padding; pair screens with `useChromeInsets().appTabBarReserve` or `projectTabBarReserve` so scroll content is not hidden |
-| **Accessibility** | Each item is a `Pressable` with `accessibilityRole="tab"`, `accessibilityLabel`, and `accessibilityState.selected`; minimum 56×56 pt touch target |
-| **Glass** | iOS `systemChromeMaterialLight` blur via `expo-blur`; very light white overlay so scroll content shows through; rebuild dev client (`npx expo run:ios`) if blur falls back to frosted `View` |
-| **Metrics** | Bar height ~72px, item wells ~56px, max width ~520px on tablet (`floatingTabBarMetrics.ts`) |
+| **Use case** | Project workspace tabs via `ProjectTabBar`; app-level tabs via `AppTabBar` |
+| **Pattern** | Capsule-shaped translucent bar, icon-only; active tab gets a wider soft white/gray pill (no brand fill) |
+| **Safe area** | Uses `useSafeAreaInsets` for bottom padding; pair screens with `useChromeInsets().projectTabBarReserve` or `appTabBarReserve` |
+| **Accessibility** | `accessibilityRole="tab"`, `accessibilityLabel`, `accessibilityState.selected`; minimum 44×44 pt touch target |
+| **Glass** | `expo-blur` `BlurView` with `systemChromeMaterialLight` on iOS; border, specular edge, and drop shadow |
+| **Metrics** | Height ~77px, width ~86% of screen (max 430px), active pill ~72px wide (`floatingTabBarMetrics.ts`) |
 
 ### 5.2 Hero / Home card
 

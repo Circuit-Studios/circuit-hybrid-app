@@ -1,13 +1,19 @@
 import { spacing } from '@/theme';
 
 /** Visual height of the floating tab bar capsule (excluding safe-area padding). */
-export const FLOATING_TAB_BAR_HEIGHT = 72;
+export const FLOATING_TAB_BAR_HEIGHT = 77;
 
-/** Touch target / icon well size for each tab item. */
-export const FLOATING_TAB_ITEM_SIZE = 56;
+/** Minimum touch target for each tab item. */
+export const FLOATING_TAB_ITEM_MIN = 44;
 
-/** Max width of the floating bar on tablet / wide layouts. */
-export const FLOATING_TAB_BAR_MAX_WIDTH = 520;
+/** Wider active tab pill width. */
+export const FLOATING_TAB_ITEM_ACTIVE_WIDTH = 72;
+
+/** Max width of the floating bar. */
+export const FLOATING_TAB_BAR_MAX_WIDTH = 430;
+
+/** Share of screen width used on phones (84–88%). */
+export const FLOATING_TAB_BAR_WIDTH_RATIO = 0.86;
 
 /** Vertical space to reserve so scroll content clears a floating app tab bar. */
 export function getAppTabBarReserve(_compact: boolean, safeBottom: number): number {

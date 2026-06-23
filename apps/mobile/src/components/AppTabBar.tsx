@@ -3,10 +3,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePathname, useRouter } from 'expo-router';
 import {
   FloatingTabBar,
+  floatingTabIconColor,
   type FloatingTabItem,
-} from '@/components/navigation/FloatingTabBar';
-import { useChromeInsets } from '@/hooks/useChromeInsets';
-import { colors } from '@/theme';
+} from '@/components/ui/FloatingTabBar';
 
 type AppTabKey = 'home' | 'activity' | 'schedule' | 'team';
 
@@ -55,11 +54,9 @@ function resolveActiveTab(pathname: string): AppTabKey {
 export function AppTabBar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { safeHorizontal, tabBarMaxWidth } = useChromeInsets();
   const activeKey = resolveActiveTab(pathname);
 
   const items: FloatingTabItem[] = useMemo(() => {
-    const iconColor = (selected: boolean) => (selected ? colors.textPrimary : colors.textMuted);
     return (Object.keys(TAB_META) as AppTabKey[]).map((key) => {
       const meta = TAB_META[key];
       return {
@@ -67,8 +64,8 @@ export function AppTabBar() {
         label: meta.label,
         href: meta.href,
         accessibilityLabel: meta.label,
-        icon: <Ionicons name={meta.icon} size={24} color={iconColor(false)} />,
-        activeIcon: <Ionicons name={meta.activeIcon} size={24} color={iconColor(true)} />,
+        icon: <Ionicons name={meta.icon} size={24} color={floatingTabIconColor(false)} />,
+        activeIcon: <Ionicons name={meta.activeIcon} size={24} color={floatingTabIconColor(true)} />,
         onPress: () => {
           if (key === activeKey) return;
           router.replace(meta.href);
@@ -77,12 +74,5 @@ export function AppTabBar() {
     });
   }, [activeKey, router]);
 
-  return (
-    <FloatingTabBar
-      items={items}
-      activeKey={activeKey}
-      horizontalInset={safeHorizontal}
-      maxWidth={tabBarMaxWidth}
-    />
-  );
+  return <FloatingTabBar items={items} activeKey={activeKey} />;
 }

@@ -2,16 +2,16 @@ import type { ViewStyle } from 'react-native';
 import {
   FLOATING_TAB_BAR_HEIGHT,
   FLOATING_TAB_BAR_MAX_WIDTH,
-  FLOATING_TAB_ITEM_SIZE,
+  FLOATING_TAB_ITEM_MIN,
   getAppTabBarReserve,
   getProjectTabBarReserve,
-} from '@/components/navigation/floatingTabBarMetrics';
+} from '@/components/ui/floatingTabBarMetrics';
 import { spacing } from './tokens';
 
 export {
   FLOATING_TAB_BAR_HEIGHT,
   FLOATING_TAB_BAR_MAX_WIDTH,
-  FLOATING_TAB_ITEM_SIZE,
+  FLOATING_TAB_ITEM_MIN,
   getAppTabBarReserve,
   getProjectTabBarReserve,
 };

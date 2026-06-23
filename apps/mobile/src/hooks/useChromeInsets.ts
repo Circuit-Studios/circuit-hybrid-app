@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useContentFrame } from '@/hooks/useContentFrame';
-import { getAppTabBarReserve, getProjectTabBarReserve, FLOATING_TAB_BAR_MAX_WIDTH, isTabletWidth } from '@/theme/layout';
+import { getAppTabBarReserve, getProjectTabBarReserve, isTabletWidth } from '@/theme/layout';
 import { spacing } from '@/theme';
 
 /**
@@ -22,7 +22,6 @@ export function useChromeInsets() {
       appTabBarReserve: getAppTabBarReserve(compactTabBar, insets.bottom),
       projectTabBarReserve: getProjectTabBarReserve(compactTabBar, insets.bottom),
       safeHorizontal: Math.max(spacing.lg, insets.left, insets.right),
-      tabBarMaxWidth: isTabletWidth(frame.width) ? FLOATING_TAB_BAR_MAX_WIDTH : undefined,
     };
   }, [
     frame.contentWidth,
