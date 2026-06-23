@@ -67,7 +67,7 @@ export default function AccountScreen() {
   }
 
   return (
-    <ScreenContainer scroll topAligned edges={['top', 'left', 'right', 'bottom']}>
+    <ScreenContainer scroll topAligned edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <Pressable onPress={() => leaveOverlayScreen(router)} hitSlop={12} accessibilityRole="button">
           <Text style={styles.back}>‹ Back</Text>

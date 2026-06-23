@@ -10,6 +10,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CinematicBackdrop } from '@/components/CinematicBackdrop';
 import { useContentFrame } from '@/hooks/useContentFrame';
+import {
+  useFloatingTabBarReserve,
+  type FloatingTabBarReserveMode,
+} from '@/hooks/useFloatingTabBarReserve';
 import { type ContentConstraint } from '@/theme/layout';
 import { colors, spacing } from '@/theme';
 
@@ -32,9 +36,14 @@ interface ScreenContainerProps {
   centerContent?: boolean;
   /**
    * Extra bottom padding when content scrolls behind a floating tab bar.
-   * Defaults to 0 — prefer `useChromeInsets().appTabBarReserve` on screen content.
+   * When `reserveFloatingTabBar` is true/`auto`, this is added automatically.
    */
   bottomInsetForFloatingTab?: number;
+  /**
+   * Reserve space for the global floating tab bar. Default `auto` on app screens.
+   * Set `false` for full-bleed overlays (e.g. modals).
+   */
+  reserveFloatingTabBar?: FloatingTabBarReserveMode;
 }
 
 export function ScreenContainer({
@@ -46,8 +55,11 @@ export function ScreenContainer({
   constrained = 'auto',
   centerContent = false,
   bottomInsetForFloatingTab = 0,
+  reserveFloatingTabBar = 'auto',
 }: ScreenContainerProps) {
   const { horizontalPadding, maxWidth } = useContentFrame(constrained);
+  const tabBarReserve = useFloatingTabBarReserve(reserveFloatingTabBar);
+  const bottomPad = bottomInsetForFloatingTab + tabBarReserve;
 
   const fillHeight = !scroll && !centerContent;
 
@@ -58,7 +70,7 @@ export function ScreenContainer({
         { paddingHorizontal: horizontalPadding },
         fillHeight && styles.contentFlex,
         topAligned && scroll && styles.topAligned,
-        bottomInsetForFloatingTab > 0 && { paddingBottom: bottomInsetForFloatingTab },
+        bottomPad > 0 && { paddingBottom: bottomPad },
         contentStyle,
       ]}
     >

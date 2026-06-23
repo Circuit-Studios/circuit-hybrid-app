@@ -9,6 +9,7 @@ import { Card } from '@/components/Card';
 import { colors, radius, spacing, typography } from '@/theme';
 import { uploadScript, triggerAnalysis } from '@/api/scripts';
 import { readApiError } from '@/api/client';
+import { leaveUploadScript } from '@/lib/appNavigation';
 import { useAppConfig } from '@/config/AppConfigContext';
 
 interface PickedFile {
@@ -83,7 +84,7 @@ export default function UploadScriptScreen() {
 
   return (
     <ScreenContainer scroll>
-      <Pressable onPress={() => router.back()} hitSlop={12}>
+      <Pressable onPress={() => leaveUploadScript(router, projectId!)} hitSlop={12}>
         <Text style={styles.back}>‹ Back</Text>
       </Pressable>
 
@@ -128,7 +129,11 @@ export default function UploadScriptScreen() {
           disabled={!picked || !uploadEnabled}
           onPress={handleUpload}
         />
-        <PrimaryButton title="Skip for now" variant="ghost" onPress={() => router.back()} />
+        <PrimaryButton
+          title="Skip for now"
+          variant="ghost"
+          onPress={() => leaveUploadScript(router, projectId!)}
+        />
       </View>
 
       <Card style={styles.tipCard}>

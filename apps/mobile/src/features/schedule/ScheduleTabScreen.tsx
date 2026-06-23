@@ -9,7 +9,6 @@ import { useActiveProject } from '@/context/ActiveProjectContext';
 import { useHomeQuery } from '@/features/home/hooks';
 import { useScheduleQuery } from '@/features/schedule/hooks';
 import { readApiError } from '@/api/client';
-import { useChromeInsets } from '@/hooks/useChromeInsets';
 import { colors, radius, spacing, typography } from '@/theme';
 
 type DayState = 'done' | 'today' | 'soon';
@@ -67,14 +66,8 @@ export default function ScheduleTabScreen() {
   const displayDate = homeQ.data?.nextShootDay?.date
     ? new Date(homeQ.data.nextShootDay.date)
     : today;
-  const { appTabBarReserve } = useChromeInsets();
-
   return (
-    <ScreenContainer
-      scroll
-      edges={['top', 'left', 'right']}
-      contentStyle={{ paddingBottom: appTabBarReserve }}
-    >
+    <ScreenContainer scroll edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <View>
           <Text style={styles.wordmark}>

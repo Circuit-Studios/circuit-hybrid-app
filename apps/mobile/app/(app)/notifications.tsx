@@ -90,7 +90,7 @@ export default function NotificationsScreen() {
   const listData = useMemo(() => buildNotificationSections(items), [items]);
 
   return (
-    <ScreenContainer>
+    <ScreenContainer topAligned edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <Pressable onPress={() => leaveOverlayScreen(router)} hitSlop={12} accessibilityRole="button">
           <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />

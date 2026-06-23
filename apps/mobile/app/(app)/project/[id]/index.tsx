@@ -9,15 +9,14 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { HealthRing, type HealthRingSegment } from '@/components/HealthRing';
 import { EmptyState } from '@/components/EmptyState';
 import { SectionHeader } from '@/components/SectionHeader';
-import { ProjectTabBar } from '@/components/ProjectTabBar';
 import { AccountButton } from '@/components/AccountButton';
 import { getProject } from '@/api/projects';
 import { qk } from '@/api/queryKeys';
 import { getProjectHealth, listConflicts } from '@/api/workspace';
 import { readApiError } from '@/api/client';
+import { leaveProjectWorkspace } from '@/lib/appNavigation';
 import { useAppConfig } from '@/config/AppConfigContext';
 import { useContentFrame } from '@/hooks/useContentFrame';
-import { useChromeInsets } from '@/hooks/useChromeInsets';
 import { useProjectRoom } from '@/realtime/useProjectRoom';
 import { getHealthRingSize, colors, radius, spacing, typography } from '@/theme';
 import { formatProjectLanguages, formatRole, formatStatus, relativeTimeFrom } from '@/lib/format';
@@ -48,7 +47,6 @@ export default function ProjectWorkspaceScreen() {
   const { isFeatureEnabled } = useAppConfig();
   const scriptUploadEnabled = isFeatureEnabled('scripts.upload');
   const { contentWidth, isWide, height } = useContentFrame('auto');
-  const { projectTabBarReserve } = useChromeInsets();
   const ringSize = useMemo(
     () => getHealthRingSize(contentWidth, isWide, height),
     [contentWidth, height, isWide],
@@ -130,14 +128,10 @@ export default function ProjectWorkspaceScreen() {
 
   return (
     <View style={styles.root}>
-      <ScreenContainer
-        scroll
-        edges={['top', 'left', 'right']}
-        contentStyle={{ paddingBottom: projectTabBarReserve }}
-      >
+      <ScreenContainer scroll edges={['top', 'left', 'right']}>
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <Pressable onPress={() => router.replace('/(app)/projects')} hitSlop={12}>
+            <Pressable onPress={() => leaveProjectWorkspace(router)} hitSlop={12}>
               <Text style={styles.back}>‹ Projects</Text>
             </Pressable>
             <AccountButton />
@@ -259,8 +253,6 @@ export default function ProjectWorkspaceScreen() {
 
         <View style={{ height: spacing.lg }} />
       </ScreenContainer>
-
-      <ProjectTabBar projectId={project.id} active="workspace" />
     </View>
   );
 }

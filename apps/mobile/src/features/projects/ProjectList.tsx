@@ -11,10 +11,10 @@ import { Card } from '@/components/Card';
 import { StatusBadge } from '@/components/StatusBadge';
 import { readApiError } from '@/api/client';
 import { useAuth } from '@/auth/AuthContext';
-import { leaveOverlayScreen } from '@/lib/appNavigation';
+import { leaveProjectsScreen } from '@/lib/appNavigation';
+import { useFloatingTabBarReserve } from '@/hooks/useFloatingTabBarReserve';
 import { colors, radius, spacing, typography } from '@/theme';
 import { formatRole } from '@/lib/format';
-import { useChromeInsets } from '@/hooks/useChromeInsets';
 import type { ProjectInvite } from '@/api/types';
 import { ProjectCard } from './ProjectCard';
 import { useAcceptInviteMutation, useMyInvitesQuery, useProjectsQuery } from './hooks';
@@ -31,13 +31,18 @@ export default function ProjectList() {
   const projects = data ?? [];
   const invites = invitesQ.data ?? [];
   const inSpiderMode = projects.length >= 2;
-  const { appTabBarReserve } = useChromeInsets();
+  const tabBarReserve = useFloatingTabBarReserve('app');
 
   return (
-    <ScreenContainer edges={['top', 'left', 'right']} contentStyle={{ paddingBottom: appTabBarReserve }}>
+    <ScreenContainer
+      topAligned
+      edges={['top', 'left', 'right']}
+      contentStyle={styles.screenContent}
+      reserveFloatingTabBar={false}
+    >
       <View style={styles.topBar}>
         <Pressable
-          onPress={() => leaveOverlayScreen(router)}
+          onPress={() => leaveProjectsScreen(router)}
           hitSlop={12}
           accessibilityRole="button"
           accessibilityLabel="Go back"
@@ -83,7 +88,10 @@ export default function ProjectList() {
         <View style={styles.listFlex}>
           <FlatList
             style={styles.listFlex}
-            contentContainerStyle={styles.list}
+            contentContainerStyle={[
+              styles.list,
+              { paddingBottom: tabBarReserve + spacing.lg },
+            ]}
             data={projects}
             keyExtractor={(p) => p.id}
             renderItem={({ item }) => <ProjectCard project={item} />}
@@ -92,6 +100,7 @@ export default function ProjectList() {
               void invitesQ.refetch();
             }}
             refreshing={isRefetching}
+            showsVerticalScrollIndicator={false}
             ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
             ListHeaderComponent={
               invites.length > 0 ? (
@@ -112,10 +121,10 @@ export default function ProjectList() {
             }
             ListFooterComponent={
               canStartProject ? (
-                <View style={{ marginTop: spacing.xl }}>
+                <View style={styles.listFooter}>
                   <Button
                     title="Start a new project"
-                    variant="secondary"
+                    variant="primary"
                     onPress={() => router.push('/(app)/create-project')}
                   />
                 </View>
@@ -164,6 +173,7 @@ function InviteCard({
 }
 
 const styles = StyleSheet.create({
+  screenContent: { flex: 1, paddingBottom: 0 },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -172,7 +182,8 @@ const styles = StyleSheet.create({
   },
   topBarSpacer: { flex: 1 },
   listFlex: { flex: 1 },
-  list: { paddingBottom: spacing.xl },
+  list: { flexGrow: 1 },
+  listFooter: { marginTop: spacing.xl },
   inviteBlock: {
     marginBottom: spacing.lg,
     padding: spacing.md,

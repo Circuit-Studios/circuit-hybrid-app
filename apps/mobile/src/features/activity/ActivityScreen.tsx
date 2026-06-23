@@ -11,7 +11,6 @@ import { useActiveProject } from '@/context/ActiveProjectContext';
 import { readApiError } from '@/api/client';
 import type { ActivityFilter } from '@/api/home';
 import { GlassFilterChip } from '@/components/GlassFilterChip';
-import { useChromeInsets } from '@/hooks/useChromeInsets';
 import { colors, radius, spacing, typography } from '@/theme';
 import { useActivityQuery } from '@/features/home/hooks';
 
@@ -67,14 +66,8 @@ export default function ActivityScreen() {
     return [...map.entries()];
   }, [data]);
 
-  const { appTabBarReserve } = useChromeInsets();
-
   return (
-    <ScreenContainer
-      topAligned
-      edges={['top', 'left', 'right']}
-      contentStyle={{ flex: 1, paddingBottom: appTabBarReserve }}
-    >
+    <ScreenContainer topAligned edges={['top', 'left', 'right']} contentStyle={{ flex: 1 }}>
       <View style={styles.header}>
         <Text style={styles.title}>Activity</Text>
         <AccountButton />

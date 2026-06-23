@@ -11,7 +11,6 @@ import { Card } from '@/components/Card';
 import { useActiveProject } from '@/context/ActiveProjectContext';
 import { useAuth } from '@/auth/AuthContext';
 import { readApiError } from '@/api/client';
-import { useChromeInsets } from '@/hooks/useChromeInsets';
 import { colors, radius, spacing, typography } from '@/theme';
 import { useHomeQuery } from './hooks';
 
@@ -29,16 +28,11 @@ export default function HomeScreen() {
   const { data, isLoading, isFetching, error, refetch } = useHomeQuery(projectId);
 
   const canStartProject = user?.defaultRole === 'DIRECTOR' || user?.defaultRole === 'PRODUCER';
-  const { appTabBarReserve } = useChromeInsets();
   const dashboardLoading = !!projectId && !data && !error && (isLoading || isFetching);
 
   if (!projectId && !isLoading) {
     return (
-      <ScreenContainer
-        scroll
-        edges={['top', 'left', 'right']}
-        contentStyle={{ paddingBottom: appTabBarReserve }}
-      >
+      <ScreenContainer scroll edges={['top', 'left', 'right']}>
         <View style={styles.headerRow}>
           <CircuitWordmark />
           <AppHeaderActions />
@@ -61,11 +55,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <ScreenContainer
-      scroll
-      edges={['top', 'left', 'right']}
-      contentStyle={{ paddingBottom: appTabBarReserve }}
-    >
+    <ScreenContainer scroll edges={['top', 'left', 'right']}>
       <View style={styles.headerRow}>
         <CircuitWordmark />
         <AppHeaderActions />
