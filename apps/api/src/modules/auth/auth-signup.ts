@@ -20,6 +20,24 @@ export async function linkPendingInvites(
   });
 }
 
+async function assertOptionalSignupIdentifiersAvailable(
+  email?: string | null,
+  phone?: string | null,
+): Promise<void> {
+  if (phone) {
+    const phoneOwner = await prisma.user.findUnique({ where: { phone } });
+    if (phoneOwner) {
+      throw conflict('An account with this phone number already exists');
+    }
+  }
+  if (email) {
+    const emailOwner = await prisma.user.findUnique({ where: { email } });
+    if (emailOwner) {
+      throw conflict('An account with this email already exists');
+    }
+  }
+}
+
 /** Find existing user or create one from signup payload after OTP verification. */
 export async function findOrCreateUserAfterOtp(input: VerifyOtpBody): Promise<User> {
   if (input.channel === 'EMAIL') {
@@ -33,6 +51,7 @@ export async function findOrCreateUserAfterOtp(input: VerifyOtpBody): Promise<Us
       if (!input.signup.password) {
         throw badRequest('Password is required to create an account');
       }
+      await assertOptionalSignupIdentifiersAvailable(undefined, input.signup.phone);
       const passwordHash = await hashPassword(input.signup.password);
       user = await prisma.user.create({
         data: {
@@ -64,6 +83,7 @@ export async function findOrCreateUserAfterOtp(input: VerifyOtpBody): Promise<Us
     if (!input.signup.password) {
       throw badRequest('Password is required to create an account');
     }
+    await assertOptionalSignupIdentifiersAvailable(input.signup.email, undefined);
     const passwordHash = await hashPassword(input.signup.password);
     user = await prisma.user.create({
       data: {

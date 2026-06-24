@@ -2,7 +2,7 @@ import { OtpChannel } from '@prisma/client';
 import { Resend } from 'resend';
 import { env } from '../../../config/env.js';
 import { logger } from '../../../lib/logger.js';
-import { maskOtpTarget } from '../otp-target.js';
+import { maskOtpLogFields } from '../otp-target.js';
 import type { OtpDeliveryProvider, OtpDeliverySendInput } from './types.js';
 
 /** Resend hosted-template send payload (SDK types lag the API). */
@@ -33,7 +33,7 @@ export class ResendEmailOtpProvider implements OtpDeliveryProvider {
       throw new Error('RESEND_OTP_TEMPLATE_ID is required when EMAIL_OTP_PROVIDER=RESEND');
     }
 
-    const masked = maskOtpTarget(OtpChannel.EMAIL, input.target);
+    const maskedFields = maskOtpLogFields(OtpChannel.EMAIL, input.target);
     const resend = new Resend(apiKey);
 
     const payload: ResendTemplateEmailPayload = {
@@ -54,15 +54,12 @@ export class ResendEmailOtpProvider implements OtpDeliveryProvider {
 
     if (error) {
       const detail = error.message ?? 'Unknown error';
-      logger.error(
-        { maskedTarget: masked, provider: 'RESEND', status: error.name },
-        'auth.otp_failed',
-      );
+      logger.error({ ...maskedFields, provider: 'RESEND', status: error.name }, 'auth.otp_failed');
       throw new Error(`Resend email failed: ${detail}`);
     }
 
     logger.info(
-      { maskedTarget: masked, provider: 'RESEND', messageId: data?.id },
+      { ...maskedFields, provider: 'RESEND', messageId: data?.id },
       'auth.otp_dispatched',
     );
   }

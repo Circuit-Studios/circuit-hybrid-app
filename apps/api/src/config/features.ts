@@ -1,3 +1,4 @@
+import { env } from './env.js';
 import { prisma } from '../lib/prisma.js';
 
 export const FEATURE_FLAG_KEYS = [
@@ -10,6 +11,12 @@ export const FEATURE_FLAG_KEYS = [
 ] as const;
 
 export type FeatureFlagKey = (typeof FEATURE_FLAG_KEYS)[number];
+
+const SENSITIVE_PROD_FLAGS: FeatureFlagKey[] = [
+  'scripts.upload',
+  'scripts.aiAnalysis',
+  'team.invites',
+];
 
 /** Safe defaults when DB is unavailable or a key is missing. */
 export const DEFAULT_FEATURE_FLAGS: Record<FeatureFlagKey, boolean> = {
@@ -26,14 +33,22 @@ const CACHE_TTL_MS = 30_000;
 type CacheEntry = {
   expiresAt: number;
   flags: Map<string, { enabled: boolean; configJson: unknown }>;
+  dbFailed: boolean;
 };
 
 let cache: CacheEntry | null = null;
 
-async function loadFlags(): Promise<Map<string, { enabled: boolean; configJson: unknown }>> {
+function defaultEnabledForKey(key: string, dbFailed: boolean): boolean {
+  if (dbFailed && env.APP_ENV === 'prod' && SENSITIVE_PROD_FLAGS.includes(key as FeatureFlagKey)) {
+    return false;
+  }
+  return DEFAULT_FEATURE_FLAGS[key as FeatureFlagKey] ?? false;
+}
+
+async function loadFlags(): Promise<CacheEntry> {
   const now = Date.now();
   if (cache && cache.expiresAt > now) {
-    return cache.flags;
+    return cache;
   }
 
   try {
@@ -42,10 +57,11 @@ async function loadFlags(): Promise<Map<string, { enabled: boolean; configJson: 
     for (const row of rows) {
       flags.set(row.key, { enabled: row.enabled, configJson: row.configJson ?? null });
     }
-    cache = { expiresAt: now + CACHE_TTL_MS, flags };
-    return flags;
+    cache = { expiresAt: now + CACHE_TTL_MS, flags, dbFailed: false };
+    return cache;
   } catch {
-    return new Map();
+    cache = { expiresAt: now + CACHE_TTL_MS, flags: new Map(), dbFailed: true };
+    return cache;
   }
 }
 
@@ -57,13 +73,12 @@ export async function getFeatureFlag(key: string): Promise<{
   enabled: boolean;
   configJson: unknown;
 }> {
-  const flags = await loadFlags();
+  const { flags, dbFailed } = await loadFlags();
   const row = flags.get(key);
   if (row) return row;
 
-  const defaultEnabled = DEFAULT_FEATURE_FLAGS[key as FeatureFlagKey];
   return {
-    enabled: defaultEnabled ?? false,
+    enabled: defaultEnabledForKey(key, dbFailed),
     configJson: null,
   };
 }
@@ -74,12 +89,12 @@ export async function isFeatureEnabled(key: string): Promise<boolean> {
 }
 
 export async function getPublicFeatureFlags(): Promise<Record<string, boolean>> {
-  const flags = await loadFlags();
-  const result: Record<string, boolean> = { ...DEFAULT_FEATURE_FLAGS };
+  const { flags, dbFailed } = await loadFlags();
+  const result: Record<string, boolean> = {};
 
   for (const key of FEATURE_FLAG_KEYS) {
     const row = flags.get(key);
-    if (row) result[key] = row.enabled;
+    result[key] = row ? row.enabled : defaultEnabledForKey(key, dbFailed);
   }
 
   for (const [key, row] of flags) {

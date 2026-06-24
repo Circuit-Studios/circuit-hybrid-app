@@ -5,14 +5,13 @@ import { ScreenContainer } from '@/components/ScreenContainer';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { FormErrorText } from '@/components/FormErrorText';
 import { Button } from '@/components/ui/Button';
-import { LoadingState } from '@/components/ui/LoadingState';
 import { useAuth } from '@/auth/AuthContext';
 import { useOtpSession } from '@/auth/OtpSessionContext';
 import { requestOtp } from '@/api/auth';
 import { readApiError } from '@/api/client';
 import { useContentFrame } from '@/hooks/useContentFrame';
 import { formatRemainingSession } from '@/lib/session';
-import { validateOtpSession } from '@/lib/otp-session';
+import { validateOtpSession, otpSessionErrorMessage } from '@/lib/otp-session';
 import { maskEmail, maskPhone } from '@/lib/mask';
 import { getOtpBoxSize, colors, radius, spacing, typography } from '@/theme';
 
@@ -39,8 +38,8 @@ export default function OtpForm() {
   const channel = sessionValidation.ok ? sessionValidation.session.channel : undefined;
   const destination = sessionValidation.ok
     ? sessionValidation.session.channel === 'EMAIL'
-      ? sessionValidation.session.email!
-      : sessionValidation.session.phone!
+      ? (sessionValidation.session.email ?? '')
+      : (sessionValidation.session.phone ?? '')
     : '';
   const maskedDestination =
     channel === 'EMAIL'
@@ -51,8 +50,10 @@ export default function OtpForm() {
 
   useEffect(() => {
     if (sessionValidation.ok) return;
-    clearSession();
-    router.replace('/(auth)/auth');
+    if (sessionValidation.issue === 'expired') {
+      clearSession();
+      router.replace('/(auth)/auth');
+    }
   }, [clearSession, router, sessionValidation]);
 
   useEffect(() => {
@@ -89,24 +90,32 @@ export default function OtpForm() {
     if (value.length !== 6 || submitting) return;
     const validation = validateOtpSession(session);
     if (!validation.ok) {
-      setError('Your verification session expired. Start again.');
-      clearSession();
-      router.replace('/(auth)/auth');
+      setError(otpSessionErrorMessage(validation.issue));
       return;
     }
 
     const activeSession = validation.session;
-    const email = activeSession.email;
-    const phone = activeSession.phone;
-    const activeChannel = activeSession.channel;
+    if (activeSession.channel === 'EMAIL' && !activeSession.email) {
+      setError(otpSessionErrorMessage('missing_destination'));
+      return;
+    }
+    if (activeSession.channel === 'PHONE' && !activeSession.phone) {
+      setError(otpSessionErrorMessage('missing_destination'));
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
     try {
-      if (activeChannel === 'EMAIL') {
+      if (activeSession.channel === 'EMAIL') {
+        const email = activeSession.email;
+        if (!email) {
+          setError(otpSessionErrorMessage('missing_destination'));
+          return;
+        }
         await verifyOtp({
           channel: 'EMAIL',
-          email: email!,
+          email,
           code: value,
           signup:
             activeSession.mode === 'signup' && activeSession.role && activeSession.password
@@ -120,9 +129,14 @@ export default function OtpForm() {
               : undefined,
         });
       } else {
+        const phone = activeSession.phone;
+        if (!phone) {
+          setError(otpSessionErrorMessage('missing_destination'));
+          return;
+        }
         await verifyOtp({
           channel: 'PHONE',
-          phone: phone!,
+          phone,
           code: value,
           signup:
             activeSession.mode === 'signup' && activeSession.role && activeSession.password
@@ -149,34 +163,49 @@ export default function OtpForm() {
     if (cooldown > 0 || resending) return;
     const validation = validateOtpSession(session);
     if (!validation.ok) {
-      setError('Your verification session expired. Start again.');
-      clearSession();
-      router.replace('/(auth)/auth');
+      setError(otpSessionErrorMessage(validation.issue));
       return;
     }
 
     const activeSession = validation.session;
-    const email = activeSession.email;
-    const phone = activeSession.phone;
-    const activeChannel = activeSession.channel;
+    if (activeSession.channel === 'EMAIL' && !activeSession.email) {
+      setError(otpSessionErrorMessage('missing_destination'));
+      return;
+    }
+    if (activeSession.channel === 'PHONE' && !activeSession.phone) {
+      setError(otpSessionErrorMessage('missing_destination'));
+      return;
+    }
 
     setResending(true);
     setError(null);
     try {
       const otpPurpose = activeSession.mode === 'login' ? 'login' : 'signup';
-      const { ttlSeconds } =
-        activeChannel === 'EMAIL'
-          ? await requestOtp({
-              channel: 'EMAIL',
-              email: email!,
-              purpose: otpPurpose,
-            })
-          : await requestOtp({
-              channel: 'PHONE',
-              phone: phone!,
-              purpose: otpPurpose,
-            });
-      extendSession(Date.now() + ttlSeconds * 1000);
+      if (activeSession.channel === 'EMAIL') {
+        const email = activeSession.email;
+        if (!email) {
+          setError(otpSessionErrorMessage('missing_destination'));
+          return;
+        }
+        const { ttlSeconds } = await requestOtp({
+          channel: 'EMAIL',
+          email,
+          purpose: otpPurpose,
+        });
+        extendSession(Date.now() + ttlSeconds * 1000);
+      } else {
+        const phone = activeSession.phone;
+        if (!phone) {
+          setError(otpSessionErrorMessage('missing_destination'));
+          return;
+        }
+        const { ttlSeconds } = await requestOtp({
+          channel: 'PHONE',
+          phone,
+          purpose: otpPurpose,
+        });
+        extendSession(Date.now() + ttlSeconds * 1000);
+      }
       setCooldown(RESEND_COOLDOWN);
     } catch (err) {
       setError(readApiError(err, 'Could not resend'));
@@ -190,10 +219,25 @@ export default function OtpForm() {
     router.back();
   }
 
+  function returnToAuth() {
+    clearSession();
+    router.replace('/(auth)/auth');
+  }
+
   if (!sessionValidation.ok) {
     return (
       <ScreenContainer scroll={scroll} constrained="form">
-        <LoadingState />
+        <ScreenHeader
+          eyebrow="Verification"
+          title="Session problem"
+          subtitle={otpSessionErrorMessage(sessionValidation.issue)}
+          showRule
+          size="large"
+        />
+        <FormErrorText>{otpSessionErrorMessage(sessionValidation.issue)}</FormErrorText>
+        <View style={styles.actions}>
+          <Button title="Back to sign in" onPress={returnToAuth} />
+        </View>
       </ScreenContainer>
     );
   }

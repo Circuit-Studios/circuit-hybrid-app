@@ -10,6 +10,7 @@ import { requireFeature } from '../../middleware/require-feature.js';
 import { canEditScripts, canInviteMembers, getActiveMembership } from '../../auth/permissions.js';
 import { analyzeScript } from '../../ai/pipelines/script-analysis.pipeline.js';
 import { logger } from '../../lib/logger.js';
+import { assertPdfMagicBytes, sanitizeDownloadFilename } from '../../lib/pdf-upload.js';
 import { getStorage } from '../../storage/index.js';
 
 const router: Router = Router();
@@ -47,6 +48,8 @@ router.post(
     await assertCanEditProject(userId, projectId);
 
     if (!req.file) throw badRequest('Missing script file (field "script")');
+
+    assertPdfMagicBytes(req.file.buffer);
 
     // Object keys are deterministic-ish per script for clean tracing: every
     // file lives under scripts/<projectId>/<uuid><ext>. Easy to inventory.
@@ -153,12 +156,10 @@ router.get(
     if (!membership) throw forbidden('You are not a member of this project');
 
     const obj = await getStorage().get(script.storageKey);
+    const safeName = sanitizeDownloadFilename(script.originalFileName);
     res.setHeader('Content-Type', obj.contentType);
     res.setHeader('Content-Length', String(obj.contentLength));
-    res.setHeader(
-      'Content-Disposition',
-      `inline; filename="${script.originalFileName.replace(/"/g, '')}"`,
-    );
+    res.setHeader('Content-Disposition', `inline; filename="${safeName}"`);
     obj.stream.pipe(res);
   }),
 );

@@ -41,3 +41,15 @@ export function maskOtpTarget(channel: OtpChannel, target: string): string {
   if (target.length <= 4) return '****';
   return `${target.slice(0, 3)}***${target.slice(-2)}`;
 }
+
+/** Structured log fields — avoid names `email`, `phone`, or `target` (pino redacts those). */
+export function maskOtpLogFields(
+  channel: OtpChannel,
+  target: string,
+): { emailMasked?: string; phoneMasked?: string } {
+  const masked = maskOtpTarget(channel, target);
+  if (channel === OtpChannel.EMAIL) {
+    return { emailMasked: masked };
+  }
+  return { phoneMasked: masked };
+}

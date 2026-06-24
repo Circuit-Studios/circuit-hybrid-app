@@ -35,4 +35,20 @@ describe('features service', () => {
     clearFeatureFlagCacheForTests();
     await expect(isFeatureEnabled('team.invites')).resolves.toBe(true);
   });
+
+  it('defaults sensitive flags to false in prod when DB read fails', async () => {
+    vi.resetModules();
+    vi.doMock('../../src/config/env.js', () => ({
+      env: { APP_ENV: 'prod' },
+    }));
+
+    prismaMock.featureFlag.findMany.mockRejectedValue(new Error('db down'));
+
+    const { isFeatureEnabled, clearFeatureFlagCacheForTests } =
+      await import('../../src/config/features.js');
+    clearFeatureFlagCacheForTests();
+
+    await expect(isFeatureEnabled('scripts.upload')).resolves.toBe(false);
+    await expect(isFeatureEnabled('auth.emailOtp')).resolves.toBe(true);
+  });
 });

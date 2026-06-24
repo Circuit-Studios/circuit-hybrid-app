@@ -43,3 +43,18 @@ export function validateOtpSession(session: OtpSession | null | undefined): OtpS
 
   return { ok: true, session };
 }
+
+export function otpSessionErrorMessage(issue: OtpSessionIssue): string {
+  switch (issue) {
+    case 'missing_destination':
+      return 'Your verification session is missing an email or phone number. Please start again.';
+    case 'missing_channel':
+      return 'Your verification session is invalid. Please start again.';
+    case 'expired':
+      return 'Your verification code expired. Please start again.';
+    case 'incomplete_signup':
+      return 'Your signup session is incomplete. Please start again.';
+    default:
+      return 'Your verification session expired. Please start again.';
+  }
+}

@@ -57,7 +57,7 @@ const loggerOptions: LoggerOptions = {
       'body.phone',
       'body.signup.phone',
 
-      // Request-body targets only — structured OTP logs use `maskedTarget` (not redacted).
+      // Request-body targets only — OTP logs use `emailMasked` / `phoneMasked`.
       'body.target',
       'req.body.target',
 

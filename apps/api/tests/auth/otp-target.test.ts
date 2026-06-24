@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { OtpChannel } from '@prisma/client';
 import {
   isValidOtpTarget,
+  maskOtpLogFields,
   maskOtpTarget,
   normalizeOtpTarget,
 } from '../../src/modules/auth/otp-target.js';
@@ -26,11 +27,17 @@ describe('otp-target', () => {
     const masked = maskOtpTarget(OtpChannel.EMAIL, 'kiran@circuit.app');
     expect(masked).not.toContain('kiran@circuit.app');
     expect(masked).toContain('@');
+    expect(maskOtpLogFields(OtpChannel.EMAIL, 'kiran@circuit.app')).toEqual({
+      emailMasked: masked,
+    });
   });
 
   it('masks phone without exposing full number', () => {
     const masked = maskOtpTarget(OtpChannel.PHONE, '+919812345678');
     expect(masked).not.toBe('+919812345678');
     expect(masked).toContain('***');
+    expect(maskOtpLogFields(OtpChannel.PHONE, '+919812345678')).toEqual({
+      phoneMasked: masked,
+    });
   });
 });

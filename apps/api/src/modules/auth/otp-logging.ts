@@ -1,13 +1,13 @@
 import { OtpChannel } from '@prisma/client';
 import { env } from '../../config/env.js';
 import { logger } from '../../lib/logger.js';
-import { maskOtpTarget } from './otp-target.js';
+import { maskOtpLogFields } from './otp-target.js';
 
 export function logOtpRequested(channel: OtpChannel, target: string, purpose: string): void {
   logger.info(
     {
       channel,
-      maskedTarget: maskOtpTarget(channel, target),
+      ...maskOtpLogFields(channel, target),
       purpose,
     },
     'auth.otp_requested',
@@ -18,7 +18,7 @@ export function logOtpDispatched(channel: OtpChannel, target: string, provider: 
   logger.info(
     {
       channel,
-      maskedTarget: maskOtpTarget(channel, target),
+      ...maskOtpLogFields(channel, target),
       provider,
     },
     'auth.otp_dispatched',
@@ -29,7 +29,7 @@ export function logOtpVerified(channel: OtpChannel, target: string, purpose: str
   logger.info(
     {
       channel,
-      maskedTarget: maskOtpTarget(channel, target),
+      ...maskOtpLogFields(channel, target),
       purpose,
     },
     'auth.otp_verified',
@@ -40,7 +40,7 @@ export function logOtpFailed(channel: OtpChannel, target: string, reason: string
   logger.warn(
     {
       channel,
-      maskedTarget: maskOtpTarget(channel, target),
+      ...maskOtpLogFields(channel, target),
       reason,
     },
     'auth.otp_failed',
@@ -56,7 +56,7 @@ export function logOtpMock(channel: OtpChannel, target: string, code: string): v
   logger.debug(
     {
       channel,
-      maskedTarget: maskOtpTarget(channel, target),
+      ...maskOtpLogFields(channel, target),
       provider: 'MOCK',
       code,
     },
