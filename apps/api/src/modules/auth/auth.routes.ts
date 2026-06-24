@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { OtpChannel } from '@prisma/client';
+import { OtpChannel, OtpPurpose } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import {
   asyncHandler,
@@ -10,6 +10,7 @@ import {
   unauthorized,
 } from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { logger } from '../../lib/logger.js';
 import { buildAuthResponse } from './auth-response.js';
 import { findOrCreateUserAfterOtp, linkPendingInvites } from './auth-signup.js';
 import { assertDirectRegisterAllowed } from './direct-register.policy.js';
@@ -17,10 +18,13 @@ import { hashPassword, verifyPassword } from './password.service.js';
 import { OTP_RESEND_COOLDOWN_SECONDS, OTP_TTL_SECONDS } from './auth.constants.js';
 import { assertLoginChannel, assertSignupChannel } from './verification-policy.js';
 import { isFeatureEnabled } from '../../config/features.js';
+import { normalizeEmail } from './otp-crypto.js';
 import {
   directRegisterSchema,
+  forgotPasswordSchema,
   loginSchema,
   requestOtpSchema,
+  resetPasswordSchema,
   verifyOtpSchema,
   type RequestOtpBody,
 } from './auth.schemas.js';
@@ -186,6 +190,86 @@ authPublicRouter.post(
 
     const user = await findOrCreateUserAfterOtp(input);
     res.json(buildAuthResponse(user));
+  }),
+);
+
+const GENERIC_RESET_MESSAGE =
+  'If an account exists for that email, a password reset code has been sent.';
+
+authPublicRouter.post(
+  '/forgot-password',
+  asyncHandler(async (req, res) => {
+    const { email } = forgotPasswordSchema.parse(req.body);
+    const normalizedEmail = normalizeEmail(email);
+
+    // Anti-enumeration: only dispatch when the account exists, but always
+    // return the same generic response so callers cannot probe for emails.
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (user) {
+      try {
+        await requestOtp({
+          channel: OtpChannel.EMAIL,
+          target: normalizedEmail,
+          purpose: 'password_reset',
+        });
+      } catch (err) {
+        // Swallow cooldown/delivery errors so timing/response does not leak
+        // whether the email is registered. The OTP service logs masked details.
+        logger.warn(
+          { event: 'auth.forgot_password_suppressed' },
+          err instanceof Error ? err.message : 'forgot_password_failed',
+        );
+      }
+    }
+
+    res.json({
+      ok: true,
+      message: GENERIC_RESET_MESSAGE,
+      ttlSeconds: EMAIL_OTP_TTL_SECONDS,
+      cooldownSeconds: OTP_RESEND_COOLDOWN_SECONDS,
+    });
+  }),
+);
+
+authPublicRouter.post(
+  '/reset-password',
+  asyncHandler(async (req, res) => {
+    const { email, code, newPassword } = resetPasswordSchema.parse(req.body);
+    const normalizedEmail = normalizeEmail(email);
+
+    // Verifying consumes the single-use OTP and throws a generic 401 on failure.
+    await verifyOtp({
+      channel: OtpChannel.EMAIL,
+      target: normalizedEmail,
+      code,
+      purpose: 'password_reset',
+    });
+
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (!user) {
+      // Should not happen (OTP was issued for an existing account); stay generic.
+      throw unauthorized('Invalid or expired verification code.');
+    }
+
+    const passwordHash = await hashPassword(newPassword);
+    await prisma.$transaction([
+      prisma.user.update({ where: { id: user.id }, data: { passwordHash } }),
+      // Invalidate any other outstanding reset codes for this account.
+      prisma.authOtp.updateMany({
+        where: {
+          channel: OtpChannel.EMAIL,
+          target: normalizedEmail,
+          purpose: OtpPurpose.PASSWORD_RESET,
+          consumed: false,
+        },
+        data: { consumed: true, consumedAt: new Date() },
+      }),
+    ]);
+
+    res.json({
+      ok: true,
+      message: 'Password updated. Please sign in with your new password.',
+    });
   }),
 );
 

@@ -18,6 +18,8 @@ export const signupPasswordSchema = z
   .min(8, 'Password must be at least 8 characters')
   .max(128, 'Password is too long');
 
+export const otpCodeSchema = z.string().regex(/^\d{6}$/, 'OTP must be 6 digits');
+
 export const personNameSchema = z.object({
   firstName: z.string().trim().min(1, 'First name is required').max(60),
   lastName: z.string().trim().max(60).default(''),
@@ -91,7 +93,7 @@ const verifyOtpBaseSchema = z.object({
   channel: z.enum(['PHONE', 'EMAIL']).optional(),
   phone: phoneSchema.optional(),
   email: emailSchema.optional(),
-  code: z.string().regex(/^\d{6}$/, 'OTP must be 6 digits'),
+  code: otpCodeSchema,
   purpose: z.enum(['signup', 'login', 'verify_email']).optional(),
   signup: z.union([emailSignupPayloadSchema, phoneSignupPayloadSchema]).optional(),
 });
@@ -152,6 +154,18 @@ export const loginSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters').max(128),
 });
 
+/** Request a password-reset OTP to a registered email. */
+export const forgotPasswordSchema = z.object({
+  email: emailSchema,
+});
+
+/** Confirm a password-reset OTP and set a new password in one step. */
+export const resetPasswordSchema = z.object({
+  email: emailSchema,
+  code: otpCodeSchema,
+  newPassword: signupPasswordSchema,
+});
+
 /** Local-only bypass when ALLOW_DIRECT_REGISTER=true and APP_ENV=local. */
 export const directRegisterSchema = personNameSchema.extend({
   email: emailSchema,
@@ -162,3 +176,5 @@ export const directRegisterSchema = personNameSchema.extend({
 
 export type RequestOtpBody = z.infer<typeof requestOtpSchema>;
 export type VerifyOtpBody = z.infer<typeof verifyOtpSchema>;
+export type ForgotPasswordBody = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordBody = z.infer<typeof resetPasswordSchema>;

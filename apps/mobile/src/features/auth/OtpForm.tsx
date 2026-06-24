@@ -1,9 +1,10 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { FormErrorText } from '@/components/FormErrorText';
+import { OtpCodeInput } from '@/components/auth/OtpCodeInput';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/auth/AuthContext';
 import { useOtpSession } from '@/auth/OtpSessionContext';
@@ -13,7 +14,7 @@ import { useContentFrame } from '@/hooks/useContentFrame';
 import { formatRemainingSession } from '@/lib/session';
 import { validateOtpSession, otpSessionErrorMessage } from '@/lib/otp-session';
 import { maskEmail, maskPhone } from '@/lib/mask';
-import { getOtpBoxSize, colors, radius, spacing, typography } from '@/theme';
+import { colors, radius, spacing, typography } from '@/theme';
 
 const RESEND_COOLDOWN = 30;
 
@@ -21,10 +22,9 @@ export default function OtpForm() {
   const router = useRouter();
   const { verifyOtp } = useAuth();
   const { session, clearSession, extendSession } = useOtpSession();
-  const { contentWidth, isLandscape, isCompactHeight } = useContentFrame('form');
+  const { isLandscape, isCompactHeight } = useContentFrame('form');
   const scroll = isLandscape || isCompactHeight;
 
-  const inputRef = useRef<TextInput>(null);
   const [code, setCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [resending, setResending] = useState(false);
@@ -34,7 +34,6 @@ export default function OtpForm() {
 
   const sessionValidation = useMemo(() => validateOtpSession(session), [session]);
 
-  const boxSize = useMemo(() => getOtpBoxSize(contentWidth), [contentWidth]);
   const channel = sessionValidation.ok ? sessionValidation.session.channel : undefined;
   const destination = sessionValidation.ok
     ? sessionValidation.session.channel === 'EMAIL'
@@ -80,11 +79,6 @@ export default function OtpForm() {
     const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [cooldown]);
-
-  useEffect(() => {
-    const t = setTimeout(() => inputRef.current?.focus(), 250);
-    return () => clearTimeout(t);
-  }, []);
 
   async function handleVerify(value: string) {
     if (value.length !== 6 || submitting) return;
@@ -244,7 +238,6 @@ export default function OtpForm() {
 
   const activeSession = sessionValidation.session;
 
-  const digits = code.padEnd(6, ' ').slice(0, 6).split('');
   const channelLabel = channel === 'EMAIL' ? 'email' : 'text message';
   const verifyCta = activeSession.mode === 'login' ? 'Sign in' : 'Create account';
 
@@ -265,37 +258,11 @@ export default function OtpForm() {
         </Text>
       </View>
 
-      <View style={styles.boxes}>
-        {digits.map((d, i) => (
-          <View
-            key={i}
-            style={[
-              styles.box,
-              { width: boxSize.width, height: boxSize.height },
-              i === code.length && styles.boxActive,
-              code.length === 6 && styles.boxFilled,
-            ]}
-          >
-            <Text style={styles.boxText}>{d.trim()}</Text>
-          </View>
-        ))}
-        <TextInput
-          ref={inputRef}
-          value={code}
-          onChangeText={(value) => {
-            const next = value.replace(/[^0-9]/g, '').slice(0, 6);
-            setCode(next);
-            if (next.length === 6) void handleVerify(next);
-          }}
-          style={styles.hiddenInput}
-          keyboardType="number-pad"
-          autoComplete="one-time-code"
-          textContentType="oneTimeCode"
-          maxLength={6}
-          accessibilityLabel="One-time code"
-          caretHidden
-        />
-      </View>
+      <OtpCodeInput
+        value={code}
+        onChange={setCode}
+        onComplete={(next) => void handleVerify(next)}
+      />
 
       {error ? <FormErrorText>{error}</FormErrorText> : null}
 
@@ -333,25 +300,6 @@ export default function OtpForm() {
 }
 
 const styles = StyleSheet.create({
-  boxes: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginVertical: spacing.lg,
-  },
-  box: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    backgroundColor: colors.glass,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  boxActive: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
-  boxFilled: { borderColor: colors.accentMuted },
-  boxText: { ...typography.title, color: colors.textPrimary },
-  hiddenInput: { position: 'absolute', opacity: 0, width: '100%', height: 1 },
   expiryBanner: {
     backgroundColor: colors.accentSoft,
     borderRadius: radius.lg,

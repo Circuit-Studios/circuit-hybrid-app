@@ -8,8 +8,10 @@ import { asyncHandler, badRequest, forbidden, notFound } from '../../lib/http.js
 import { requireAuth } from '../../middleware/auth.js';
 import { requireFeature } from '../../middleware/require-feature.js';
 import { canEditScripts, canInviteMembers, getActiveMembership } from '../../auth/permissions.js';
-import { analyzeScript } from '../../ai/pipelines/script-analysis.pipeline.js';
-import { logger } from '../../lib/logger.js';
+import {
+  createScriptAnalysisJob,
+  enqueueBackgroundJob,
+} from '../../jobs/background-jobs.js';
 import { assertPdfMagicBytes, sanitizeDownloadFilename } from '../../lib/pdf-upload.js';
 import { getStorage } from '../../storage/index.js';
 
@@ -102,13 +104,11 @@ router.post(
       throw badRequest(`Analysis already in progress (status=${script.analysisStatus})`);
     }
 
-    // Fire-and-forget. The pipeline emits its own progress updates which
-    // the workspace screens listen to over Socket.IO.
-    void analyzeScript(scriptId).catch((err) => {
-      logger.error({ err, scriptId }, 'analyzeScript background failure');
-    });
+    // Durable background job — pipeline emits progress over Socket.IO.
+    const job = await createScriptAnalysisJob(scriptId, script.projectId);
+    enqueueBackgroundJob(job.id);
 
-    res.status(202).json({ status: 'STARTED', scriptId });
+    res.status(202).json({ status: 'STARTED', scriptId, jobId: job.id });
   }),
 );
 

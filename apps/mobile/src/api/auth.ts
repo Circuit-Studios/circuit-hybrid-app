@@ -3,7 +3,7 @@ import type { UserRole, VerifyOtpResponse, AuthUser } from './types';
 
 export type AuthSessionResponse = VerifyOtpResponse;
 
-export type OtpPurpose = 'signup' | 'login' | 'verify_email';
+export type OtpPurpose = 'signup' | 'login' | 'verify_email' | 'password_reset';
 export type OtpChannel = 'PHONE' | 'EMAIL';
 
 export type RequestOtpInput =
@@ -73,6 +73,34 @@ export type VerifyOtpInput =
 
 export async function verifyOtp(input: VerifyOtpInput): Promise<VerifyOtpResponse> {
   const { data } = await api.post<VerifyOtpResponse>('/auth/verify-otp', input);
+  return data;
+}
+
+/** Trigger a password-reset OTP to a registered email. Always resolves generically. */
+export async function requestPasswordReset(
+  email: string,
+): Promise<{ ok: boolean; message: string; ttlSeconds: number; cooldownSeconds: number }> {
+  await wakeApi();
+  const { data } = await api.post<{
+    ok: boolean;
+    message: string;
+    ttlSeconds: number;
+    cooldownSeconds: number;
+  }>('/auth/forgot-password', { email });
+  return data;
+}
+
+/** Confirm a password-reset OTP and set a new password in one step. */
+export async function resetPassword(
+  email: string,
+  code: string,
+  newPassword: string,
+): Promise<{ ok: boolean; message: string }> {
+  const { data } = await api.post<{ ok: boolean; message: string }>('/auth/reset-password', {
+    email,
+    code,
+    newPassword,
+  });
   return data;
 }
 

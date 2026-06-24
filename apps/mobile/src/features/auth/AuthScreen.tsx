@@ -279,6 +279,19 @@ export default function AuthScreen() {
             {!isSignup ? (
               <View style={styles.passwordBlock}>
                 <PasswordField value={password} onChangeText={setPassword} mode="login" />
+                <Pressable
+                  accessibilityRole="button"
+                  hitSlop={8}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/(auth)/forgot-password',
+                      params: email.trim() ? { email: email.trim() } : undefined,
+                    })
+                  }
+                  style={styles.forgotLink}
+                >
+                  <Text style={styles.forgotText}>Forgot password?</Text>
+                </Pressable>
               </View>
             ) : null}
           </View>
@@ -401,6 +414,13 @@ const styles = StyleSheet.create({
   tabText: { ...typography.bodyStrong, color: authPalette.muted },
   tabTextActive: { color: authPalette.ink },
   passwordBlock: { marginBottom: spacing.lg },
+  forgotLink: { alignSelf: 'flex-end', marginTop: spacing.sm, paddingVertical: spacing.xs },
+  forgotText: {
+    ...typography.caption,
+    color: authPalette.ink,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
+  },
   cta: {
     borderRadius: radius.pill,
     paddingVertical: spacing.md + 4,

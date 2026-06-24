@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: authPalette.inputBorder,
     borderBottomWidth: 2,
-    borderBottomColor: 'rgba(232,185,49,0.35)',
+    borderBottomColor: authPalette.inputUnderline,
   },
   fieldRowLight: {
     backgroundColor: colors.glass,

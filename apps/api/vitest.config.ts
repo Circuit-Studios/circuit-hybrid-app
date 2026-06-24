@@ -15,6 +15,7 @@ process.env.DATABASE_URL ??= 'postgresql://test:test@localhost:5432/circuit_test
 process.env.OPENAI_API_KEY ??= 'sk-test';
 process.env.OPENAI_MODEL ??= 'gpt-4o-test';
 process.env.OPENAI_MODEL_FAST ??= 'gpt-4o-mini-test';
+process.env.LLM_PROVIDER ??= 'OPENAI';
 process.env.APP_ENV ??= 'local';
 process.env.EMAIL_OTP_PROVIDER ??= 'MOCK';
 process.env.PHONE_OTP_PROVIDER ??= 'MOCK';

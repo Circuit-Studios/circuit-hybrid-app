@@ -46,7 +46,20 @@ const schema = z.object({
 
   REDIS_URL: optionalUrl,
 
-  OPENAI_API_KEY: z.string().min(1, 'OPENAI_API_KEY is required'),
+  LLM_PROVIDER: z.enum(['OPENAI', 'NVIDIA']).default('OPENAI'),
+  NVIDIA_API_KEY: optionalString,
+  NVIDIA_BASE_URL: z.preprocess(
+    emptyToUndefined,
+    z.string().url().default('https://integrate.api.nvidia.com/v1'),
+  ),
+  NVIDIA_MODEL_EXTRACTOR: optionalString,
+  NVIDIA_MODEL_PLANNER: optionalString,
+  NVIDIA_MODEL_FAST: optionalString,
+  LLM_MAX_SCRIPT_CHARS: z.coerce.number().int().positive().default(250_000),
+  LLM_MAX_CHUNK_CHARS: z.coerce.number().int().positive().default(18_000),
+  LLM_PLANNER_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.2),
+
+  OPENAI_API_KEY: optionalString,
   OPENAI_MODEL: z.string().default('gpt-4o'),
   OPENAI_MODEL_FAST: z.string().default('gpt-4o-mini'),
   OPENAI_MAX_RETRIES: z.coerce.number().int().min(0).max(10).default(3),
@@ -78,6 +91,38 @@ function applyLegacyOtpProvider(data: Env): Env {
   return next;
 }
 
+function resolveNvidiaModels(data: Env): Env {
+  if (data.LLM_PROVIDER !== 'NVIDIA') return data;
+  const planner = data.NVIDIA_MODEL_PLANNER!;
+  return {
+    ...data,
+    NVIDIA_MODEL_EXTRACTOR: data.NVIDIA_MODEL_EXTRACTOR ?? planner,
+    NVIDIA_MODEL_FAST: data.NVIDIA_MODEL_FAST ?? planner,
+  };
+}
+
+function assertLlmProviderConfig(data: Env): void {
+  if (data.LLM_PROVIDER === 'OPENAI') {
+    if (!data.OPENAI_API_KEY) {
+      console.error('Invalid environment configuration:');
+      console.error('  - OPENAI_API_KEY: required when LLM_PROVIDER=OPENAI');
+      process.exit(1);
+    }
+    return;
+  }
+
+  if (!data.NVIDIA_API_KEY) {
+    console.error('Invalid environment configuration:');
+    console.error('  - NVIDIA_API_KEY: required when LLM_PROVIDER=NVIDIA');
+    process.exit(1);
+  }
+  if (!data.NVIDIA_MODEL_PLANNER) {
+    console.error('Invalid environment configuration:');
+    console.error('  - NVIDIA_MODEL_PLANNER: required when LLM_PROVIDER=NVIDIA');
+    process.exit(1);
+  }
+}
+
 function loadEnv(): Env {
   const parsed = schema.safeParse(process.env);
   if (!parsed.success) {
@@ -88,7 +133,9 @@ function loadEnv(): Env {
     process.exit(1);
   }
 
-  const resolved = applyLegacyOtpProvider(parsed.data);
+  let resolved = applyLegacyOtpProvider(parsed.data);
+  resolved = resolveNvidiaModels(resolved);
+  assertLlmProviderConfig(resolved);
   assertResendEmailOtpConfig(resolved);
   assertProductionOtpProviders(resolved);
   return resolved;

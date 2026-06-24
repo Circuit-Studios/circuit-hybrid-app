@@ -1,17 +1,17 @@
 // Core design tokens — Circuit v1 gold/glass light theme.
 
 export const colors = {
-  // Brand — golden yellow (auth mockup)
-  brand: '#E8B931',
-  brandStrong: '#D4A628',
-  brandSoft: 'rgba(232,185,49,0.14)',
-  brandDisabled: 'rgba(232,185,49,0.28)',
-  amber: '#E8B931',
-  amberLight: '#F0C94A',
+  // Brand — vivid golden yellow (auth mockup)
+  brand: '#F5B301',
+  brandStrong: '#DD9E00',
+  brandSoft: 'rgba(245,179,1,0.14)',
+  brandDisabled: 'rgba(245,179,1,0.30)',
+  amber: '#F5B301',
+  amberLight: '#FFCB3D',
 
   // Hero gradient (top → bottom)
-  heroFrom: '#F0C94A',
-  heroMid: '#E8B931',
+  heroFrom: '#FFCB3D',
+  heroMid: '#F5B301',
   heroTo: '#121212',
 
   // Neutrals (light theme)
@@ -32,11 +32,11 @@ export const colors = {
   onBrand: '#121212',
 
   // Backward-compatible aliases (used across existing screens)
-  accent: '#E8B931',
-  accentLight: '#F0C94A',
-  accentMuted: '#D4A628',
-  accentSoft: 'rgba(232,185,49,0.14)',
-  accentGlow: 'rgba(232,185,49,0.38)',
+  accent: '#F5B301',
+  accentLight: '#FFCB3D',
+  accentMuted: '#DD9E00',
+  accentSoft: 'rgba(245,179,1,0.14)',
+  accentGlow: 'rgba(245,179,1,0.38)',
   accentInk: '#121212',
 
   // Semantic

@@ -11,8 +11,8 @@ import { normalizeOtpTarget } from './otp-target.js';
 import { getOtpDeliveryProvider } from './providers/otp-delivery.js';
 import { generateSixDigitOtp, hashOtpCode, normalizeEmail, verifyOtpCode } from './otp-crypto.js';
 import {
+  flowPurposeToOtpPurpose,
   purposeToApiLabel,
-  toAuthOtpPurpose,
   toOtpDeliveryPurpose,
   toOtpPurpose,
   type OtpFlowPurpose,
@@ -159,17 +159,13 @@ async function verifyIssuedOtp(
 
 export async function requestOtp({ channel, target, purpose }: RequestOtpInput): Promise<void> {
   await assertOtpChannelEnabled(channel);
-  const otpPurpose =
-    purpose === 'verify_email' ? OtpPurpose.VERIFY_EMAIL : toAuthOtpPurpose(purpose);
-  await issueOtp(channel, target, otpPurpose);
+  await issueOtp(channel, target, flowPurposeToOtpPurpose(purpose));
 }
 
 export async function verifyOtp({ channel, target, code, purpose }: VerifyOtpInput): Promise<true> {
   await assertOtpChannelEnabled(channel);
-  const otpPurpose =
-    purpose === 'verify_email' ? OtpPurpose.VERIFY_EMAIL : toAuthOtpPurpose(purpose);
-  await verifyIssuedOtp(channel, target, code, otpPurpose);
+  await verifyIssuedOtp(channel, target, code, flowPurposeToOtpPurpose(purpose));
   return true;
 }
 
-export { toAuthOtpPurpose, toOtpPurpose };
+export { flowPurposeToOtpPurpose, toOtpPurpose };

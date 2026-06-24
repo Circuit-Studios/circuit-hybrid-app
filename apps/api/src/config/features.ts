@@ -4,6 +4,9 @@ import { prisma } from '../lib/prisma.js';
 export const FEATURE_FLAG_KEYS = [
   'scripts.upload',
   'scripts.aiAnalysis',
+  'scripts.shootingPlan',
+  'scripts.taskSuggestions',
+  'llm.nvidia',
   'team.invites',
   'auth.emailOtp',
   'auth.phoneOtp',
@@ -15,6 +18,9 @@ export type FeatureFlagKey = (typeof FEATURE_FLAG_KEYS)[number];
 const SENSITIVE_PROD_FLAGS: FeatureFlagKey[] = [
   'scripts.upload',
   'scripts.aiAnalysis',
+  'scripts.shootingPlan',
+  'scripts.taskSuggestions',
+  'llm.nvidia',
   'team.invites',
 ];
 
@@ -22,6 +28,9 @@ const SENSITIVE_PROD_FLAGS: FeatureFlagKey[] = [
 export const DEFAULT_FEATURE_FLAGS: Record<FeatureFlagKey, boolean> = {
   'scripts.upload': true,
   'scripts.aiAnalysis': true,
+  'scripts.shootingPlan': true,
+  'scripts.taskSuggestions': true,
+  'llm.nvidia': true,
   'team.invites': true,
   'auth.emailOtp': true,
   'auth.phoneOtp': true,

@@ -29,9 +29,9 @@ vi.mock('openai', () => {
   };
 });
 
-// Import AFTER the mock so the singleton in openai.client.ts picks up the
-// mocked SDK.
+// Import AFTER the mock so the singleton picks up the mocked SDK.
 const { chatJson } = await import('../../src/ai/openai.client.js');
+const { resetLlmProviderForTests } = await import('../../src/ai/llm/index.js');
 
 const schema = z.object({
   characters: z.array(z.object({ name: z.string(), importance: z.enum(['LEAD', 'SUPPORT']) })),
@@ -46,11 +46,13 @@ function respond(payload: unknown) {
 describe('chatJson', () => {
   beforeEach(() => {
     mockCreate.mockReset();
+    resetLlmProviderForTests();
   });
 
   it('parses and validates a well-formed response', async () => {
     respond({ characters: [{ name: 'Rajesh', importance: 'LEAD' }] });
     const out = await chatJson({
+      role: 'planner',
       schema,
       schemaName: 'Test',
       systemPrompt: 'system',
@@ -60,25 +62,29 @@ describe('chatJson', () => {
     expect(out.characters[0]!.name).toBe('Rajesh');
   });
 
-  it('throws when the model returns invalid JSON', async () => {
-    (mockCreate as Mock).mockResolvedValueOnce({
-      choices: [{ message: { content: '{not json' } }],
-    });
+  it('throws when the model returns invalid JSON after repair', async () => {
+    (mockCreate as Mock)
+      .mockResolvedValueOnce({ choices: [{ message: { content: '{not json' } }] })
+      .mockResolvedValueOnce({ choices: [{ message: { content: '{still bad' } }] });
     await expect(
-      chatJson({ schema, schemaName: 'Test', systemPrompt: 's', userPrompt: 'u' }),
+      chatJson({ role: 'planner', schema, schemaName: 'Test', systemPrompt: 's', userPrompt: 'u' }),
     ).rejects.toThrow(/JSON/);
+    expect(mockCreate).toHaveBeenCalledTimes(2);
   });
 
-  it('throws when the JSON does not match the schema', async () => {
+  it('throws when the JSON does not match the schema after repair', async () => {
     respond({ characters: [{ name: 'Rajesh', importance: 'BOSS' /* invalid */ }] });
+    respond({ characters: [{ name: 'Rajesh', importance: 'BOSS' /* still invalid */ }] });
     await expect(
-      chatJson({ schema, schemaName: 'Test', systemPrompt: 's', userPrompt: 'u' }),
+      chatJson({ role: 'planner', schema, schemaName: 'Test', systemPrompt: 's', userPrompt: 'u' }),
     ).rejects.toThrow(/schema/);
+    expect(mockCreate).toHaveBeenCalledTimes(2);
   });
 
   it('passes the prompts to OpenAI verbatim', async () => {
     respond({ characters: [] });
     await chatJson({
+      role: 'planner',
       schema,
       schemaName: 'Test',
       systemPrompt: 'SYSTEM-SENTINEL',

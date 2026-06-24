@@ -187,6 +187,15 @@ export default function AIResultsScreen() {
         <StatTile big={String(Math.round(totalShootDays))} label="Shoot days" />
       </View>
 
+      <View style={styles.reviewCta}>
+        <PrimaryButton
+          title="Review shooting plan & tasks"
+          onPress={() =>
+            router.push(`/(app)/project/${projectId}/director-review?scriptId=${scriptId ?? ''}`)
+          }
+        />
+      </View>
+
       {savings > 0 ? (
         <Card style={styles.savingsCard}>
           <Text style={styles.savingsEyebrow}>Combination scenes</Text>
@@ -571,6 +580,7 @@ const styles = StyleSheet.create({
   body: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
   bodyStrong: { color: colors.textPrimary, fontWeight: '600' },
   statsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+  reviewCta: { marginTop: spacing.md, marginBottom: spacing.md },
   statTile: {
     flex: 1,
     backgroundColor: colors.surface,
