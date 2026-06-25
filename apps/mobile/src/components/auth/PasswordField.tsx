@@ -20,12 +20,7 @@ export function PasswordField({
   fieldVariant = 'signIn',
 }: PasswordFieldProps) {
   const isNew = mode === 'new';
-  const placeholder =
-    fieldVariant === 'signUp' && isNew
-      ? 'Password'
-      : isNew
-        ? 'At least 8 characters'
-        : 'Enter your password';
+  const placeholder = isNew ? 'Password' : 'Enter your password';
 
   return (
     <LabeledInput

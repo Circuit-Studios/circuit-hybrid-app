@@ -1,6 +1,8 @@
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAuthMetrics } from '@/features/auth/AuthMetricsContext';
 import { authPalette } from '@/theme/authPalette';
+import { authTypography } from '@/theme/authTypography';
+import { typography } from '@/theme';
 
 export type AuthTab = 'signup' | 'signin';
 
@@ -91,8 +93,8 @@ const styles = StyleSheet.create({
     opacity: 0.92,
   },
   label: {
-    fontSize: 15,
-    fontWeight: '600',
+    ...typography.bodyStrong,
+    fontSize: authTypography.segmentFontSize,
     color: authPalette.segmentInactiveText,
   },
   labelActive: {

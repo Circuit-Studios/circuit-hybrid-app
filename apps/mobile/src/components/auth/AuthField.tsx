@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthMetrics } from '@/features/auth/AuthMetricsContext';
 import { authPalette } from '@/theme/authPalette';
 import { authInputChrome } from '@/theme/authInputChrome';
+import { authFieldLabelStyle } from '@/theme/authTypography';
 import { authFieldRowStyleFromMetrics, type AuthFieldVariant } from '@/theme/fields';
 
 export interface AuthFieldProps extends TextInputProps {
@@ -37,13 +38,11 @@ export function AuthField({
           style={[
             styles.fieldLabel,
             {
-              fontSize: metrics.labelFontSize,
-              letterSpacing: metrics.labelLetterSpacing,
               marginBottom: metrics.labelMarginBottom,
             },
           ]}
         >
-          {label.toUpperCase()}
+          {label}
         </Text>
       ) : null}
       <View
@@ -81,7 +80,7 @@ export function AuthField({
 const styles = StyleSheet.create({
   field: {},
   fieldLabel: {
-    fontWeight: '700',
+    ...authFieldLabelStyle,
     color: authPalette.label,
   },
   fieldIconWrap: {

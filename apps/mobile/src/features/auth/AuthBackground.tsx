@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     height: 260,
     borderRadius: 130,
     backgroundColor: authPalette.bgGlow,
-    opacity: 0.35,
+    opacity: 0.28,
   },
   glowBottomLeft: {
     position: 'absolute',
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     height: 240,
     borderRadius: 120,
     backgroundColor: authPalette.bgGlow,
-    opacity: 0.25,
+    opacity: 0.18,
   },
   filmStrip: {
     position: 'absolute',

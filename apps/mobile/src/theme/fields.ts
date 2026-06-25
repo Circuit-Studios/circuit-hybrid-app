@@ -32,21 +32,23 @@ export function authFieldRowStyleFromMetrics(metrics: AuthLayoutMetrics): ViewSt
 /** TextInput styles that avoid iOS/Android baseline drift inside icon rows. */
 export const authInputTextStyle: TextStyle = Platform.select({
   ios: {
-    fontSize: 16,
-    fontWeight: '400',
-    lineHeight: 20,
+    fontSize: typography.body.fontSize,
+    fontWeight: typography.body.fontWeight,
+    lineHeight: typography.body.lineHeight,
     paddingVertical: 0,
   },
   android: {
-    fontSize: 16,
-    fontWeight: '400',
+    fontSize: typography.body.fontSize,
+    fontWeight: typography.body.fontWeight,
+    lineHeight: typography.body.lineHeight,
     paddingVertical: 0,
     textAlignVertical: 'center',
     includeFontPadding: false,
   },
   default: {
-    fontSize: 16,
-    fontWeight: '400',
+    fontSize: typography.body.fontSize,
+    fontWeight: typography.body.fontWeight,
+    lineHeight: typography.body.lineHeight,
     paddingVertical: 0,
   },
 })!;

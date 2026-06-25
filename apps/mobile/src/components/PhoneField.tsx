@@ -24,6 +24,7 @@ import {
 } from '@/lib/phone';
 import { authPalette } from '@/theme/authPalette';
 import { authInputChrome } from '@/theme/authInputChrome';
+import { authFieldLabelStyle } from '@/theme/authTypography';
 import { authFieldRowStyleFromMetrics, authInputTextStyle, type AuthFieldVariant } from '@/theme/fields';
 import { useAuthMetrics } from '@/features/auth/AuthMetricsContext';
 import { colors, radius, spacing, typography } from '@/theme';
@@ -242,11 +243,8 @@ export function usePhoneFieldState(initialCountry?: CountryCode) {
 const styles = StyleSheet.create({
   wrap: {},
   label: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 3.6,
+    ...authFieldLabelStyle,
     color: authPalette.label,
-    textTransform: 'uppercase',
     marginBottom: 8,
   },
   row: {
@@ -274,8 +272,7 @@ const styles = StyleSheet.create({
     ...authInputTextStyle,
   },
   hint: {
-    fontSize: 13,
-    lineHeight: 18,
+    ...typography.caption,
     color: authPalette.segmentInactiveText,
     marginTop: 8,
   },

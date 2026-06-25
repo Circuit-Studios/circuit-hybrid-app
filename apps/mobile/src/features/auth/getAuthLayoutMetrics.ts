@@ -1,3 +1,5 @@
+import { authTypography } from '@/theme/authTypography';
+
 export type AuthScreenMode = 'signIn' | 'signUp';
 
 export interface AuthLayoutMetricsInput {
@@ -87,9 +89,9 @@ export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutM
   let headerTopMargin = isSignUp ? 8 : 12;
   let logoRingSize = isSignUp ? 58 : 74;
   let logoInnerSize = isSignUp ? 36 : 46;
-  let wordmarkFontSize = isSignUp ? 28 : 34;
-  let subtitleFontSize = isSignUp ? 9.5 : 12;
-  let subtitleLetterSpacing = isSignUp ? 4.2 : 5.5;
+  let wordmarkFontSize = authTypography.wordmarkFontSize;
+  let subtitleFontSize = authTypography.taglineFontSize;
+  let subtitleLetterSpacing = authTypography.taglineLetterSpacing;
   let headerBottomMargin = isSignUp ? 16 : 20;
   let segmentHeight = isSignUp ? 44 : 50;
   let segmentMarginTop = isSignUp ? 16 : 28;
@@ -97,20 +99,20 @@ export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutM
   let formMarginTop = isSignUp ? 0 : 30;
   let inputHeight = isSignUp ? 44 : 54;
   let inputRadius = 15;
-  let inputFontSize = isSignUp ? 14 : 16;
-  let labelFontSize = isSignUp ? 10 : 12;
-  let labelLetterSpacing = isSignUp ? 3.1 : 3.6;
+  const inputFontSize = authTypography.inputFontSize;
+  const labelFontSize = authTypography.labelFontSize;
+  const labelLetterSpacing = authTypography.labelLetterSpacing;
   let labelMarginBottom = 8;
   let fieldGap = isSignUp ? 9 : 24;
   let forgotMarginTop = 16;
-  let helperFontSize = isSignUp ? 11.5 : 12.5;
-  let helperLineHeight = isSignUp ? 15 : 18;
+  const helperFontSize = authTypography.helperFontSize;
+  const helperLineHeight = authTypography.helperLineHeight;
   let ctaHeight = isSignUp ? 54 : 58;
   let ctaRadius = 20;
-  let ctaFontSize = 16;
+  const ctaFontSize = authTypography.ctaFontSize;
   let ctaMarginTop = isSignUp ? 0 : 34;
   let footerMarginTop = isSignUp ? 10 : 24;
-  let footerFontSize = 12;
+  const footerFontSize = authTypography.footerFontSize;
   let bottomPadding = 28;
   let hideSubtitle = false;
   let hideCameraWatermark = false;
@@ -130,17 +132,10 @@ export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutM
     horizontalPadding = 18;
     logoRingSize = isSignUp ? 52 : 66;
     logoInnerSize = Math.round(logoRingSize * 0.62);
-    wordmarkFontSize = isSignUp ? 24 : 30;
-    subtitleFontSize = 8.5;
-    subtitleLetterSpacing = 3.5;
     segmentHeight = 40;
     inputHeight = isSignUp ? 40 : 48;
-    inputFontSize = 13.5;
-    labelFontSize = 10;
     fieldGap = isSignUp ? 7 : 12;
     ctaHeight = isSignUp ? 50 : 52;
-    helperFontSize = 11;
-    helperLineHeight = 14;
     watermarkScale = 0.85;
     watermarkOpacityMultiplier = 0.75;
     phoneHelperShort = true;
@@ -158,8 +153,6 @@ export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutM
   if (isVeryShortHeight && isSignUp) {
     logoRingSize = 52;
     logoInnerSize = 32;
-    wordmarkFontSize = 24;
-    subtitleFontSize = 9;
     segmentHeight = 40;
     inputHeight = 40;
     ctaHeight = 46;
@@ -179,9 +172,6 @@ export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutM
 
     logoRingSize = 54;
     logoInnerSize = 34;
-    wordmarkFontSize = 26;
-    subtitleFontSize = 9;
-    subtitleLetterSpacing = 3;
     segmentHeight = 40;
     inputHeight = 40;
     ctaHeight = 48;
@@ -200,8 +190,8 @@ export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutM
   }
 
   const segmentInnerHeight = Math.max(32, segmentHeight - 8);
-  const stickyFooterLinkHeight = hideStickyFooterLink ? 0 : FOOTER_LINK_HEIGHT;
-  const stickyFooterHeight = ctaHeight + stickyFooterLinkHeight + (hideStickyFooterLink ? 12 : 20);
+  const stickyFooterLinkHeight = isSignUp || hideStickyFooterLink ? 0 : FOOTER_LINK_HEIGHT;
+  const stickyFooterHeight = ctaHeight + stickyFooterLinkHeight + 12;
 
   return {
     horizontalPadding,

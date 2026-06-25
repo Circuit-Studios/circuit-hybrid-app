@@ -1,11 +1,9 @@
-import { View, StyleSheet, Text } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, StyleSheet } from 'react-native';
 import { PhoneField, usePhoneFieldState } from '@/components/PhoneField';
 import { DropdownPicker } from '@/components/pickers/DropdownPicker';
 import { AuthField } from '@/components/auth/AuthField';
 import { PasswordField } from '@/components/auth/PasswordField';
 import { useAuthMetrics } from '@/features/auth/AuthMetricsContext';
-import { authPalette } from '@/theme/authPalette';
 import type { UserRole } from '@/api/types';
 
 export type SignupVerificationChannel = 'EMAIL' | 'PHONE';
@@ -53,14 +51,6 @@ export function SignupFormFields({
 }: SignupFormFieldsProps) {
   const metrics = useAuthMetrics('signUp');
 
-  const phoneHint = metrics.phoneHelperShort
-    ? 'Optional contact number for crew invites.'
-    : 'Used for crew invites — optional contact number.';
-
-  const passwordNotes = metrics.useShortPasswordHelper
-    ? ['At least 8 characters', 'Used for email sign in']
-    : ['At least 8 characters', 'Used for email sign in'];
-
   const otpTargetHint =
     channel === 'EMAIL'
       ? "We'll email a 6-digit code to verify your account."
@@ -103,7 +93,6 @@ export function SignupFormFields({
             nationalNumber={phoneField.nationalNumber}
             onCountryChange={phoneField.setCountry}
             onNationalNumberChange={phoneField.setNationalNumber}
-            hint={phoneHint}
             showError={attempted && !!phoneField.nationalNumber && !phoneField.isValid}
             error={phoneField.error ?? undefined}
             fieldVariant="signUp"
@@ -157,30 +146,13 @@ export function SignupFormFields({
         />
       </View>
 
-      <View style={styles.passwordBlock}>
-        <PasswordField
-          value={password}
-          onChangeText={onPasswordChange}
-          mode="new"
-          fieldVariant="signUp"
-          containerStyle={styles.passwordField}
-        />
-        <View style={[styles.notes, { marginTop: metrics.fieldGap }]}>
-          {passwordNotes.map((note) => (
-            <View key={note} style={styles.noteRow}>
-              <Ionicons name="checkmark-circle" size={13} color={authPalette.brand} />
-              <Text
-                style={[
-                  styles.noteText,
-                  { fontSize: metrics.helperFontSize, lineHeight: metrics.helperLineHeight },
-                ]}
-              >
-                {note}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </View>
+      <PasswordField
+        value={password}
+        onChangeText={onPasswordChange}
+        mode="new"
+        fieldVariant="signUp"
+        containerStyle={styles.passwordField}
+      />
     </>
   );
 }
@@ -188,9 +160,5 @@ export function SignupFormFields({
 const styles = StyleSheet.create({
   phoneBlock: { marginBottom: 0 },
   roleBlock: { marginBottom: 0 },
-  passwordBlock: { marginBottom: 0 },
   passwordField: { marginBottom: 0 },
-  notes: { gap: 6 },
-  noteRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  noteText: { color: authPalette.label },
 });

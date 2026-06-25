@@ -1,13 +1,14 @@
 import { StyleSheet } from 'react-native';
 import { authPalette } from './authPalette';
 import { authLayout } from './authLayout';
+import { typography } from './tokens';
 
 /** Shared layout styles for login, signup, and related auth screens. */
 export const authFormStyles = StyleSheet.create({
   fieldFlush: { marginBottom: 0 },
   actions: { marginTop: 0, gap: 8 },
   submitHint: {
-    fontSize: 13,
+    ...typography.caption,
     color: authPalette.muted,
     textAlign: 'center',
     marginBottom: 8,
@@ -20,10 +21,10 @@ export const authFormStyles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 4,
   },
-  footerText: { fontSize: 13, color: authPalette.muted },
-  footerLink: { fontSize: 13, color: authPalette.footerLink, fontWeight: '700' },
+  footerText: { ...typography.caption, color: authPalette.muted },
+  footerLink: { ...typography.caption, color: authPalette.footerLink, fontWeight: '700' },
   error: {
-    fontSize: 13,
+    ...typography.caption,
     color: authPalette.error,
     marginBottom: 8,
     marginTop: 4,

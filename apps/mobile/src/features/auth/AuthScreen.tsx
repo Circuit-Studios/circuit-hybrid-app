@@ -1,7 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
-  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -31,6 +30,7 @@ import { isValidEmail, normalizeEmail, splitFullName } from '@/lib/email';
 import { isValidPassword } from '@/lib/password';
 import { authPalette } from '@/theme/authPalette';
 import { authFormStyles } from '@/theme/authForm';
+import { typography } from '@/theme';
 import type { UserRole } from '@/api/types';
 import type { AuthTab } from '@/features/auth/AuthSegmentControl';
 
@@ -74,7 +74,6 @@ export default function AuthScreen() {
   const [role, setRole] = useState<UserRole | null>(null);
   const [attempted, setAttempted] = useState(false);
   const [rolePickerOpen, setRolePickerOpen] = useState(false);
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const phoneField = usePhoneFieldState();
 
   const isSignup = tab === 'signup';
@@ -113,17 +112,6 @@ export default function AuthScreen() {
       screenMode,
     ],
   );
-
-  useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const showSub = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
-    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
 
   const signupChannel = config.signupVerificationChannel;
   const signupEmailRequired = signupChannel === 'EMAIL';
@@ -263,14 +251,8 @@ export default function AuthScreen() {
     ? metrics.formColumnWidth!
     : width - metrics.horizontalPadding * 2;
 
-  const showStickyFooterLink =
-    isSignup && !keyboardVisible && !metrics.hideStickyFooterLink;
-
-  const showScrollFooterLink =
-    isSignup && metrics.hideStickyFooterLink && !keyboardVisible;
-
   const scrollBottomPadding = isSignup
-    ? metrics.stickyFooterHeight + insets.bottom + 24
+    ? metrics.stickyFooterHeight + insets.bottom + 20
     : metrics.bottomPadding + insets.bottom;
 
   const signInForm = (
@@ -377,13 +359,6 @@ export default function AuthScreen() {
               marginTop={metrics.footerMarginTop}
             />
           </>
-        ) : showScrollFooterLink ? (
-          <AuthFooterLink
-            isSignup
-            onSwitch={() => switchTab('signin')}
-            fontSize={metrics.footerFontSize}
-            marginTop={metrics.footerMarginTop}
-          />
         ) : null}
       </View>
     </View>
@@ -414,13 +389,6 @@ export default function AuthScreen() {
             marginTop={metrics.footerMarginTop}
           />
         </>
-      ) : showScrollFooterLink ? (
-        <AuthFooterLink
-          isSignup
-          onSwitch={() => switchTab('signin')}
-          fontSize={metrics.footerFontSize}
-          marginTop={metrics.footerMarginTop}
-        />
       ) : null}
     </>
   );
@@ -466,7 +434,7 @@ export default function AuthScreen() {
                 {
                   left: stickyFooterLeft,
                   width: stickyFooterWidth,
-                  bottom: insets.bottom + 12,
+                  bottom: insets.bottom + 28,
                 },
               ]}
             >
@@ -480,14 +448,6 @@ export default function AuthScreen() {
                   void handleSubmit();
                 }}
               />
-              {showStickyFooterLink ? (
-                <AuthFooterLink
-                  isSignup
-                  onSwitch={() => switchTab('signin')}
-                  fontSize={metrics.footerFontSize}
-                  marginTop={metrics.footerMarginTop}
-                />
-              ) : null}
             </View>
           ) : null}
         </KeyboardAvoidingView>
@@ -518,8 +478,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   forgotText: {
-    fontSize: 14,
-    fontWeight: '700',
+    ...typography.bodyStrong,
     color: authPalette.ink,
     textDecorationLine: 'underline',
   },

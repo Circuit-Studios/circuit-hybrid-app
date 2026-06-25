@@ -61,9 +61,9 @@ export const colors = {
 
 /** Auth screens — white-glassy film studio aesthetic (approved mockup). */
 export const auth = {
-  bg: '#FCFAF7',
-  bgWarm: '#FFFDF8',
-  bgGlow: '#FFF4D6',
+  bg: '#FEFCFB',
+  bgWarm: '#FFFEFC',
+  bgGlow: '#FFF6E0',
 
   ink: '#111111',
   inkSoft: '#24211D',
@@ -76,19 +76,19 @@ export const auth = {
   goldDark: '#B77B00',
   goldSoft: '#FFF2C7',
 
-  segmentBg: 'rgba(238, 235, 228, 0.78)',
+  segmentBg: 'rgba(244, 242, 237, 0.82)',
   segmentActive: '#171717',
   segmentInactiveText: '#8F8980',
   segmentActiveText: '#FFFFFF',
 
-  fieldBg: 'rgba(255, 255, 255, 0.78)',
+  fieldBg: 'rgba(255, 255, 255, 0.88)',
   fieldBorder: '#E7E0D6',
   fieldBorderFocus: '#E8A914',
   fieldText: '#24211D',
   fieldPlaceholder: '#AAA49B',
   fieldIcon: '#8F8980',
 
-  cardBg: 'rgba(255, 255, 255, 0.72)',
+  cardBg: 'rgba(255, 255, 255, 0.82)',
   cardBorder: 'rgba(231, 224, 214, 0.9)',
 
   watermark: '#D8C6A3',

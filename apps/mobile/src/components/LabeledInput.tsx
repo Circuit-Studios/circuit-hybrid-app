@@ -12,6 +12,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthMetrics } from '@/features/auth/AuthMetricsContext';
 import { authPalette } from '@/theme/authPalette';
 import { authInputChrome } from '@/theme/authInputChrome';
+import { typography } from '@/theme';
+import { authFieldLabelStyle } from '@/theme/authTypography';
 import { authFieldRowStyleFromMetrics, type AuthFieldVariant } from '@/theme/fields';
 
 export interface LabeledInputProps extends Omit<TextInputProps, 'style'> {
@@ -55,13 +57,11 @@ export const LabeledInput = forwardRef<TextInput, LabeledInputProps>(function La
           style={[
             styles.label,
             {
-              fontSize: metrics.labelFontSize,
-              letterSpacing: metrics.labelLetterSpacing,
               marginBottom: metrics.labelMarginBottom,
             },
           ]}
         >
-          {label.toUpperCase()}
+          {label}
         </Text>
       ) : null}
       <View
@@ -123,7 +123,7 @@ export const LabeledInput = forwardRef<TextInput, LabeledInputProps>(function La
 const styles = StyleSheet.create({
   wrap: {},
   label: {
-    fontWeight: '700',
+    ...authFieldLabelStyle,
     color: authPalette.label,
   },
   leading: {
@@ -136,10 +136,9 @@ const styles = StyleSheet.create({
   },
   trailing: { marginLeft: 8 },
   hint: {
-    fontSize: 13,
-    lineHeight: 18,
+    ...typography.caption,
     color: authPalette.segmentInactiveText,
     marginTop: 8,
   },
-  errorText: { fontSize: 13, color: authPalette.error, marginTop: 8 },
+  errorText: { ...typography.caption, color: authPalette.error, marginTop: 8 },
 });
