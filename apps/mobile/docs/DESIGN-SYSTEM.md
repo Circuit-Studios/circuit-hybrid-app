@@ -163,3 +163,30 @@ Circular, amber/orange, soft glow shadow; center play (`◉`) or `＋` depending
   the new palette; product `name`/`slug`/`bundleIdentifier` are **TBD**.
 - Gradients: use `expo-linear-gradient` (add dependency) for the hero card and FAB.
 - Glass pills: translucent background + 1px hairline border + soft shadow.
+
+---
+
+## 8. Auth screens — white-glassy film studio style
+
+Sign In and Sign Up use a dedicated **auth palette** (`src/theme/tokens.ts` → `auth`, mapped via
+`authPalette.ts`) distinct from the main orange app chrome:
+
+| Token / pattern | Direction |
+| ---------------- | --------- |
+| Background | Warm white / ivory (`#FBFAF7`) with soft radial champagne glow |
+| Accent | Champagne / gold (`#E5AA22` range) — not heavy orange |
+| Typography | Charcoal primary (`#111111`), warm gray secondary |
+| Form cards | Translucent white glass (`rgba(255,255,255,0.72)`), soft shadow |
+| Inputs | Rounded glass fields, gold focus border, mail/lock icons |
+| Motifs | Very subtle film line-art (strip, camera, clapperboard) as watermarks |
+| Segment control | Pill track with raised white glass selected segment |
+
+**Auth UX constraints (v1):**
+
+- **No social login** — no Google, Apple, or “continue with” buttons.
+- **Sign In:** email + password only; forgot-password link preserved.
+- **Sign Up:** email verification OTP flow; phone is **optional** profile/contact info
+  (“Used for crew invites — optional contact number.”).
+- Reusable pieces: `AuthBackground`, `AuthHeader`, `AuthSegmentControl`, `AuthFormCard`.
+
+Do **not** use dark cinematic photo backgrounds or heavy movie-poster imagery on auth screens.

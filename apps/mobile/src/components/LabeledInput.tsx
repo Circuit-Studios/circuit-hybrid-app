@@ -1,5 +1,6 @@
 import { forwardRef, useState } from 'react';
 import {
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -7,10 +8,11 @@ import {
   type TextInputProps,
   type ViewStyle,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useAuthMetrics } from '@/features/auth/AuthMetricsContext';
 import { authPalette } from '@/theme/authPalette';
-import { authFieldRowStyle, authInputTextStyle } from '@/theme/fields';
-import { colors, radius, spacing, typography } from '@/theme';
-import type { AuthFieldTone } from '@/components/auth/AuthField';
+import { authInputChrome } from '@/theme/authInputChrome';
+import { authFieldRowStyleFromMetrics, type AuthFieldVariant } from '@/theme/fields';
 
 export interface LabeledInputProps extends Omit<TextInputProps, 'style'> {
   label: string;
@@ -18,35 +20,69 @@ export interface LabeledInputProps extends Omit<TextInputProps, 'style'> {
   error?: string;
   containerStyle?: ViewStyle;
   trailing?: React.ReactNode;
-  tone?: AuthFieldTone;
+  leadingIcon?: keyof typeof Ionicons.glyphMap;
+  fieldVariant?: AuthFieldVariant;
+  hideLabel?: boolean;
 }
 
 export const LabeledInput = forwardRef<TextInput, LabeledInputProps>(function LabeledInput(
-  { label, hint, error, containerStyle, trailing, tone = 'dark', onFocus, onBlur, ...rest },
+  {
+    label,
+    hint,
+    error,
+    containerStyle,
+    trailing,
+    leadingIcon,
+    fieldVariant = 'signIn',
+    hideLabel = false,
+    onFocus,
+    onBlur,
+    secureTextEntry,
+    ...rest
+  },
   ref,
 ) {
   const [focused, setFocused] = useState(false);
-  const dark = tone === 'dark';
-  const labelColor = dark ? authPalette.label : colors.textSecondary;
-  const placeholderColor = dark ? authPalette.inputPlaceholder : colors.textMuted;
-  const textColor = dark ? authPalette.inputText : colors.textPrimary;
+  const [hidden, setHidden] = useState(secureTextEntry ?? false);
+  const metrics = useAuthMetrics(fieldVariant === 'signUp' ? 'signUp' : 'signIn');
+
+  const showEye = secureTextEntry;
 
   return (
-    <View style={[styles.wrap, containerStyle]}>
-      <Text style={[styles.label, { color: labelColor }]}>{label}</Text>
+    <View style={[styles.wrap, { marginBottom: metrics.fieldGap }, containerStyle]}>
+      {!hideLabel ? (
+        <Text
+          style={[
+            styles.label,
+            {
+              fontSize: metrics.labelFontSize,
+              letterSpacing: metrics.labelLetterSpacing,
+              marginBottom: metrics.labelMarginBottom,
+            },
+          ]}
+        >
+          {label.toUpperCase()}
+        </Text>
+      ) : null}
       <View
         style={[
-          styles.inputWrap,
-          dark ? styles.inputWrapDark : styles.inputWrapLight,
-          focused && !error ? styles.inputFocused : null,
-          error ? styles.inputError : null,
+          authFieldRowStyleFromMetrics(metrics),
+          authInputChrome.base,
+          focused && !error ? authInputChrome.focused : null,
+          error ? authInputChrome.error : null,
         ]}
       >
+        {leadingIcon ? (
+          <View style={styles.leading}>
+            <Ionicons name={leadingIcon} size={18} color={authPalette.inputIcon} />
+          </View>
+        ) : null}
         <TextInput
           ref={ref}
-          style={[styles.input, { color: textColor }]}
-          placeholderTextColor={placeholderColor}
+          style={[styles.input, { fontSize: metrics.inputFontSize }]}
+          placeholderTextColor={authPalette.inputPlaceholder}
           selectionColor={authPalette.brand}
+          secureTextEntry={hidden}
           onFocus={(e) => {
             setFocused(true);
             onFocus?.(e);
@@ -57,47 +93,53 @@ export const LabeledInput = forwardRef<TextInput, LabeledInputProps>(function La
           }}
           {...rest}
         />
-        {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
+        {showEye ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={hidden ? 'Show password' : 'Hide password'}
+            onPress={() => setHidden((v) => !v)}
+            hitSlop={8}
+            style={styles.trailing}
+          >
+            <Ionicons
+              name={hidden ? 'eye-outline' : 'eye-off-outline'}
+              size={20}
+              color={authPalette.inputIcon}
+            />
+          </Pressable>
+        ) : trailing ? (
+          <View style={styles.trailing}>{trailing}</View>
+        ) : null}
       </View>
       {error ? (
         <Text style={styles.errorText}>{error}</Text>
       ) : hint ? (
-        <Text style={[styles.hint, dark && styles.hintDark]}>{hint}</Text>
+        <Text style={styles.hint}>{hint}</Text>
       ) : null}
     </View>
   );
 });
 
 const styles = StyleSheet.create({
-  wrap: { marginBottom: spacing.lg },
-  label: { ...typography.micro, marginBottom: spacing.xs },
-  inputWrap: {
-    ...authFieldRowStyle,
-    paddingHorizontal: spacing.lg,
+  wrap: {},
+  label: {
+    fontWeight: '700',
+    color: authPalette.label,
   },
-  inputWrapDark: {
-    backgroundColor: authPalette.inputBg,
-    borderWidth: 1,
-    borderColor: authPalette.inputBorder,
-    borderBottomWidth: 2,
-    borderBottomColor: authPalette.inputUnderline,
+  leading: {
+    marginRight: 8,
   },
-  inputWrapLight: {
-    backgroundColor: colors.glass,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  inputFocused: {
-    borderColor: authPalette.inputAccent,
-    borderBottomColor: authPalette.inputAccent,
-  },
-  inputError: { borderColor: colors.danger },
   input: {
     flex: 1,
-    ...authInputTextStyle,
+    color: authPalette.inputText,
+    paddingVertical: 0,
   },
-  trailing: { marginLeft: spacing.sm },
-  hint: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
-  hintDark: { color: authPalette.muted },
-  errorText: { ...typography.caption, color: colors.danger, marginTop: spacing.xs },
+  trailing: { marginLeft: 8 },
+  hint: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: authPalette.segmentInactiveText,
+    marginTop: 8,
+  },
+  errorText: { fontSize: 13, color: authPalette.error, marginTop: 8 },
 });

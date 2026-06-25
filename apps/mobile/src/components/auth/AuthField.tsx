@@ -1,10 +1,10 @@
+import { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, type TextInputProps } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuthMetrics } from '@/features/auth/AuthMetricsContext';
 import { authPalette } from '@/theme/authPalette';
-import { authFieldRowStyle, authInputTextStyle } from '@/theme/fields';
-import { colors, radius, spacing, typography } from '@/theme';
-
-export type AuthFieldTone = 'light' | 'dark';
+import { authInputChrome } from '@/theme/authInputChrome';
+import { authFieldRowStyleFromMetrics, type AuthFieldVariant } from '@/theme/fields';
 
 export interface AuthFieldProps extends TextInputProps {
   label: string;
@@ -12,41 +12,65 @@ export interface AuthFieldProps extends TextInputProps {
   value: string;
   onChangeText: (value: string) => void;
   icon: keyof typeof Ionicons.glyphMap;
-  compact?: boolean;
-  tone?: AuthFieldTone;
+  fieldVariant?: AuthFieldVariant;
+  hideLabel?: boolean;
 }
 
-/** Auth input with leading icon — dark fields on the sign-up mockup palette. */
+/** Glass auth input with leading icon. */
 export function AuthField({
   label,
   placeholder,
   value,
   onChangeText,
   icon,
-  compact = false,
-  tone = 'dark',
+  fieldVariant = 'signIn',
+  hideLabel = false,
   ...rest
 }: AuthFieldProps) {
-  const dark = tone === 'dark';
-  const labelColor = dark ? authPalette.label : colors.textSecondary;
-  const iconColor = dark ? authPalette.muted : colors.textMuted;
-  const placeholderColor = dark ? authPalette.inputPlaceholder : colors.textMuted;
-  const textColor = dark ? authPalette.inputText : colors.textPrimary;
+  const [focused, setFocused] = useState(false);
+  const metrics = useAuthMetrics(fieldVariant === 'signUp' ? 'signUp' : 'signIn');
 
   return (
-    <View style={[styles.field, compact && styles.fieldCompact]}>
-      <Text style={[styles.fieldLabel, { color: labelColor }]}>{label}</Text>
-      <View style={[styles.fieldRow, dark ? styles.fieldRowDark : styles.fieldRowLight]}>
+    <View style={[styles.field, { marginBottom: metrics.fieldGap }]}>
+      {!hideLabel ? (
+        <Text
+          style={[
+            styles.fieldLabel,
+            {
+              fontSize: metrics.labelFontSize,
+              letterSpacing: metrics.labelLetterSpacing,
+              marginBottom: metrics.labelMarginBottom,
+            },
+          ]}
+        >
+          {label.toUpperCase()}
+        </Text>
+      ) : null}
+      <View
+        style={[
+          authFieldRowStyleFromMetrics(metrics),
+          authInputChrome.base,
+          focused && authInputChrome.focused,
+        ]}
+      >
         <View style={styles.fieldIconWrap}>
-          <Ionicons name={icon} size={18} color={iconColor} />
+          <Ionicons name={icon} size={18} color={authPalette.inputIcon} />
         </View>
         <TextInput
           placeholder={placeholder}
-          placeholderTextColor={placeholderColor}
+          placeholderTextColor={authPalette.inputPlaceholder}
           value={value}
           onChangeText={onChangeText}
           selectionColor={authPalette.brand}
-          style={[styles.fieldInput, { color: textColor }]}
+          style={[styles.fieldInput, { fontSize: metrics.inputFontSize }]}
+          onFocus={(e) => {
+            setFocused(true);
+            rest.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            rest.onBlur?.(e);
+          }}
           {...rest}
         />
       </View>
@@ -55,35 +79,20 @@ export function AuthField({
 }
 
 const styles = StyleSheet.create({
-  field: { marginBottom: spacing.lg },
-  fieldCompact: { marginBottom: spacing.md },
+  field: {},
   fieldLabel: {
-    ...typography.micro,
-    marginBottom: spacing.xs,
-  },
-  fieldRow: {
-    ...authFieldRowStyle,
-  },
-  fieldRowDark: {
-    backgroundColor: authPalette.inputBg,
-    borderWidth: 1,
-    borderColor: authPalette.inputBorder,
-    borderBottomWidth: 2,
-    borderBottomColor: authPalette.inputUnderline,
-  },
-  fieldRowLight: {
-    backgroundColor: colors.glass,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
+    fontWeight: '700',
+    color: authPalette.label,
   },
   fieldIconWrap: {
     width: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.sm,
+    marginRight: 8,
   },
   fieldInput: {
     flex: 1,
-    ...authInputTextStyle,
+    color: authPalette.inputText,
+    paddingVertical: 0,
   },
 });

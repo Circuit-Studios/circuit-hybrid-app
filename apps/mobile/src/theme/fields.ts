@@ -1,38 +1,58 @@
-import { Platform, StyleSheet, type TextStyle } from 'react-native';
+import { Platform, StyleSheet, type TextStyle, type ViewStyle } from 'react-native';
+import type { AuthLayoutMetrics } from '@/features/auth/getAuthLayoutMetrics';
 import { colors, radius, spacing, typography } from './tokens';
+import { authLayout } from './authLayout';
 
-/** Fixed-height auth row — icon + text stay vertically centered. */
-export const AUTH_FIELD_HEIGHT = 52;
+export type AuthFieldVariant = 'signIn' | 'signUp';
+
+export function getAuthFieldHeight(variant: AuthFieldVariant = 'signIn'): number {
+  return variant === 'signUp' ? authLayout.fieldHeightSignUp : authLayout.fieldHeightSignIn;
+}
+
+export function authFieldRowStyle(variant: AuthFieldVariant = 'signIn'): ViewStyle {
+  return {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: getAuthFieldHeight(variant),
+    paddingHorizontal: 16,
+    borderRadius: authLayout.fieldRadius,
+  };
+}
+
+export function authFieldRowStyleFromMetrics(metrics: AuthLayoutMetrics): ViewStyle {
+  return {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: metrics.inputHeight,
+    paddingHorizontal: 16,
+    borderRadius: metrics.inputRadius,
+  };
+}
 
 /** TextInput styles that avoid iOS/Android baseline drift inside icon rows. */
 export const authInputTextStyle: TextStyle = Platform.select({
   ios: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '400',
     lineHeight: 20,
     paddingVertical: 0,
   },
   android: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '400',
     paddingVertical: 0,
     textAlignVertical: 'center',
     includeFontPadding: false,
   },
   default: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '400',
     paddingVertical: 0,
   },
 })!;
 
-export const authFieldRowStyle = {
-  flexDirection: 'row' as const,
-  alignItems: 'center' as const,
-  height: AUTH_FIELD_HEIGHT,
-  paddingHorizontal: spacing.md,
-  borderRadius: radius.lg,
-};
+/** @deprecated Use getAuthFieldHeight('signIn') */
+export const AUTH_FIELD_HEIGHT = authLayout.fieldHeightSignIn;
 
 /** Shared field chrome for inputs, dropdowns, and date pickers. */
 export const fieldStyles = StyleSheet.create({

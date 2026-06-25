@@ -1,28 +1,55 @@
-/** Auth / sign-up screen palette — matches Circuit brand mockup. */
+import { auth } from './tokens';
+
+/** Auth / sign-up screen palette — white-glassy film studio style. */
 export const authPalette = {
-  bg: '#FDFCF8',
-  brand: '#F5B301',
-  brandStrong: '#DD9E00',
-  brandGlow: 'rgba(245,179,1,0.38)',
-  brandSoft: 'rgba(245,179,1,0.14)',
-  ink: '#121212',
-  label: '#7C7C7C',
-  muted: '#8E8E93',
-  // Light input chrome — soft white cards on the cream auth background.
-  inputBg: '#FFFFFF',
-  inputText: '#121212',
-  inputPlaceholder: '#9CA3AF',
-  inputBorder: 'rgba(18,18,18,0.10)',
-  inputUnderline: 'rgba(245,179,1,0.55)',
-  inputAccent: '#F5B301',
+  bg: auth.bg,
+  bgWarm: auth.bgWarm,
+  bgGlow: auth.bgGlow,
+
+  brand: auth.gold,
+  brand2: auth.gold2,
+  brandStrong: auth.goldDark,
+  brandSoft: auth.goldSoft,
+
+  ink: auth.ink,
+  inkSoft: auth.inkSoft,
+  label: auth.label,
+  muted: auth.muted,
+  muted2: auth.muted2,
+  subtitle: auth.subtitle,
+
+  inputBg: auth.fieldBg,
+  inputText: auth.fieldText,
+  inputPlaceholder: auth.fieldPlaceholder,
+  inputBorder: auth.fieldBorder,
+  inputAccent: auth.fieldBorderFocus,
+  inputIcon: auth.fieldIcon,
+  inputLabel: auth.label,
+
   logoBg: '#FFFFFF',
-  logoBorder: '#E5E7EB',
-  tabTrack: 'rgba(0,0,0,0.06)',
-  chipBorder: 'rgba(156,163,175,0.45)',
-  chipText: '#9CA3AF',
-  ctaBg: '#F5B301',
-  ctaBgDisabled: 'rgba(245,179,1,0.30)',
-  ctaBorder: 'transparent',
-  ctaText: '#121212',
-  ctaTextDisabled: 'rgba(18,18,18,0.38)',
+  logoBorder: auth.gold,
+
+  tabTrack: auth.segmentBg,
+  segmentActive: auth.segmentActive,
+  segmentInactiveText: auth.segmentInactiveText,
+  segmentActiveText: auth.segmentActiveText,
+
+  card: auth.cardBg,
+  cardBorder: auth.cardBorder,
+
+  ctaGradientStart: auth.ctaGradientStart,
+  ctaGradientMid: auth.ctaGradientMid,
+  ctaGradientEnd: auth.ctaGradientEnd,
+  ctaShadow: auth.ctaShadow,
+  ctaBgDisabled: auth.ctaDisabled,
+  ctaText: auth.ink,
+  ctaTextDisabled: 'rgba(17,17,17,0.38)',
+
+  footerLink: auth.footerLink,
+  error: auth.danger,
+  watermark: auth.watermark,
+  watermarkDark: auth.watermarkDark,
+
+  chipBorder: auth.fieldBorder,
+  chipText: auth.segmentInactiveText,
 } as const;

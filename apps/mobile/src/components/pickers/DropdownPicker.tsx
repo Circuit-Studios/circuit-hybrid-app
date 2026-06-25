@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { authPalette } from '@/theme/authPalette';
+import { authInputChrome } from '@/theme/authInputChrome';
+import { authLayout } from '@/theme/authLayout';
 import { dropdownLayout, getDropdownListMaxHeight } from '@/theme/layout';
 import { spacing } from '@/theme';
 import { pickerStyles as styles, OPTIONS_MAX_HEIGHT } from './pickerStyles';
@@ -266,14 +268,20 @@ function formatDefaultLabels<T extends string>(values: T[], options: PickerOptio
 }
 
 const authStyles = StyleSheet.create({
-  label: { color: authPalette.label },
-  dropdownTrigger: {
-    backgroundColor: authPalette.inputBg,
-    borderColor: authPalette.inputBorder,
-    minHeight: 52,
+  label: {
+    color: authPalette.label,
+    fontWeight: '700',
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 3.6,
+    marginBottom: authLayout.labelMarginBottom,
   },
-  dropdownTriggerOpen: { borderColor: authPalette.inputAccent },
-  dropdownTriggerPressed: { borderColor: authPalette.inputAccent },
+  dropdownTrigger: {
+    ...authInputChrome.base,
+    minHeight: authLayout.fieldHeightSignUp,
+  },
+  dropdownTriggerOpen: authInputChrome.focused,
+  dropdownTriggerPressed: authInputChrome.focused,
   dropdownValue: { color: authPalette.inputText },
   dropdownPlaceholder: { color: authPalette.inputPlaceholder },
   chev: { color: authPalette.muted },

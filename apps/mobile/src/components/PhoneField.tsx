@@ -23,9 +23,10 @@ import {
   toE164,
 } from '@/lib/phone';
 import { authPalette } from '@/theme/authPalette';
-import { AUTH_FIELD_HEIGHT, authFieldRowStyle, authInputTextStyle } from '@/theme/fields';
+import { authInputChrome } from '@/theme/authInputChrome';
+import { authFieldRowStyleFromMetrics, authInputTextStyle, type AuthFieldVariant } from '@/theme/fields';
+import { useAuthMetrics } from '@/features/auth/AuthMetricsContext';
 import { colors, radius, spacing, typography } from '@/theme';
-import type { AuthFieldTone } from '@/components/auth/AuthField';
 
 interface PhoneFieldProps {
   label?: string;
@@ -39,7 +40,9 @@ interface PhoneFieldProps {
   error?: string;
   containerStyle?: ViewStyle;
   showError?: boolean;
-  tone?: AuthFieldTone;
+  fieldVariant?: AuthFieldVariant;
+  hideLabel?: boolean;
+  placeholder?: string;
 }
 
 export function PhoneField({
@@ -53,10 +56,14 @@ export function PhoneField({
   error: errorProp,
   containerStyle,
   showError = true,
-  tone = 'dark',
+  fieldVariant = 'signIn',
+  hideLabel = false,
+  placeholder = '10-digit mobile number',
 }: PhoneFieldProps) {
-  const dark = tone === 'dark';
   const [focused, setFocused] = useState(false);
+  const metrics = useAuthMetrics(fieldVariant === 'signUp' ? 'signUp' : 'signIn');
+  const fieldHeight = metrics.inputHeight;
+  const gap = metrics.fieldGap;
   const [pickerOpen, setPickerOpen] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -114,33 +121,38 @@ export function PhoneField({
   }
 
   return (
-    <View style={[styles.wrap, containerStyle]}>
-      <Text style={[styles.label, dark && styles.labelDark]}>{label}</Text>
+    <View style={[styles.wrap, { marginBottom: gap }, containerStyle]}>
+      {!hideLabel ? <Text style={styles.label}>{label}</Text> : null}
       <View
         style={[
+          authFieldRowStyleFromMetrics(metrics),
           styles.row,
-          dark ? styles.rowDark : null,
-          focused && !error ? (dark ? styles.rowFocusedDark : styles.rowFocused) : null,
-          error ? styles.rowError : null,
+          authInputChrome.base,
+          focused && !error ? authInputChrome.focused : null,
+          error ? authInputChrome.error : null,
         ]}
       >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Country code, ${countryName(country)}, ${dialCode(country)}`}
           onPress={() => setPickerOpen(true)}
-          style={({ pressed }) => [styles.countryBtn, pressed && styles.countryBtnPressed]}
+          style={({ pressed }) => [
+            styles.countryBtn,
+            { height: fieldHeight },
+            pressed && styles.countryBtnPressed,
+          ]}
         >
           <CountryFlag code={country} size={20} />
-          <Text style={[styles.dial, dark && styles.dialDark]}>{dialCode(country)}</Text>
-          <Text style={[styles.chev, dark && styles.chevDark]}>▾</Text>
+          <Text style={styles.dial}>{dialCode(country)}</Text>
+          <Text style={styles.chev}>▾</Text>
         </Pressable>
-        <View style={[styles.divider, dark && styles.dividerDark]} />
+        <View style={styles.divider} />
         <TextInput
-          style={[styles.input, dark && styles.inputDark]}
+          style={styles.input}
           value={nationalNumber}
           onChangeText={updateNational}
-          placeholder="10-digit mobile number"
-          placeholderTextColor={dark ? authPalette.inputPlaceholder : colors.textMuted}
+          placeholder={placeholder}
+          placeholderTextColor={authPalette.inputPlaceholder}
           keyboardType="number-pad"
           autoComplete="tel"
           textContentType="telephoneNumber"
@@ -153,9 +165,9 @@ export function PhoneField({
       {error ? (
         <Text style={styles.errorText}>{error}</Text>
       ) : statusHint ? (
-        <Text style={[styles.hint, dark && styles.hintDark]}>{statusHint}</Text>
+        <Text style={styles.hint}>{statusHint}</Text>
       ) : hint ? (
-        <Text style={[styles.hint, dark && styles.hintDark]}>{hint}</Text>
+        <Text style={styles.hint}>{hint}</Text>
       ) : null}
 
       <Modal
@@ -228,62 +240,46 @@ export function usePhoneFieldState(initialCountry?: CountryCode) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginBottom: spacing.lg },
+  wrap: {},
   label: {
-    ...typography.micro,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 3.6,
+    color: authPalette.label,
+    textTransform: 'uppercase',
+    marginBottom: 8,
   },
-  labelDark: { color: authPalette.label },
   row: {
-    ...authFieldRowStyle,
     overflow: 'hidden',
   },
-  rowDark: {
-    backgroundColor: authPalette.inputBg,
-    borderWidth: 1,
-    borderColor: authPalette.inputBorder,
-    borderBottomWidth: 2,
-    borderBottomColor: authPalette.inputUnderline,
-  },
-  rowFocused: {
-    borderColor: colors.accent,
-    backgroundColor: colors.surface,
-  },
-  rowFocusedDark: {
-    borderColor: authPalette.inputAccent,
-    borderBottomColor: authPalette.inputAccent,
-  },
-  rowError: { borderColor: colors.danger },
   countryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
-    height: AUTH_FIELD_HEIGHT,
     gap: spacing.xs,
   },
   countryBtnPressed: { opacity: 0.85 },
-  dial: { ...typography.bodyStrong, color: colors.textPrimary },
-  dialDark: { color: authPalette.inputText },
-  chev: { ...typography.caption, color: colors.textMuted, marginLeft: 2 },
-  chevDark: { color: authPalette.muted },
+  dial: { ...typography.bodyStrong, color: authPalette.inputText },
+  chev: { ...typography.caption, color: authPalette.muted, marginLeft: 2 },
   divider: {
     width: 1,
     alignSelf: 'stretch',
-    backgroundColor: colors.glassBorder,
+    backgroundColor: authPalette.inputBorder,
     marginVertical: spacing.sm,
   },
-  dividerDark: { backgroundColor: 'rgba(255,255,255,0.12)' },
   input: {
     flex: 1,
-    color: colors.textPrimary,
+    color: authPalette.inputText,
     paddingHorizontal: spacing.md,
     ...authInputTextStyle,
   },
-  inputDark: { color: authPalette.inputText },
-  hint: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
-  hintDark: { color: authPalette.muted },
-  errorText: { ...typography.caption, color: colors.danger, marginTop: spacing.xs },
+  hint: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: authPalette.segmentInactiveText,
+    marginTop: 8,
+  },
+  errorText: { ...typography.caption, color: authPalette.error, marginTop: spacing.xs },
   modal: {
     flex: 1,
     backgroundColor: colors.bg,

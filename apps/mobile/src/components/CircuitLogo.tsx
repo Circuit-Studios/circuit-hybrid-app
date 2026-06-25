@@ -3,20 +3,29 @@ import { authPalette } from '@/theme/authPalette';
 
 const LOGO_SOURCE = require('../../assets/circuit-logo.png');
 
+type LogoSize = 'sm' | 'md' | 'lg' | 'auth';
+
 interface CircuitLogoProps {
-  size?: 'sm' | 'md' | 'lg';
+  size?: LogoSize;
+  /** Outer diameter — overrides `size` when set (responsive auth layouts). */
+  ringSize?: number;
   style?: ViewStyle;
 }
 
-const DIAMETERS = {
+const DIAMETERS: Record<LogoSize, number> = {
   sm: 60,
   md: 78,
   lg: 96,
-} as const;
+  auth: 82,
+};
 
-/** Circular Circuit mark — assets/circuit-logo.png (classical bust). */
-export function CircuitLogo({ size = 'md', style }: CircuitLogoProps) {
-  const diameter = DIAMETERS[size];
+/**
+ * Circular Circuit emblem — original raster mark at
+ * apps/mobile/assets/circuit-logo.png (classical bust, no overlays).
+ * Image fills the ring exactly as in the source asset.
+ */
+export function CircuitLogo({ size = 'md', ringSize, style }: CircuitLogoProps) {
+  const diameter = ringSize ?? DIAMETERS[size];
 
   return (
     <View
@@ -48,7 +57,7 @@ const styles = StyleSheet.create({
   shell: {
     overflow: 'hidden',
     borderWidth: 2,
-    borderColor: authPalette.brand,
+    borderColor: authPalette.logoBorder,
     ...Platform.select({
       ios: {
         shadowColor: authPalette.brand,

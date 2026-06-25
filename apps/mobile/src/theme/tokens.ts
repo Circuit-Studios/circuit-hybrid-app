@@ -59,6 +59,53 @@ export const colors = {
   ringTrack: 'rgba(0,0,0,0.08)',
 } as const;
 
+/** Auth screens — white-glassy film studio aesthetic (approved mockup). */
+export const auth = {
+  bg: '#FCFAF7',
+  bgWarm: '#FFFDF8',
+  bgGlow: '#FFF4D6',
+
+  ink: '#111111',
+  inkSoft: '#24211D',
+  muted: '#807A70',
+  muted2: '#A49D92',
+  label: '#6E685F',
+
+  gold: '#E7A914',
+  gold2: '#F6C347',
+  goldDark: '#B77B00',
+  goldSoft: '#FFF2C7',
+
+  segmentBg: 'rgba(238, 235, 228, 0.78)',
+  segmentActive: '#171717',
+  segmentInactiveText: '#8F8980',
+  segmentActiveText: '#FFFFFF',
+
+  fieldBg: 'rgba(255, 255, 255, 0.78)',
+  fieldBorder: '#E7E0D6',
+  fieldBorderFocus: '#E8A914',
+  fieldText: '#24211D',
+  fieldPlaceholder: '#AAA49B',
+  fieldIcon: '#8F8980',
+
+  cardBg: 'rgba(255, 255, 255, 0.72)',
+  cardBorder: 'rgba(231, 224, 214, 0.9)',
+
+  watermark: '#D8C6A3',
+  watermarkDark: '#C8B58F',
+
+  danger: '#B84A3A',
+
+  ctaGradientStart: '#F8CE5A',
+  ctaGradientMid: '#F0B629',
+  ctaGradientEnd: '#E4A318',
+  ctaShadow: '#D89A12',
+  ctaDisabled: 'rgba(232, 169, 20, 0.45)',
+
+  subtitle: '#7F7A70',
+  footerLink: '#B77B00',
+} as const;
+
 /** Floating glass tab bar — Instagram-style neutral dock. */
 export const tabBar = {
   height: 80,

@@ -1,43 +1,72 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AuthBackdrop } from '@/components/AuthBackdrop';
-import { CircuitLogo } from '@/components/CircuitLogo';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AuthField } from '@/components/auth/AuthField';
 import { usePhoneFieldState } from '@/components/PhoneField';
 import { PasswordField } from '@/components/auth/PasswordField';
+import { AuthBackground } from '@/features/auth/AuthBackground';
+import { AuthHeader } from '@/features/auth/AuthHeader';
+import { AuthMetricsProvider } from '@/features/auth/AuthMetricsContext';
+import { AuthPrimaryButton } from '@/features/auth/AuthPrimaryButton';
+import { AuthSegmentControl } from '@/features/auth/AuthSegmentControl';
 import { SignupFormFields } from '@/features/auth/SignupFormFields';
+import { getAuthLayoutMetrics } from '@/features/auth/getAuthLayoutMetrics';
 import { useAuth } from '@/auth/AuthContext';
 import { useOtpSession } from '@/auth/OtpSessionContext';
 import { useAuthSubmit } from '@/features/auth/hooks';
 import { requestOtp } from '@/api/auth';
 import { useAppConfig } from '@/config/AppConfigContext';
-import { useContentFrame } from '@/hooks/useContentFrame';
 import { isValidEmail, normalizeEmail, splitFullName } from '@/lib/email';
 import { isValidPassword } from '@/lib/password';
 import { authPalette } from '@/theme/authPalette';
-import { colors, radius, spacing, typography } from '@/theme';
+import { authFormStyles } from '@/theme/authForm';
 import type { UserRole } from '@/api/types';
+import type { AuthTab } from '@/features/auth/AuthSegmentControl';
 
-type AuthTab = 'signup' | 'signin';
+function AuthFooterLink({
+  isSignup,
+  onSwitch,
+  fontSize,
+  marginTop,
+}: {
+  isSignup: boolean;
+  onSwitch: () => void;
+  fontSize: number;
+  marginTop: number;
+}) {
+  return (
+    <View style={[authFormStyles.footer, { marginTop }]}>
+      <Text style={[authFormStyles.footerText, { fontSize }]}>
+        {isSignup ? 'Already have an account?' : "Don't have an account?"}
+      </Text>
+      <Pressable accessibilityRole="button" hitSlop={8} onPress={onSwitch}>
+        <Text style={[authFormStyles.footerLink, { fontSize }]}>
+          {isSignup ? 'Sign in' : 'Sign up'}
+        </Text>
+      </Pressable>
+    </View>
+  );
+}
 
 export default function AuthScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ tab?: string }>();
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const { loginWithPassword } = useAuth();
   const { config } = useAppConfig();
   const { setSession } = useOtpSession();
-  const frame = useContentFrame('form');
-  const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<AuthTab>(params.tab === 'signin' ? 'signin' : 'signup');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -45,11 +74,58 @@ export default function AuthScreen() {
   const [role, setRole] = useState<UserRole | null>(null);
   const [attempted, setAttempted] = useState(false);
   const [rolePickerOpen, setRolePickerOpen] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const phoneField = usePhoneFieldState();
 
   const isSignup = tab === 'signup';
-  const signupChannel = config.signupVerificationChannel;
+  const screenMode = isSignup ? 'signUp' : 'signIn';
 
+  const isLandscape = width > height;
+  const isSmallPhone = width < 390;
+  const isShortHeight = height < 760;
+  const isVeryShortHeight = height < 680;
+  const isTablet = width >= 768;
+
+  const metrics = useMemo(
+    () =>
+      getAuthLayoutMetrics({
+        width,
+        height,
+        safeAreaTop: insets.top,
+        safeAreaBottom: insets.bottom,
+        isLandscape,
+        isSmallPhone,
+        isShortHeight,
+        isVeryShortHeight,
+        isTablet,
+        mode: screenMode,
+      }),
+    [
+      width,
+      height,
+      insets.top,
+      insets.bottom,
+      isLandscape,
+      isSmallPhone,
+      isShortHeight,
+      isVeryShortHeight,
+      isTablet,
+      screenMode,
+    ],
+  );
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const signupChannel = config.signupVerificationChannel;
   const signupEmailRequired = signupChannel === 'EMAIL';
   const signupPhoneRequired = signupChannel === 'PHONE';
   const nameValid = !isSignup || fullName.trim().length >= 1;
@@ -58,9 +134,7 @@ export default function AuthScreen() {
   const signupPhoneValid = !signupPhoneRequired || phoneField.isValid;
   const signupEmailValid =
     signupChannel === 'EMAIL' ? isValidEmail(email) : !email.trim() || isValidEmail(email);
-
   const signInValid = isValidEmail(email) && isValidPassword(password);
-
   const canSubmit = isSignup
     ? nameValid && roleValid && signupPasswordValid && signupPhoneValid && signupEmailValid
     : signInValid;
@@ -167,285 +241,289 @@ export default function AuthScreen() {
     [tab, phoneField, clearFeedback],
   );
 
-  const signupUsesEmail = signupChannel === 'EMAIL';
+  const ctaLabel = submitting
+    ? isSignup
+      ? 'Sending code…'
+      : 'Signing in…'
+    : isSignup
+      ? 'Get started →'
+      : 'Sign In →';
 
-  const compact = frame.isCompactHeight;
-  const landscape = frame.isLandscape;
-  const compactBrand = compact || landscape || isSignup;
-  const footerReserve = isSignup ? 148 : 112;
+  const contentMaxWidth = metrics.isLandscapeTwoColumn
+    ? metrics.totalMaxWidth!
+    : Math.min(width - metrics.horizontalPadding * 2, metrics.contentMaxWidth);
+
+  const containerLeft = (width - contentMaxWidth) / 2;
+
+  const stickyFooterLeft = metrics.isLandscapeTwoColumn
+    ? containerLeft + metrics.brandColumnWidth! + metrics.columnGap!
+    : metrics.horizontalPadding;
+
+  const stickyFooterWidth = metrics.isLandscapeTwoColumn
+    ? metrics.formColumnWidth!
+    : width - metrics.horizontalPadding * 2;
+
+  const showStickyFooterLink =
+    isSignup && !keyboardVisible && !metrics.hideStickyFooterLink;
+
+  const showScrollFooterLink =
+    isSignup && metrics.hideStickyFooterLink && !keyboardVisible;
+
+  const scrollBottomPadding = isSignup
+    ? metrics.stickyFooterHeight + insets.bottom + 24
+    : metrics.bottomPadding + insets.bottom;
+
+  const signInForm = (
+    <View style={{ marginTop: metrics.formMarginTop }}>
+      <AuthField
+        label="Email"
+        placeholder="you@studio.com"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoComplete="email"
+        textContentType="emailAddress"
+        icon="mail-outline"
+        fieldVariant="signIn"
+      />
+      <PasswordField
+        value={password}
+        onChangeText={setPassword}
+        mode="login"
+        fieldVariant="signIn"
+        containerStyle={styles.passwordField}
+      />
+      <Pressable
+        accessibilityRole="button"
+        hitSlop={8}
+        onPress={() =>
+          router.push({
+            pathname: '/(auth)/forgot-password',
+            params: email.trim() ? { email: email.trim() } : undefined,
+          })
+        }
+        style={[styles.forgotLink, { marginTop: metrics.forgotMarginTop }]}
+      >
+        <Text style={styles.forgotText}>Forgot password?</Text>
+      </Pressable>
+    </View>
+  );
+
+  const signupForm = (
+    <View style={{ marginTop: metrics.formMarginTop }}>
+      <SignupFormFields
+        channel={signupChannel}
+        fullName={fullName}
+        onFullNameChange={setFullName}
+        email={email}
+        onEmailChange={setEmail}
+        password={password}
+        onPasswordChange={setPassword}
+        role={role}
+        onRoleChange={setRole}
+        phoneField={phoneField}
+        attempted={attempted}
+        signupPhoneRequired={signupPhoneRequired}
+        onRolePickerOpenChange={setRolePickerOpen}
+      />
+    </View>
+  );
+
+  const formBlock = isSignup ? signupForm : signInForm;
+
+  const feedbackBlock = (
+    <>
+      {error ? <Text style={authFormStyles.error}>{error}</Text> : null}
+      {submitHint ? <Text style={authFormStyles.submitHint}>{submitHint}</Text> : null}
+    </>
+  );
+
+  const mainContent = metrics.isLandscapeTwoColumn ? (
+    <View
+      style={[
+        styles.twoColumn,
+        {
+          maxWidth: contentMaxWidth,
+          gap: metrics.columnGap,
+        },
+      ]}
+    >
+      <View style={{ width: metrics.brandColumnWidth }}>
+        <AuthHeader compact={isSignup} column />
+      </View>
+      <View style={{ flex: 1, maxWidth: metrics.formColumnWidth }}>
+        <AuthSegmentControl value={tab} onChange={switchTab} compact={isSignup} />
+        {formBlock}
+        {feedbackBlock}
+        {!isSignup ? (
+          <>
+            <View style={{ marginTop: metrics.ctaMarginTop }}>
+              <AuthPrimaryButton
+                title={ctaLabel}
+                disabled={!canSubmit || submitting}
+                loading={submitting}
+                mode="signIn"
+                onPress={() => {
+                  setAttempted(true);
+                  void handleSubmit();
+                }}
+              />
+            </View>
+            <AuthFooterLink
+              isSignup={false}
+              onSwitch={() => switchTab('signup')}
+              fontSize={metrics.footerFontSize}
+              marginTop={metrics.footerMarginTop}
+            />
+          </>
+        ) : showScrollFooterLink ? (
+          <AuthFooterLink
+            isSignup
+            onSwitch={() => switchTab('signin')}
+            fontSize={metrics.footerFontSize}
+            marginTop={metrics.footerMarginTop}
+          />
+        ) : null}
+      </View>
+    </View>
+  ) : (
+    <>
+      <AuthHeader compact={isSignup} />
+      <AuthSegmentControl value={tab} onChange={switchTab} compact={isSignup} />
+      {formBlock}
+      {feedbackBlock}
+      {!isSignup ? (
+        <>
+          <View style={{ marginTop: metrics.ctaMarginTop }}>
+            <AuthPrimaryButton
+              title={ctaLabel}
+              disabled={!canSubmit || submitting}
+              loading={submitting}
+              mode="signIn"
+              onPress={() => {
+                setAttempted(true);
+                void handleSubmit();
+              }}
+            />
+          </View>
+          <AuthFooterLink
+            isSignup={false}
+            onSwitch={() => switchTab('signup')}
+            fontSize={metrics.footerFontSize}
+            marginTop={metrics.footerMarginTop}
+          />
+        </>
+      ) : showScrollFooterLink ? (
+        <AuthFooterLink
+          isSignup
+          onSwitch={() => switchTab('signin')}
+          fontSize={metrics.footerFontSize}
+          marginTop={metrics.footerMarginTop}
+        />
+      ) : null}
+    </>
+  );
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'bottom', 'left', 'right']}>
-      <AuthBackdrop />
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
-      >
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: footerReserve }]}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={isSignup}
-          nestedScrollEnabled
-          scrollEnabled={!rolePickerOpen}
+    <AuthMetricsProvider metrics={metrics}>
+      <View style={styles.root}>
+        <AuthBackground
+          mode={screenMode}
+          metrics={{
+            watermarkScale: metrics.watermarkScale,
+            watermarkOpacityMultiplier: metrics.watermarkOpacityMultiplier,
+            hideCameraWatermark: metrics.hideCameraWatermark,
+          }}
+        />
+        <KeyboardAvoidingView
+          style={styles.flex}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
         >
-          <View
-            style={[
-              styles.inner,
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={[
+              styles.scrollContent,
               {
-                paddingHorizontal: frame.horizontalPadding,
-                maxWidth: frame.maxWidth,
-                alignSelf: frame.maxWidth != null ? 'center' : undefined,
-                width: '100%',
-                paddingTop: compactBrand ? spacing.lg : spacing.xxxl,
+                paddingTop: metrics.topPadding,
+                paddingHorizontal: metrics.horizontalPadding,
+                paddingBottom: scrollBottomPadding,
               },
             ]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={isSignup}
+            nestedScrollEnabled
+            scrollEnabled={!rolePickerOpen}
           >
+            <View style={[styles.inner, { maxWidth: contentMaxWidth }]}>{mainContent}</View>
+          </ScrollView>
+
+          {isSignup ? (
             <View
               style={[
-                styles.brandBlock,
-                compactBrand && styles.brandBlockCompact,
-                landscape && styles.brandBlockLandscape,
+                styles.stickyFooter,
+                {
+                  left: stickyFooterLeft,
+                  width: stickyFooterWidth,
+                  bottom: insets.bottom + 12,
+                },
               ]}
             >
-              <CircuitLogo size={compactBrand ? 'sm' : 'md'} />
-              <View style={styles.wordmarkRow}>
-                <Text style={[styles.wordmark, compactBrand && styles.wordmarkCompact]}>CIRCU</Text>
-                <Text
-                  style={[
-                    styles.wordmark,
-                    styles.wordmarkAccent,
-                    compactBrand && styles.wordmarkCompact,
-                  ]}
-                >
-                  IT
-                </Text>
-              </View>
-              {!compactBrand ? <Text style={styles.tagline}>FOR FILMMAKERS</Text> : null}
-            </View>
-
-            <View style={[styles.tabRow, compact && styles.tabRowCompact]}>
-              <Pressable
-                accessibilityRole="tab"
-                accessibilityState={{ selected: isSignup }}
-                onPress={() => switchTab('signup')}
-                style={[styles.tab, isSignup && styles.tabActive]}
-              >
-                <Text style={[styles.tabText, isSignup && styles.tabTextActive]}>Sign up</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="tab"
-                accessibilityState={{ selected: !isSignup }}
-                onPress={() => switchTab('signin')}
-                style={[styles.tab, !isSignup && styles.tabActive]}
-              >
-                <Text style={[styles.tabText, !isSignup && styles.tabTextActive]}>Sign In</Text>
-              </Pressable>
-            </View>
-
-            {isSignup ? (
-              <SignupFormFields
-                channel={signupChannel}
-                fullName={fullName}
-                onFullNameChange={setFullName}
-                email={email}
-                onEmailChange={setEmail}
-                password={password}
-                onPasswordChange={setPassword}
-                role={role}
-                onRoleChange={setRole}
-                phoneField={phoneField}
-                attempted={attempted}
-                signupPhoneRequired={signupPhoneRequired}
-                compact={compact || isSignup}
-                onRolePickerOpenChange={setRolePickerOpen}
+              <AuthPrimaryButton
+                title={ctaLabel}
+                disabled={!canSubmit || submitting}
+                loading={submitting}
+                mode="signUp"
+                onPress={() => {
+                  setAttempted(true);
+                  void handleSubmit();
+                }}
               />
-            ) : (
-              <AuthField
-                label="Email"
-                placeholder="you@studio.com"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoComplete="email"
-                textContentType="emailAddress"
-                icon="mail-outline"
-                compact={compact}
-              />
-            )}
-
-            {!isSignup ? (
-              <View style={styles.passwordBlock}>
-                <PasswordField value={password} onChangeText={setPassword} mode="login" />
-                <Pressable
-                  accessibilityRole="button"
-                  hitSlop={8}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/(auth)/forgot-password',
-                      params: email.trim() ? { email: email.trim() } : undefined,
-                    })
-                  }
-                  style={styles.forgotLink}
-                >
-                  <Text style={styles.forgotText}>Forgot password?</Text>
-                </Pressable>
-              </View>
-            ) : null}
-          </View>
-        </ScrollView>
-
-        <View
-          style={[
-            styles.footer,
-            {
-              paddingHorizontal: frame.horizontalPadding,
-              maxWidth: frame.maxWidth,
-              alignSelf: frame.maxWidth != null ? 'center' : undefined,
-              width: '100%',
-            },
-          ]}
-        >
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          {submitHint ? <Text style={styles.hint}>{submitHint}</Text> : null}
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ disabled: !canSubmit || submitting }}
-            disabled={!canSubmit || submitting}
-            onPress={() => {
-              setAttempted(true);
-              void handleSubmit();
-            }}
-            style={({ pressed }) => [
-              styles.cta,
-              canSubmit && !submitting ? styles.ctaEnabled : styles.ctaDisabled,
-              pressed && canSubmit && !submitting && styles.ctaPressed,
-            ]}
-          >
-            <Text style={[styles.ctaText, (!canSubmit || submitting) && styles.ctaTextDisabled]}>
-              {submitting
-                ? isSignup
-                  ? 'Sending code…'
-                  : 'Signing in…'
-                : isSignup
-                  ? signupUsesEmail
-                    ? 'Get started →'
-                    : 'Get started →'
-                  : 'Sign In →'}
-            </Text>
-          </Pressable>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+              {showStickyFooterLink ? (
+                <AuthFooterLink
+                  isSignup
+                  onSwitch={() => switchTab('signin')}
+                  fontSize={metrics.footerFontSize}
+                  marginTop={metrics.footerMarginTop}
+                />
+              ) : null}
+            </View>
+          ) : null}
+        </KeyboardAvoidingView>
+      </View>
+    </AuthMetricsProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: authPalette.bg },
+  root: { flex: 1, backgroundColor: authPalette.bg },
   flex: { flex: 1 },
   scroll: { flex: 1 },
-  scrollContent: { flexGrow: 1 },
+  scrollContent: {
+    flexGrow: 1,
+  },
   inner: {
-    paddingBottom: spacing.md,
+    width: '100%',
+    alignSelf: 'center',
   },
-  footer: {
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
-    backgroundColor: 'transparent',
-  },
-  brandBlock: { alignItems: 'center', marginBottom: spacing.xl, width: '100%' },
-  brandBlockCompact: { marginBottom: spacing.md },
-  brandBlockLandscape: { marginBottom: spacing.sm },
-  wordmarkRow: {
+  twoColumn: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'center',
-    marginTop: spacing.md,
+    alignItems: 'flex-start',
+    width: '100%',
+    alignSelf: 'center',
   },
-  wordmark: {
-    fontSize: 30,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    color: authPalette.ink,
-    lineHeight: 36,
+  passwordField: { marginBottom: 0 },
+  forgotLink: {
+    alignSelf: 'flex-end',
   },
-  wordmarkCompact: {
-    fontSize: 24,
-    lineHeight: 30,
-  },
-  wordmarkAccent: { color: authPalette.brand },
-  tagline: {
-    ...typography.micro,
-    color: authPalette.label,
-    marginTop: spacing.xs,
-    letterSpacing: 2.4,
-    textAlign: 'center',
-  },
-  tabRow: {
-    flexDirection: 'row',
-    backgroundColor: authPalette.tabTrack,
-    borderRadius: radius.pill,
-    padding: 4,
-    marginBottom: spacing.xl,
-  },
-  tabRowCompact: { marginBottom: spacing.md },
-  tab: {
-    flex: 1,
-    paddingVertical: spacing.sm + 2,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-  },
-  tabActive: {
-    backgroundColor: colors.surface,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 6,
-      },
-      android: { elevation: 2 },
-      default: {},
-    }),
-  },
-  tabText: { ...typography.bodyStrong, color: authPalette.muted },
-  tabTextActive: { color: authPalette.ink },
-  passwordBlock: { marginBottom: spacing.lg },
-  forgotLink: { alignSelf: 'flex-end', marginTop: spacing.sm, paddingVertical: spacing.xs },
   forgotText: {
-    ...typography.caption,
-    color: authPalette.ink,
+    fontSize: 14,
     fontWeight: '700',
+    color: authPalette.ink,
     textDecorationLine: 'underline',
   },
-  cta: {
-    borderRadius: radius.pill,
-    paddingVertical: spacing.md + 4,
-    alignItems: 'center',
-    borderWidth: 0,
+  stickyFooter: {
+    position: 'absolute',
   },
-  ctaEnabled: {
-    backgroundColor: authPalette.ctaBg,
-    ...Platform.select({
-      ios: {
-        shadowColor: authPalette.brand,
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.35,
-        shadowRadius: 16,
-      },
-      android: { elevation: 6 },
-      default: {},
-    }),
-  },
-  ctaDisabled: {
-    backgroundColor: authPalette.ctaBgDisabled,
-  },
-  ctaPressed: { opacity: 0.88 },
-  ctaText: { ...typography.bodyStrong, color: authPalette.ctaText },
-  ctaTextDisabled: { color: authPalette.ctaTextDisabled },
-  error: { ...typography.caption, color: colors.danger, marginBottom: spacing.sm },
-  hint: { ...typography.caption, color: authPalette.muted, marginBottom: spacing.sm },
 });

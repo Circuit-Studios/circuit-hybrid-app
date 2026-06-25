@@ -1,0 +1,254 @@
+export type AuthScreenMode = 'signIn' | 'signUp';
+
+export interface AuthLayoutMetricsInput {
+  width: number;
+  height: number;
+  safeAreaTop: number;
+  safeAreaBottom: number;
+  isLandscape: boolean;
+  isSmallPhone: boolean;
+  isShortHeight: boolean;
+  isVeryShortHeight: boolean;
+  isTablet: boolean;
+  mode: AuthScreenMode;
+}
+
+export interface AuthLayoutMetrics {
+  horizontalPadding: number;
+  contentMaxWidth: number;
+  topPadding: number;
+  headerTopMargin: number;
+  logoRingSize: number;
+  logoInnerSize: number;
+  wordmarkFontSize: number;
+  subtitleFontSize: number;
+  subtitleLetterSpacing: number;
+  headerBottomMargin: number;
+  segmentHeight: number;
+  segmentInnerHeight: number;
+  segmentMarginTop: number;
+  segmentMarginBottom: number;
+  formMarginTop: number;
+  inputHeight: number;
+  inputRadius: number;
+  inputFontSize: number;
+  labelFontSize: number;
+  labelLetterSpacing: number;
+  labelMarginBottom: number;
+  fieldGap: number;
+  forgotMarginTop: number;
+  helperFontSize: number;
+  helperLineHeight: number;
+  ctaHeight: number;
+  ctaRadius: number;
+  ctaFontSize: number;
+  ctaMarginTop: number;
+  footerMarginTop: number;
+  footerFontSize: number;
+  bottomPadding: number;
+  stickyFooterHeight: number;
+  stickyFooterLinkHeight: number;
+  isLandscapeTwoColumn: boolean;
+  brandColumnWidth?: number;
+  formColumnWidth?: number;
+  columnGap?: number;
+  totalMaxWidth?: number;
+  hideSubtitle: boolean;
+  hideCameraWatermark: boolean;
+  hideStickyFooterLink: boolean;
+  watermarkScale: number;
+  watermarkOpacityMultiplier: number;
+  useShortPasswordHelper: boolean;
+  phoneHelperShort: boolean;
+}
+
+const FOOTER_LINK_HEIGHT = 32;
+
+/** Derives responsive spacing/sizing for auth screens. */
+export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutMetrics {
+  const {
+    mode,
+    safeAreaTop,
+    width,
+    height,
+    isLandscape,
+    isSmallPhone,
+    isShortHeight,
+    isVeryShortHeight,
+    isTablet,
+  } = input;
+
+  const isSignUp = mode === 'signUp';
+  const isLandscapeWide = isLandscape && width >= 700;
+  const isLandscapeTight = isLandscape && height < 430;
+
+  let horizontalPadding = 24;
+  let contentMaxWidth = isTablet ? (isLandscape ? 920 : 520) : 620;
+  let headerTopMargin = isSignUp ? 8 : 12;
+  let logoRingSize = isSignUp ? 58 : 74;
+  let logoInnerSize = isSignUp ? 36 : 46;
+  let wordmarkFontSize = isSignUp ? 28 : 34;
+  let subtitleFontSize = isSignUp ? 9.5 : 12;
+  let subtitleLetterSpacing = isSignUp ? 4.2 : 5.5;
+  let headerBottomMargin = isSignUp ? 16 : 20;
+  let segmentHeight = isSignUp ? 44 : 50;
+  let segmentMarginTop = isSignUp ? 16 : 28;
+  let segmentMarginBottom = isSignUp ? 18 : 0;
+  let formMarginTop = isSignUp ? 0 : 30;
+  let inputHeight = isSignUp ? 44 : 54;
+  let inputRadius = 15;
+  let inputFontSize = isSignUp ? 14 : 16;
+  let labelFontSize = isSignUp ? 10 : 12;
+  let labelLetterSpacing = isSignUp ? 3.1 : 3.6;
+  let labelMarginBottom = 8;
+  let fieldGap = isSignUp ? 9 : 24;
+  let forgotMarginTop = 16;
+  let helperFontSize = isSignUp ? 11.5 : 12.5;
+  let helperLineHeight = isSignUp ? 15 : 18;
+  let ctaHeight = isSignUp ? 54 : 58;
+  let ctaRadius = 20;
+  let ctaFontSize = 16;
+  let ctaMarginTop = isSignUp ? 0 : 34;
+  let footerMarginTop = isSignUp ? 10 : 24;
+  let footerFontSize = 12;
+  let bottomPadding = 28;
+  let hideSubtitle = false;
+  let hideCameraWatermark = false;
+  let hideStickyFooterLink = false;
+  let watermarkScale = 1;
+  let watermarkOpacityMultiplier = 1;
+  let useShortPasswordHelper = false;
+  let phoneHelperShort = false;
+
+  let isLandscapeTwoColumn = false;
+  let brandColumnWidth: number | undefined;
+  let formColumnWidth: number | undefined;
+  let columnGap: number | undefined;
+  let totalMaxWidth: number | undefined;
+
+  if (isSmallPhone) {
+    horizontalPadding = 18;
+    logoRingSize = isSignUp ? 52 : 66;
+    logoInnerSize = Math.round(logoRingSize * 0.62);
+    wordmarkFontSize = isSignUp ? 24 : 30;
+    subtitleFontSize = 8.5;
+    subtitleLetterSpacing = 3.5;
+    segmentHeight = 40;
+    inputHeight = isSignUp ? 40 : 48;
+    inputFontSize = 13.5;
+    labelFontSize = 10;
+    fieldGap = isSignUp ? 7 : 12;
+    ctaHeight = isSignUp ? 50 : 52;
+    helperFontSize = 11;
+    helperLineHeight = 14;
+    watermarkScale = 0.85;
+    watermarkOpacityMultiplier = 0.75;
+    phoneHelperShort = true;
+  }
+
+  if (isShortHeight && !isSignUp) {
+    headerTopMargin -= 10;
+    headerBottomMargin -= 8;
+    segmentMarginTop -= 8;
+    fieldGap = Math.max(6, fieldGap - 3);
+    ctaMarginTop -= 6;
+    footerMarginTop -= 4;
+  }
+
+  if (isVeryShortHeight && isSignUp) {
+    logoRingSize = 52;
+    logoInnerSize = 32;
+    wordmarkFontSize = 24;
+    subtitleFontSize = 9;
+    segmentHeight = 40;
+    inputHeight = 40;
+    ctaHeight = 46;
+    hideSubtitle = true;
+    useShortPasswordHelper = true;
+    watermarkOpacityMultiplier *= 0.7;
+    hideStickyFooterLink = true;
+  }
+
+  if (isLandscapeWide) {
+    isLandscapeTwoColumn = true;
+    totalMaxWidth = 920;
+    brandColumnWidth = 340;
+    formColumnWidth = 420;
+    columnGap = 44;
+    contentMaxWidth = 920;
+
+    logoRingSize = 54;
+    logoInnerSize = 34;
+    wordmarkFontSize = 26;
+    subtitleFontSize = 9;
+    subtitleLetterSpacing = 3;
+    segmentHeight = 40;
+    inputHeight = 40;
+    ctaHeight = 48;
+    headerBottomMargin = 12;
+    segmentMarginTop = 0;
+    formMarginTop = 0;
+    watermarkOpacityMultiplier *= 0.85;
+  }
+
+  if (isLandscapeTight) {
+    hideCameraWatermark = true;
+    hideSubtitle = true;
+    headerBottomMargin = 8;
+    segmentMarginTop = 4;
+    hideStickyFooterLink = true;
+  }
+
+  const segmentInnerHeight = Math.max(32, segmentHeight - 8);
+  const stickyFooterLinkHeight = hideStickyFooterLink ? 0 : FOOTER_LINK_HEIGHT;
+  const stickyFooterHeight = ctaHeight + stickyFooterLinkHeight + (hideStickyFooterLink ? 12 : 20);
+
+  return {
+    horizontalPadding,
+    contentMaxWidth,
+    topPadding: safeAreaTop + (isSignUp ? 16 : 18),
+    headerTopMargin: Math.max(0, headerTopMargin),
+    logoRingSize,
+    logoInnerSize,
+    wordmarkFontSize,
+    subtitleFontSize,
+    subtitleLetterSpacing,
+    headerBottomMargin: Math.max(8, headerBottomMargin),
+    segmentHeight,
+    segmentInnerHeight,
+    segmentMarginTop: Math.max(0, segmentMarginTop),
+    segmentMarginBottom: Math.max(0, segmentMarginBottom),
+    formMarginTop,
+    inputHeight,
+    inputRadius,
+    inputFontSize,
+    labelFontSize,
+    labelLetterSpacing,
+    labelMarginBottom,
+    fieldGap,
+    forgotMarginTop,
+    helperFontSize,
+    helperLineHeight,
+    ctaHeight,
+    ctaRadius,
+    ctaFontSize,
+    ctaMarginTop: Math.max(8, ctaMarginTop),
+    footerMarginTop: Math.max(8, footerMarginTop),
+    footerFontSize,
+    bottomPadding,
+    stickyFooterHeight,
+    stickyFooterLinkHeight,
+    isLandscapeTwoColumn,
+    brandColumnWidth,
+    formColumnWidth,
+    columnGap,
+    totalMaxWidth,
+    hideSubtitle,
+    hideCameraWatermark,
+    hideStickyFooterLink,
+    watermarkScale,
+    watermarkOpacityMultiplier,
+    useShortPasswordHelper,
+    phoneHelperShort,
+  };
+}
