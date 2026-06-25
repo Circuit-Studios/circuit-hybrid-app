@@ -25,7 +25,11 @@ import {
 import { authPalette } from '@/theme/authPalette';
 import { authInputChrome } from '@/theme/authInputChrome';
 import { authFieldLabelStyle } from '@/theme/authTypography';
-import { authFieldRowStyleFromMetrics, authInputTextStyle, type AuthFieldVariant } from '@/theme/fields';
+import {
+  authFieldRowStyleFromMetrics,
+  authInputTextStyle,
+  type AuthFieldVariant,
+} from '@/theme/fields';
 import { useAuthMetrics } from '@/features/auth/AuthMetricsContext';
 import { colors, radius, spacing, typography } from '@/theme';
 

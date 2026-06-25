@@ -133,6 +133,17 @@ Unified OTP storage for phone and email. Plain codes are never stored — only `
 
 Legacy columns `phone` and `consumed` remain for backward compatibility but are not used by new code paths.
 
+**OTP notes**
+
+- The legacy `EmailOtp` / `email_otps` table was migrated into `AuthOtp` (see
+  `20260624120000_drop_email_otps`). **TODO:** remove remaining `phone` / `consumed` legacy columns
+  once all readers use `target` + `consumedAt` only.
+- **Attempt counting:** both email and phone OTP verification share `otp.service.ts` — each failed
+  code increments `attempts` until `OTP_MAX_ATTEMPTS` (5), then verification is rejected. Resend
+  cooldown is rate-limit only and does not increment attempts.
+- **Logging:** OTP logs must use `targetMasked`, `emailMasked`, and `phoneMasked` — never raw
+  `target`, `email`, or `phone` (see `maskOtpLogFields` in `otp-target.ts`).
+
 ---
 
 ### `PushToken`

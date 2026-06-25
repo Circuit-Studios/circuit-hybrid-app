@@ -1,6 +1,6 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import {
-  getAuthLayoutMetrics,
+  getAuthMetrics,
   type AuthLayoutMetrics,
   type AuthScreenMode,
 } from '@/features/auth/getAuthLayoutMetrics';
@@ -20,16 +20,5 @@ export function useAuthMetrics(mode: AuthScreenMode = 'signIn'): AuthLayoutMetri
   const ctx = useContext(AuthMetricsContext);
   if (ctx) return ctx;
 
-  return getAuthLayoutMetrics({
-    width: 430,
-    height: 932,
-    safeAreaTop: 59,
-    safeAreaBottom: 34,
-    isLandscape: false,
-    isSmallPhone: false,
-    isShortHeight: false,
-    isVeryShortHeight: false,
-    isTablet: false,
-    mode,
-  });
+  return getAuthMetrics(430, 932, 59, 34, mode);
 }

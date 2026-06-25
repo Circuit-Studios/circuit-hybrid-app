@@ -79,4 +79,33 @@ describe('findOrCreateUserAfterOtp', () => {
 
     expect(prismaMock.user.create).not.toHaveBeenCalled();
   });
+
+  it('returns 409 when prisma unique constraint fails on create', async () => {
+    const { Prisma } = await import('@prisma/client');
+    prismaMock.user.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
+    prismaMock.user.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint', {
+        code: 'P2002',
+        clientVersion: '5.0.0',
+      }),
+    );
+
+    const { findOrCreateUserAfterOtp } = await import('../../src/modules/auth/auth-signup.js');
+
+    await expect(
+      findOrCreateUserAfterOtp({
+        channel: 'EMAIL',
+        email: 'new@studio.com',
+        code: '111111',
+        signup: {
+          firstName: 'Ada',
+          lastName: 'Lovelace',
+          role: 'CREW',
+          password: 'password123',
+        },
+      }),
+    ).rejects.toMatchObject({
+      statusCode: 409,
+    });
+  });
 });

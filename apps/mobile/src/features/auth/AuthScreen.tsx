@@ -20,7 +20,7 @@ import { AuthMetricsProvider } from '@/features/auth/AuthMetricsContext';
 import { AuthPrimaryButton } from '@/features/auth/AuthPrimaryButton';
 import { AuthSegmentControl } from '@/features/auth/AuthSegmentControl';
 import { SignupFormFields } from '@/features/auth/SignupFormFields';
-import { getAuthLayoutMetrics } from '@/features/auth/getAuthLayoutMetrics';
+import { getAuthMetrics } from '@/features/auth/getAuthLayoutMetrics';
 import { useAuth } from '@/auth/AuthContext';
 import { useOtpSession } from '@/auth/OtpSessionContext';
 import { useAuthSubmit } from '@/features/auth/hooks';
@@ -79,38 +79,9 @@ export default function AuthScreen() {
   const isSignup = tab === 'signup';
   const screenMode = isSignup ? 'signUp' : 'signIn';
 
-  const isLandscape = width > height;
-  const isSmallPhone = width < 390;
-  const isShortHeight = height < 760;
-  const isVeryShortHeight = height < 680;
-  const isTablet = width >= 768;
-
   const metrics = useMemo(
-    () =>
-      getAuthLayoutMetrics({
-        width,
-        height,
-        safeAreaTop: insets.top,
-        safeAreaBottom: insets.bottom,
-        isLandscape,
-        isSmallPhone,
-        isShortHeight,
-        isVeryShortHeight,
-        isTablet,
-        mode: screenMode,
-      }),
-    [
-      width,
-      height,
-      insets.top,
-      insets.bottom,
-      isLandscape,
-      isSmallPhone,
-      isShortHeight,
-      isVeryShortHeight,
-      isTablet,
-      screenMode,
-    ],
+    () => getAuthMetrics(width, height, insets.top, insets.bottom, screenMode),
+    [width, height, insets.top, insets.bottom, screenMode],
   );
 
   const signupChannel = config.signupVerificationChannel;
@@ -252,7 +223,7 @@ export default function AuthScreen() {
     : width - metrics.horizontalPadding * 2;
 
   const scrollBottomPadding = isSignup
-    ? metrics.stickyFooterHeight + insets.bottom + 20
+    ? metrics.stickyFooterHeight + insets.bottom + metrics.scrollBottomReserve
     : metrics.bottomPadding + insets.bottom;
 
   const signInForm = (
@@ -434,7 +405,7 @@ export default function AuthScreen() {
                 {
                   left: stickyFooterLeft,
                   width: stickyFooterWidth,
-                  bottom: insets.bottom + 28,
+                  bottom: insets.bottom + metrics.stickyCtaBottomOffset,
                 },
               ]}
             >

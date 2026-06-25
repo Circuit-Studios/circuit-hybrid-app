@@ -171,15 +171,15 @@ Circular, amber/orange, soft glow shadow; center play (`◉`) or `＋` depending
 Sign In and Sign Up use a dedicated **auth palette** (`src/theme/tokens.ts` → `auth`, mapped via
 `authPalette.ts`) distinct from the main orange app chrome:
 
-| Token / pattern | Direction |
-| ---------------- | --------- |
-| Background | Warm white / ivory (`#FBFAF7`) with soft radial champagne glow |
-| Accent | Champagne / gold (`#E5AA22` range) — not heavy orange |
-| Typography | Charcoal primary (`#111111`), warm gray secondary |
-| Form cards | Translucent white glass (`rgba(255,255,255,0.72)`), soft shadow |
-| Inputs | Rounded glass fields, gold focus border, mail/lock icons |
-| Motifs | Very subtle film line-art (strip, camera, clapperboard) as watermarks |
-| Segment control | Pill track with raised white glass selected segment |
+| Token / pattern | Direction                                                             |
+| --------------- | --------------------------------------------------------------------- |
+| Background      | Warm white / ivory (`#FBFAF7`) with soft radial champagne glow        |
+| Accent          | Champagne / gold (`#E5AA22` range) — not heavy orange                 |
+| Typography      | Charcoal primary (`#111111`), warm gray secondary                     |
+| Form cards      | Translucent white glass (`rgba(255,255,255,0.72)`), soft shadow       |
+| Inputs          | Rounded glass fields, gold focus border, mail/lock icons              |
+| Motifs          | Very subtle film line-art (strip, camera, clapperboard) as watermarks |
+| Segment control | Pill track with raised white glass selected segment                   |
 
 **Auth UX constraints (v1):**
 

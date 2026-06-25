@@ -28,6 +28,7 @@ describe('otp-target', () => {
     expect(masked).not.toContain('kiran@circuit.app');
     expect(masked).toContain('@');
     expect(maskOtpLogFields(OtpChannel.EMAIL, 'kiran@circuit.app')).toEqual({
+      targetMasked: masked,
       emailMasked: masked,
     });
   });
@@ -37,6 +38,7 @@ describe('otp-target', () => {
     expect(masked).not.toBe('+919812345678');
     expect(masked).toContain('***');
     expect(maskOtpLogFields(OtpChannel.PHONE, '+919812345678')).toEqual({
+      targetMasked: masked,
       phoneMasked: masked,
     });
   });

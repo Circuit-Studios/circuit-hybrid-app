@@ -12,7 +12,11 @@ import {
 import { requireAuth } from '../../middleware/auth.js';
 import { logger } from '../../lib/logger.js';
 import { buildAuthResponse } from './auth-response.js';
-import { findOrCreateUserAfterOtp, linkPendingInvites } from './auth-signup.js';
+import {
+  findOrCreateUserAfterOtp,
+  createUserOrConflict,
+  linkPendingInvites,
+} from './auth-signup.js';
 import { assertDirectRegisterAllowed } from './direct-register.policy.js';
 import { hashPassword, verifyPassword } from './password.service.js';
 import { OTP_RESEND_COOLDOWN_SECONDS, OTP_TTL_SECONDS } from './auth.constants.js';
@@ -73,18 +77,22 @@ authPublicRouter.post(
     if (existing) {
       throw conflict('An account with this email already exists');
     }
+    if (body.phone) {
+      const phoneOwner = await prisma.user.findUnique({ where: { phone: body.phone } });
+      if (phoneOwner) {
+        throw conflict('An account with this phone number already exists');
+      }
+    }
 
     const passwordHash = await hashPassword(body.password);
-    const user = await prisma.user.create({
-      data: {
-        email: body.email,
-        emailVerified: true,
-        firstName: body.firstName,
-        lastName: body.lastName,
-        defaultRole: body.role,
-        phone: body.phone,
-        passwordHash,
-      },
+    const user = await createUserOrConflict({
+      email: body.email,
+      emailVerified: true,
+      firstName: body.firstName,
+      lastName: body.lastName,
+      defaultRole: body.role,
+      phone: body.phone,
+      passwordHash,
     });
     await linkPendingInvites(user.id, user.phone, user.email);
     res.json(buildAuthResponse(user));

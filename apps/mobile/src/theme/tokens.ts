@@ -109,9 +109,9 @@ export const auth = {
 /** Floating glass tab bar — Instagram-style neutral dock. */
 export const tabBar = {
   height: 80,
-  activePillWidth: 90,
+  activePillWidth: 88,
   activePillHeight: 44,
-  itemTouchMin: 58,
+  itemTouchMin: 56,
   blurIntensity: 70,
   iconInactive: '#1A1A1A',
   iconActive: '#121212',

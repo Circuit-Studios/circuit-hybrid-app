@@ -120,12 +120,20 @@ export const verifyOtpSchema = verifyOtpBaseSchema
         message: 'signup payload is not allowed when purpose is verify_email',
       });
     }
-    if (data.purpose === 'signup' && !data.signup) {
+    const effectivePurpose = data.purpose ?? (data.signup ? 'signup' : 'login');
+    if (effectivePurpose === 'signup' && !data.signup) {
       ctx.addIssue({
         code: 'custom',
         path: ['signup'],
         message:
           'signup payload is required (firstName, lastName, role, password) when purpose is signup',
+      });
+    }
+    if (effectivePurpose === 'signup' && data.signup && !data.signup.password?.trim()) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['signup', 'password'],
+        message: 'Password is required to create an account',
       });
     }
   })

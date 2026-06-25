@@ -20,9 +20,13 @@ vi.mock('../../src/lib/prisma.js', () => ({
   prisma: prismaMock,
 }));
 
-vi.mock('../../src/modules/auth/auth-signup.js', () => ({
-  linkPendingInvites: vi.fn().mockResolvedValue(undefined),
-}));
+vi.mock('../../src/modules/auth/auth-signup.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/modules/auth/auth-signup.js')>();
+  return {
+    ...actual,
+    linkPendingInvites: vi.fn().mockResolvedValue(undefined),
+  };
+});
 
 vi.mock('../../src/modules/auth/password.service.js', () => ({
   hashPassword: vi.fn().mockResolvedValue('hashed'),

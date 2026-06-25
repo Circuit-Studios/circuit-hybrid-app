@@ -46,10 +46,10 @@ export function maskOtpTarget(channel: OtpChannel, target: string): string {
 export function maskOtpLogFields(
   channel: OtpChannel,
   target: string,
-): { emailMasked?: string; phoneMasked?: string } {
+): { targetMasked: string; emailMasked?: string; phoneMasked?: string } {
   const masked = maskOtpTarget(channel, target);
   if (channel === OtpChannel.EMAIL) {
-    return { emailMasked: masked };
+    return { targetMasked: masked, emailMasked: masked };
   }
-  return { phoneMasked: masked };
+  return { targetMasked: masked, phoneMasked: masked };
 }

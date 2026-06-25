@@ -8,10 +8,7 @@ import { asyncHandler, badRequest, forbidden, notFound } from '../../lib/http.js
 import { requireAuth } from '../../middleware/auth.js';
 import { requireFeature } from '../../middleware/require-feature.js';
 import { canEditScripts, canInviteMembers, getActiveMembership } from '../../auth/permissions.js';
-import {
-  createScriptAnalysisJob,
-  enqueueBackgroundJob,
-} from '../../jobs/background-jobs.js';
+import { createScriptAnalysisJob, enqueueBackgroundJob } from '../../jobs/background-jobs.js';
 import { assertPdfMagicBytes, sanitizeDownloadFilename } from '../../lib/pdf-upload.js';
 import { getStorage } from '../../storage/index.js';
 

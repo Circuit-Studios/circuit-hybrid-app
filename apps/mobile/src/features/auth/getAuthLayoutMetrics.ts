@@ -50,6 +50,8 @@ export interface AuthLayoutMetrics {
   bottomPadding: number;
   stickyFooterHeight: number;
   stickyFooterLinkHeight: number;
+  stickyCtaBottomOffset: number;
+  scrollBottomReserve: number;
   isLandscapeTwoColumn: boolean;
   brandColumnWidth?: number;
   formColumnWidth?: number;
@@ -191,7 +193,9 @@ export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutM
 
   const segmentInnerHeight = Math.max(32, segmentHeight - 8);
   const stickyFooterLinkHeight = isSignUp || hideStickyFooterLink ? 0 : FOOTER_LINK_HEIGHT;
-  const stickyFooterHeight = ctaHeight + stickyFooterLinkHeight + 12;
+  const stickyCtaBottomOffset = isSignUp ? 28 : 12;
+  const stickyFooterHeight = ctaHeight + stickyFooterLinkHeight;
+  const scrollBottomReserve = isSignUp ? stickyCtaBottomOffset + 8 : 12;
 
   return {
     horizontalPadding,
@@ -228,6 +232,8 @@ export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutM
     bottomPadding,
     stickyFooterHeight,
     stickyFooterLinkHeight,
+    stickyCtaBottomOffset,
+    scrollBottomReserve,
     isLandscapeTwoColumn,
     brandColumnWidth,
     formColumnWidth,
@@ -241,4 +247,26 @@ export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutM
     useShortPasswordHelper,
     phoneHelperShort,
   };
+}
+
+/** Responsive auth layout metrics — portrait, compact portrait, landscape-wide. */
+export function getAuthMetrics(
+  width: number,
+  height: number,
+  safeTop: number,
+  safeBottom: number,
+  mode: AuthScreenMode,
+): AuthLayoutMetrics {
+  return getAuthLayoutMetrics({
+    width,
+    height,
+    safeAreaTop: safeTop,
+    safeAreaBottom: safeBottom,
+    isLandscape: width > height,
+    isSmallPhone: width < 390,
+    isShortHeight: height < 760,
+    isVeryShortHeight: height < 680,
+    isTablet: width >= 768,
+    mode,
+  });
 }

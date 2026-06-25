@@ -11,9 +11,26 @@ function FilmStripMark({ width }: { width: number }) {
   const height = Math.round(width * 1.62);
   return (
     <Svg width={width} height={height} viewBox="0 0 130 210" fill="none">
-      <Rect x={28} y={8} width={74} height={194} rx={14} stroke={STROKE} strokeWidth={STROKE_WIDTH} />
+      <Rect
+        x={28}
+        y={8}
+        width={74}
+        height={194}
+        rx={14}
+        stroke={STROKE}
+        strokeWidth={STROKE_WIDTH}
+      />
       {[24, 52, 80, 108, 136, 164].map((y) => (
-        <Rect key={y} x={16} y={y} width={14} height={10} rx={2} stroke={STROKE} strokeWidth={STROKE_WIDTH} />
+        <Rect
+          key={y}
+          x={16}
+          y={y}
+          width={14}
+          height={10}
+          rx={2}
+          stroke={STROKE}
+          strokeWidth={STROKE_WIDTH}
+        />
       ))}
       {[24, 52, 80, 108, 136, 164].map((y) => (
         <Rect
@@ -38,7 +55,15 @@ function ClapperMark({ width }: { width: number }) {
   const height = Math.round(width * 0.81);
   return (
     <Svg width={width} height={height} viewBox="0 0 118 96" fill="none">
-      <Rect x={8} y={34} width={102} height={54} rx={6} stroke={STROKE} strokeWidth={STROKE_WIDTH} />
+      <Rect
+        x={8}
+        y={34}
+        width={102}
+        height={54}
+        rx={6}
+        stroke={STROKE}
+        strokeWidth={STROKE_WIDTH}
+      />
       <Path
         d="M8 34 L38 12 L108 12 L78 34 Z"
         stroke={STROKE}
@@ -59,8 +84,24 @@ function CameraMark({ width }: { width: number }) {
   const height = Math.round(width * 0.87);
   return (
     <Svg width={width} height={height} viewBox="0 0 150 130" fill="none">
-      <Rect x={24} y={36} width={88} height={58} rx={8} stroke={STROKE} strokeWidth={STROKE_WIDTH} />
-      <Rect x={88} y={48} width={28} height={22} rx={4} stroke={STROKE} strokeWidth={STROKE_WIDTH} />
+      <Rect
+        x={24}
+        y={36}
+        width={88}
+        height={58}
+        rx={8}
+        stroke={STROKE}
+        strokeWidth={STROKE_WIDTH}
+      />
+      <Rect
+        x={88}
+        y={48}
+        width={28}
+        height={22}
+        rx={4}
+        stroke={STROKE}
+        strokeWidth={STROKE_WIDTH}
+      />
       <Circle cx={58} cy={65} r={16} stroke={STROKE} strokeWidth={STROKE_WIDTH} />
       <Circle cx={58} cy={65} r={8} stroke={STROKE} strokeWidth={STROKE_WIDTH} />
       <Line x1={48} y1={94} x2={48} y2={118} stroke={STROKE} strokeWidth={STROKE_WIDTH} />
