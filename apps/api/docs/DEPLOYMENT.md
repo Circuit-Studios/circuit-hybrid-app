@@ -138,8 +138,9 @@ Dev/preview can use `EMAIL_OTP_PROVIDER=MOCK` and `PHONE_OTP_PROVIDER=MOCK` (cod
 
 ## Resend email OTP template
 
-Signup, login, and post-account email verification all use **`POST /auth/request-otp`** and
-**`POST /auth/verify-otp`**. Pass `purpose: 'verify_email'` for post-account email verification.
+Signup and login use **`POST /auth/request-otp`** and **`POST /auth/verify-otp`**.
+
+Post-account email verification uses **`POST /email/request-otp`** and **`POST /email/verify-otp`**.
 
 When `EMAIL_OTP_PROVIDER=RESEND`:
 

@@ -225,8 +225,10 @@ sequenceDiagram
 
 | Route                    | Purpose                                                         |
 | ------------------------ | --------------------------------------------------------------- |
-| `POST /auth/request-otp` | Signup/login OTP or post-account email verification (`purpose`) |
-| `POST /auth/verify-otp`  | Verify OTP → session or `emailVerified` when `verify_email`     |
+| `POST /auth/request-otp` | Signup/login OTP (`purpose`: `signup` or `login`) |
+| `POST /auth/verify-otp`  | Verify signup/login OTP → session JWT              |
+| `POST /email/request-otp` | Post-account email verification (send code)       |
+| `POST /email/verify-otp`  | Confirm email verification → `emailVerified`      |
 | `POST /auth/login`       | Email + password sign-in                                        |
 | `POST /auth/register`    | Local dev only (`APP_ENV=local` + `ALLOW_DIRECT_REGISTER=true`) |
 
@@ -238,39 +240,40 @@ sequenceDiagram
 
 ---
 
-## 4. Authentication flow (phone OTP)
+## 4. Authentication flow (unified OTP)
+
+Phone and email OTPs share one `AuthOtp` table (`channel`, `target`, `purpose`) and
+`otp.service.ts`. Delivery adapters (MSG91, Resend, MOCK) send codes only — they do not
+persist rows. See [OTP_STORAGE.md](./OTP_STORAGE.md).
 
 ```mermaid
 sequenceDiagram
   participant App
   participant API
-  participant OTP as OTP provider
+  participant Delivery as OTP delivery (MSG91 / Resend / MOCK)
   participant DB as Postgres
 
-  App->>API: POST /auth/request-otp { phone }
-  API->>DB: insert AuthOtp { phone, codeHash, expiresAt = now+5m }
-  API->>OTP: send SMS (MSG91 / TWILIO / MOCK)
+  App->>API: POST /auth/request-otp { channel, email|phone, purpose }
+  API->>DB: insert AuthOtp { channel, target, purpose, codeHash, expiresAt }
+  API->>Delivery: send code (SMS or email)
   API-->>App: { ok, ttlSeconds }
 
-  App->>API: POST /auth/verify-otp { phone, code, signup? }
-  API->>DB: find unconsumed AuthOtp for phone
-  API->>API: compare codeHash, mark consumed
-  alt user exists
-    API->>DB: select User by phone
-  else first sign-in
-    API->>DB: insert User { name, defaultRole }
-    API->>DB: ProjectMember.updateMany — link pending invites by phone
+  App->>API: POST /auth/verify-otp { channel, email|phone, code, signup? }
+  API->>DB: find active AuthOtp for channel+target+purpose
+  API->>API: verify codeHash, increment attempts or mark consumedAt
+  alt signup
+    API->>DB: insert User { …, passwordHash }
+  else login / verify_email
+    API->>DB: select or update User
   end
-  API->>API: signJwt({ sub, phone, name, defaultRole })
-  API-->>App: { token, user }
+  API->>API: signJwt({ sub, … })
+  API-->>App: { token, user } or { emailVerified }
 ```
 
-- **Dev:** `OTP_PROVIDER=MOCK` returns a fixed code `111111` (server-side
-  check), so testers don't need real SMS.
-- **Prod:** flip to `MSG91` (or `TWILIO`) and provide the auth key + template id.
-- **Auto-linking:** if an invite was created against the same phone, the
-  invitee's `userId` gets backfilled on first sign-in, so their pending
-  invites surface immediately under `GET /auth/me/invites`.
+- **Dev:** `EMAIL_OTP_PROVIDER=MOCK` / `PHONE_OTP_PROVIDER=MOCK` use fixed code `111111`.
+- **Prod:** configure Resend (email) and MSG91 (phone) via env — see [ENVIRONMENT.md](../../docs/ENVIRONMENT.md).
+- **Sign-in (mobile):** email + password via `POST /auth/login` — not OTP login.
+- **Auto-linking:** pending project invites link on first sign-in when phone/email matches.
 
 ---
 

@@ -32,4 +32,16 @@ describe('validateOtpSession', () => {
       }),
     ).toEqual({ ok: false, issue: 'incomplete_signup' });
   });
+
+  it('rejects signup session with empty password', () => {
+    expect(
+      validateOtpSession({
+        ...baseSession,
+        mode: 'signup',
+        password: '',
+        role: 'CREW',
+        firstName: 'Ada',
+      }),
+    ).toEqual({ ok: false, issue: 'incomplete_signup' });
+  });
 });

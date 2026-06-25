@@ -1,6 +1,7 @@
-import type { OtpSession } from '@/auth/OtpSessionContext';
+import type { OtpSession, OtpSignupSession } from '@/auth/OtpSessionContext';
 import { isValidPassword } from '@/lib/password';
 import { isSessionExpired } from '@/lib/session';
+import type { UserRole } from '@/api/types';
 
 export type OtpSessionIssue =
   | 'missing'
@@ -33,15 +34,34 @@ export function validateOtpSession(session: OtpSession | null | undefined): OtpS
   }
 
   if (session.mode === 'signup') {
-    const hasName = Boolean(session.firstName?.trim());
+    const hasName = Boolean(session.firstName.trim());
     const hasRole = Boolean(session.role);
-    const hasPassword = isValidPassword(session.password ?? '');
+    const hasPassword = isValidPassword(session.password);
     if (!hasName || !hasRole || !hasPassword) {
       return { ok: false, issue: 'incomplete_signup' };
     }
   }
 
   return { ok: true, session };
+}
+
+export function buildVerifySignupPayload(
+  session: OtpSignupSession,
+): {
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+  password: string;
+  phone?: string;
+  email?: string;
+} {
+  return {
+    firstName: session.firstName,
+    lastName: session.lastName ?? '',
+    role: session.role,
+    password: session.password,
+    ...(session.channel === 'EMAIL' ? { phone: session.phone } : { email: session.email }),
+  };
 }
 
 export function otpSessionErrorMessage(issue: OtpSessionIssue): string {

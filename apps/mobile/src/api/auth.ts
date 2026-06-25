@@ -10,30 +10,28 @@ export type RequestOtpInput =
   | { channel: 'EMAIL'; email: string; purpose?: OtpPurpose }
   | { channel: 'PHONE'; phone: string; purpose?: OtpPurpose };
 
-/** Post-account email verification via unified /auth OTP routes. */
+/** Post-account email verification — uses /email/*, not /auth/*. */
 export async function sendEmailVerificationOtp(
   email: string,
-  purpose: 'verify_email' = 'verify_email',
 ): Promise<{ ok: boolean; message: string; ttlSeconds: number }> {
   await wakeApi();
   const { data } = await api.post<{ ok: boolean; message: string; ttlSeconds: number }>(
-    '/auth/request-otp',
-    { channel: 'EMAIL', email, purpose },
+    '/email/request-otp',
+    { email },
   );
   return data;
 }
 
-/** Confirm post-account email verification via unified /auth OTP routes. */
+/** Confirm post-account email verification via /email/verify-otp. */
 export async function verifyEmailVerificationOtp(
   email: string,
   code: string,
-  purpose: 'verify_email' = 'verify_email',
 ): Promise<{ ok: boolean; message: string; emailVerified: boolean }> {
   const { data } = await api.post<{
     ok: boolean;
     message: string;
     emailVerified: boolean;
-  }>('/auth/verify-otp', { channel: 'EMAIL', email, code, purpose });
+  }>('/email/verify-otp', { email, code });
   return data;
 }
 
@@ -50,6 +48,7 @@ export type VerifyOtpInput =
       channel: 'EMAIL';
       email: string;
       code: string;
+      purpose?: Extract<OtpPurpose, 'signup' | 'login'>;
       signup?: {
         firstName: string;
         lastName: string;
@@ -62,6 +61,7 @@ export type VerifyOtpInput =
       channel: 'PHONE';
       phone: string;
       code: string;
+      purpose?: Extract<OtpPurpose, 'signup' | 'login'>;
       signup?: {
         firstName: string;
         lastName: string;

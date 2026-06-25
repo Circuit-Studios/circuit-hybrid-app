@@ -52,6 +52,23 @@ describe('auth OTP schemas', () => {
     ).toThrow();
   });
 
+  it('rejects signup with empty password', () => {
+    expect(() =>
+      verifyOtpSchema.parse({
+        channel: 'EMAIL',
+        email: 'user@studio.com',
+        code: '111111',
+        purpose: 'signup',
+        signup: {
+          firstName: 'Kiran',
+          lastName: 'Kumar',
+          role: 'DIRECTOR',
+          password: '',
+        },
+      }),
+    ).toThrow();
+  });
+
   it('requires signup payload when purpose is signup', () => {
     expect(() =>
       verifyOtpSchema.parse({

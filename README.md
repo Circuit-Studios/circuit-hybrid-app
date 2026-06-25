@@ -120,9 +120,9 @@ Configure in the **Render dashboard** (manual web service).
 
 Full guide: [`apps/api/docs/DEPLOYMENT.md`](./apps/api/docs/DEPLOYMENT.md)
 
-**Auth:** signup/login and post-account email verification both use
-`POST /auth/request-otp` + `POST /auth/verify-otp` (set `purpose: 'verify_email'` for
-email verification). `POST /auth/register` is
+**Auth:** signup/login uses `POST /auth/request-otp` + `POST /auth/verify-otp`.
+Post-account email verification uses `POST /email/request-otp` + `POST /email/verify-otp`.
+`POST /auth/register` is
 local-dev only (`APP_ENV=local` + `ALLOW_DIRECT_REGISTER=true`).
 
 ---

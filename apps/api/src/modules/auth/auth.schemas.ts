@@ -139,13 +139,39 @@ export const verifyOtpSchema = verifyOtpBaseSchema
   })
   .transform((data) => {
     const channel = resolveOtpChannel(data)!;
+    const effectivePurpose = data.purpose ?? (data.signup ? 'signup' : 'login');
+
+    if (effectivePurpose === 'signup') {
+      const signup =
+        channel === 'PHONE'
+          ? phoneSignupPayloadSchema.parse(data.signup)
+          : emailSignupPayloadSchema.parse(data.signup);
+
+      if (channel === 'PHONE') {
+        return {
+          channel: 'PHONE' as const,
+          phone: data.phone!,
+          code: data.code,
+          purpose: 'signup' as const,
+          signup,
+        };
+      }
+      return {
+        channel: 'EMAIL' as const,
+        email: data.email!,
+        code: data.code,
+        purpose: 'signup' as const,
+        signup,
+      };
+    }
+
     if (channel === 'PHONE') {
       return {
         channel: 'PHONE' as const,
         phone: data.phone!,
         code: data.code,
         purpose: data.purpose,
-        signup: data.signup as z.infer<typeof phoneSignupPayloadSchema> | undefined,
+        signup: undefined,
       };
     }
     return {
@@ -153,13 +179,13 @@ export const verifyOtpSchema = verifyOtpBaseSchema
       email: data.email!,
       code: data.code,
       purpose: data.purpose,
-      signup: data.signup as z.infer<typeof emailSignupPayloadSchema> | undefined,
+      signup: undefined,
     };
   });
 
 export const loginSchema = z.object({
   email: emailSchema,
-  password: z.string().min(8, 'Password must be at least 8 characters').max(128),
+  password: signupPasswordSchema,
 });
 
 /** Request a password-reset OTP to a registered email. */
@@ -177,7 +203,7 @@ export const resetPasswordSchema = z.object({
 /** Local-only bypass when ALLOW_DIRECT_REGISTER=true and APP_ENV=local. */
 export const directRegisterSchema = personNameSchema.extend({
   email: emailSchema,
-  password: z.string().min(8, 'Password must be at least 8 characters').max(128),
+  password: signupPasswordSchema,
   role: z.nativeEnum(UserRole).default(UserRole.CREW),
   phone: phoneSchema.optional(),
 });

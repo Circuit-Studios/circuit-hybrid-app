@@ -1,3 +1,12 @@
+/**
+ * Unified OTP issue + verify for all channels and purposes.
+ *
+ * Storage: AuthOtp only (channel + target + purpose). The legacy EmailOtp table
+ * was removed — do not add channel-specific OTP services or models.
+ *
+ * Delivery (send SMS/email) is delegated to providers/; this module owns DB lifecycle.
+ * See docs/OTP_STORAGE.md.
+ */
 import { OtpChannel, OtpPurpose } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { badRequest, unauthorized } from '../../lib/http.js';

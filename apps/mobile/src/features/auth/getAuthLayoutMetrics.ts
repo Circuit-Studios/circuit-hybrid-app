@@ -50,7 +50,9 @@ export interface AuthLayoutMetrics {
   bottomPadding: number;
   stickyFooterHeight: number;
   stickyFooterLinkHeight: number;
+  stickyFooterPaddingTop: number;
   stickyCtaBottomOffset: number;
+  signupScrollPaddingBottom: number;
   scrollBottomReserve: number;
   isLandscapeTwoColumn: boolean;
   brandColumnWidth?: number;
@@ -73,6 +75,7 @@ export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutM
   const {
     mode,
     safeAreaTop,
+    safeAreaBottom,
     width,
     height,
     isLandscape,
@@ -193,9 +196,11 @@ export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutM
 
   const segmentInnerHeight = Math.max(32, segmentHeight - 8);
   const stickyFooterLinkHeight = isSignUp || hideStickyFooterLink ? 0 : FOOTER_LINK_HEIGHT;
-  const stickyCtaBottomOffset = isSignUp ? 28 : 12;
+  const stickyFooterPaddingTop = isSignUp ? 10 : 0;
+  const stickyCtaBottomOffset = isSignUp ? (safeAreaBottom > 0 ? 8 : 16) : 12;
   const stickyFooterHeight = ctaHeight + stickyFooterLinkHeight;
-  const scrollBottomReserve = isSignUp ? stickyCtaBottomOffset + 8 : 12;
+  const signupScrollPaddingBottom = isSignUp ? 12 : 0;
+  const scrollBottomReserve = isSignUp ? 0 : 12;
 
   return {
     horizontalPadding,
@@ -232,7 +237,9 @@ export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutM
     bottomPadding,
     stickyFooterHeight,
     stickyFooterLinkHeight,
+    stickyFooterPaddingTop,
     stickyCtaBottomOffset,
+    signupScrollPaddingBottom,
     scrollBottomReserve,
     isLandscapeTwoColumn,
     brandColumnWidth,

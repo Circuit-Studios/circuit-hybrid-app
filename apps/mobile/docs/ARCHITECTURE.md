@@ -18,10 +18,9 @@ app/
 ├── _layout.tsx                     # providers: Query, Auth, Realtime, theme, safe-area
 ├── index.tsx                       # gate → auth vs app
 ├── (auth)/                         # sign-in / sign-up + OTP               [v1 ✅ restyle]
-│   ├── auth.tsx
-│   ├── login.tsx
-│   ├── signup.tsx
-│   └── otp.tsx
+│   ├── auth.tsx                    # unified AuthScreen (sign-in / sign-up tabs)
+│   ├── otp.tsx
+│   └── forgot-password.tsx
 └── (app)/
     ├── _layout.tsx                 # app shell / tabs
     ├── projects.tsx                # project list                          [v1 ✅ restyle]
@@ -92,10 +91,12 @@ src/
 
   features/                   # Business UI + hooks per domain
     auth/
-      hooks.ts
-      LoginForm.tsx
-      SignupForm.tsx
+      AuthScreen.tsx
+      AuthSignupStickyFooter.tsx
+      SignupFormFields.tsx
       OtpForm.tsx
+      getAuthLayoutMetrics.ts
+      hooks.ts
     projects/
       hooks.ts
       ProjectCard.tsx

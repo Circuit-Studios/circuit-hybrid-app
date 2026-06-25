@@ -12,7 +12,7 @@ import { requestOtp } from '@/api/auth';
 import { readApiError } from '@/api/client';
 import { useContentFrame } from '@/hooks/useContentFrame';
 import { formatRemainingSession } from '@/lib/session';
-import { validateOtpSession, otpSessionErrorMessage } from '@/lib/otp-session';
+import { validateOtpSession, otpSessionErrorMessage, buildVerifySignupPayload } from '@/lib/otp-session';
 import { maskEmail, maskPhone } from '@/lib/mask';
 import { colors, radius, spacing, typography } from '@/theme';
 
@@ -101,6 +101,10 @@ export default function OtpForm() {
     setSubmitting(true);
     setError(null);
     try {
+      const purpose = activeSession.mode === 'signup' ? 'signup' : 'login';
+      const signup =
+        activeSession.mode === 'signup' ? buildVerifySignupPayload(activeSession) : undefined;
+
       if (activeSession.channel === 'EMAIL') {
         const email = activeSession.email;
         if (!email) {
@@ -111,16 +115,8 @@ export default function OtpForm() {
           channel: 'EMAIL',
           email,
           code: value,
-          signup:
-            activeSession.mode === 'signup' && activeSession.role && activeSession.password
-              ? {
-                  firstName: activeSession.firstName ?? '',
-                  lastName: activeSession.lastName ?? '',
-                  role: activeSession.role,
-                  phone: activeSession.phone,
-                  password: activeSession.password,
-                }
-              : undefined,
+          purpose,
+          signup,
         });
       } else {
         const phone = activeSession.phone;
@@ -132,16 +128,8 @@ export default function OtpForm() {
           channel: 'PHONE',
           phone,
           code: value,
-          signup:
-            activeSession.mode === 'signup' && activeSession.role && activeSession.password
-              ? {
-                  firstName: activeSession.firstName ?? '',
-                  lastName: activeSession.lastName ?? '',
-                  role: activeSession.role,
-                  email: activeSession.email,
-                  password: activeSession.password,
-                }
-              : undefined,
+          purpose,
+          signup,
         });
       }
       clearSession();

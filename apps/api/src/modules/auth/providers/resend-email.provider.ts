@@ -1,11 +1,12 @@
 import { OtpChannel } from '@prisma/client';
-import { Resend } from 'resend';
 import { env } from '../../../config/env.js';
 import { logger } from '../../../lib/logger.js';
 import { maskOtpLogFields } from '../otp-target.js';
 import type { OtpDeliveryProvider, OtpDeliverySendInput } from './types.js';
 
-/** Resend hosted-template send payload (SDK types lag the API). */
+const RESEND_EMAILS_URL = 'https://api.resend.com/emails';
+
+/** Resend hosted-template send payload (REST API). */
 type ResendTemplateEmailPayload = {
   to: string[];
   template: {
@@ -14,9 +15,16 @@ type ResendTemplateEmailPayload = {
   };
 };
 
+type ResendSendResponse = {
+  id?: string;
+  message?: string;
+  name?: string;
+};
+
 /**
- * Sends OTP email via a Resend dashboard-hosted template (id/alias + variables).
- * From and Subject are configured on the template — not required in the send payload.
+ * Email delivery only — sends OTP via Resend REST API (hosted template).
+ * Does NOT persist OTP rows. Storage lifecycle: otp.service.ts → AuthOtp.
+ * See docs/OTP_STORAGE.md.
  */
 export class ResendEmailOtpProvider implements OtpDeliveryProvider {
   async send(input: OtpDeliverySendInput): Promise<void> {
@@ -34,7 +42,6 @@ export class ResendEmailOtpProvider implements OtpDeliveryProvider {
     }
 
     const maskedFields = maskOtpLogFields(OtpChannel.EMAIL, input.target);
-    const resend = new Resend(apiKey);
 
     const payload: ResendTemplateEmailPayload = {
       to: [input.target],
@@ -48,18 +55,25 @@ export class ResendEmailOtpProvider implements OtpDeliveryProvider {
       },
     };
 
-    const { data, error } = await resend.emails.send(
-      payload as unknown as Parameters<Resend['emails']['send']>[0],
-    );
+    const response = await fetch(RESEND_EMAILS_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
 
-    if (error) {
-      const detail = error.message ?? 'Unknown error';
-      logger.error({ ...maskedFields, provider: 'RESEND', status: error.name }, 'auth.otp_failed');
+    const body = (await response.json()) as ResendSendResponse;
+
+    if (!response.ok) {
+      const detail = body.message ?? 'Unknown error';
+      logger.error({ ...maskedFields, provider: 'RESEND', status: body.name }, 'auth.otp_failed');
       throw new Error(`Resend email failed: ${detail}`);
     }
 
     logger.info(
-      { ...maskedFields, provider: 'RESEND', messageId: data?.id },
+      { ...maskedFields, provider: 'RESEND', messageId: body.id },
       'auth.otp_dispatched',
     );
   }

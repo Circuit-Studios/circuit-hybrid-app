@@ -276,8 +276,7 @@ Full module rules and migration status: [docs/ARCHITECTURE.md § Module structur
 ```
 apps/mobile/
 ├── app/                       # Expo Router — navigation + composition only
-│   ├── (auth)/login.tsx       # → features/auth/LoginForm
-│   ├── (auth)/signup.tsx      # → features/auth/SignupForm
+│   ├── (auth)/auth.tsx        # → features/auth/AuthScreen (sign-in / sign-up tabs)
 │   ├── (auth)/otp.tsx         # → features/auth/OtpForm
 │   ├── (app)/projects.tsx     # → features/projects/ProjectList
 │   └── project/[id]/…         # tasks, schedule, team use feature sheets + scaffold

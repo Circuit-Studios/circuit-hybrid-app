@@ -12,6 +12,7 @@ import { env, corsOrigins } from '../config/env.js';
 import { logger } from '../lib/logger.js';
 import { errorHandler } from '../middleware/error.js';
 import { authPublicRouter, authProtectedRouter } from '../modules/auth/auth.routes.js';
+import { emailPublicRouter } from '../modules/email/email.routes.js';
 import projectsRoutes from '../modules/projects/projects.routes.js';
 import scriptsRoutes from '../modules/scripts/scripts.routes.js';
 import membersRoutes from '../modules/members/members.routes.js';
@@ -134,6 +135,7 @@ app.use(appConfigRoutes);
 
 app.use('/auth', authLimiter, authPublicRouter);
 app.use('/auth', authProtectedRouter);
+app.use('/email', authLimiter, emailPublicRouter);
 
 app.use('/projects', projectsRoutes);
 

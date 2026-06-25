@@ -91,7 +91,13 @@ enum OtpPurpose {
 
 model AuthOtp {
   /// Unified OTP storage for phone and email (channel + target + purpose).
-  /// Replaces the legacy EmailOtp / email_otps table.
+  ///
+  /// Canonical model — the legacy EmailOtp / email_otps table was removed
+  /// (migration 20260624120000_drop_email_otps). All OTP lifecycle logic lives in
+  /// otp.service.ts; do NOT add a second OTP table or channel-specific storage.
+  ///
+  /// TODO: drop legacy `phone` and `consumed` columns once all code uses
+  /// `target` + `consumedAt` only. See docs/OTP_STORAGE.md.
   id         String     @id @default(uuid())
   userId     String?
   channel    OtpChannel @default(PHONE)

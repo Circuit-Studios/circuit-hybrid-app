@@ -21,7 +21,10 @@ import { assertDirectRegisterAllowed } from './direct-register.policy.js';
 import { hashPassword, verifyPassword } from './password.service.js';
 import { OTP_RESEND_COOLDOWN_SECONDS, OTP_TTL_SECONDS } from './auth.constants.js';
 import { assertLoginChannel, assertSignupChannel } from './verification-policy.js';
-import { isFeatureEnabled } from '../../config/features.js';
+import {
+  authOtpDeleteByEmailTargetWhere,
+  authOtpDeleteByPhoneTargetWhere,
+} from './auth-otp.store.js';
 import { normalizeEmail } from './otp-crypto.js';
 import {
   directRegisterSchema,
@@ -32,19 +35,13 @@ import {
   verifyOtpSchema,
   type RequestOtpBody,
 } from './auth.schemas.js';
-import { GENERIC_SEND_SUCCESS, OTP_TTL_MS, requestOtp, verifyOtp } from './otp.service.js';
+import { OTP_TTL_MS, requestOtp, verifyOtp } from './otp.service.js';
 
 export const authPublicRouter: Router = Router();
 export const authProtectedRouter: Router = Router();
 
 async function assertOtpPurpose(body: RequestOtpBody): Promise<void> {
   const purpose = body.purpose ?? 'login';
-  if (purpose === 'verify_email') {
-    if (body.channel !== 'EMAIL') {
-      throw badRequest('verify_email is only supported for EMAIL channel');
-    }
-    return;
-  }
   if (body.channel === 'EMAIL') {
     const existing = await prisma.user.findUnique({ where: { email: body.email } });
     if (purpose === 'signup' && existing) {
@@ -119,28 +116,13 @@ authPublicRouter.post(
   '/request-otp',
   asyncHandler(async (req, res) => {
     const body = requestOtpSchema.parse(req.body);
+    const purpose = body.purpose ?? 'login';
+    if (purpose === 'verify_email') {
+      throw badRequest('Post-account email verification uses POST /email/request-otp');
+    }
     await assertOtpPurpose(body);
 
     const channel = body.channel === 'EMAIL' ? OtpChannel.EMAIL : OtpChannel.PHONE;
-    const purpose = body.purpose ?? 'login';
-
-    if (purpose === 'verify_email') {
-      if (!(await isFeatureEnabled('auth.emailOtp'))) {
-        throw forbidden('This feature is currently disabled');
-      }
-      await requestOtp({
-        channel: OtpChannel.EMAIL,
-        target: body.email!,
-        purpose: 'verify_email',
-      });
-      res.json({
-        ok: true,
-        message: GENERIC_SEND_SUCCESS,
-        ttlSeconds: EMAIL_OTP_TTL_SECONDS,
-        cooldownSeconds: OTP_RESEND_COOLDOWN_SECONDS,
-      });
-      return;
-    }
 
     if (purpose === 'signup') assertSignupChannel(channel);
     if (purpose === 'login') assertLoginChannel(channel);
@@ -166,24 +148,7 @@ authPublicRouter.post(
     const purpose = input.purpose ?? (input.signup ? 'signup' : 'login');
 
     if (purpose === 'verify_email') {
-      if (!(await isFeatureEnabled('auth.emailOtp'))) {
-        throw forbidden('This feature is currently disabled');
-      }
-      if (channel !== OtpChannel.EMAIL) {
-        throw badRequest('verify_email is only supported for EMAIL channel');
-      }
-      await verifyOtp({
-        channel: OtpChannel.EMAIL,
-        target: input.email!,
-        code: input.code,
-        purpose: 'verify_email',
-      });
-      res.json({
-        ok: true,
-        message: 'Email verified successfully.',
-        emailVerified: true,
-      });
-      return;
+      throw badRequest('Post-account email verification uses POST /email/verify-otp');
     }
 
     if (input.signup) assertSignupChannel(channel);
@@ -263,6 +228,7 @@ authPublicRouter.post(
     await prisma.$transaction([
       prisma.user.update({ where: { id: user.id }, data: { passwordHash } }),
       // Invalidate any other outstanding reset codes for this account.
+      // TODO: use auth-otp.store helpers — AuthOtp is the single OTP table (see docs/OTP_STORAGE.md).
       prisma.authOtp.updateMany({
         where: {
           channel: OtpChannel.EMAIL,
@@ -327,11 +293,25 @@ authProtectedRouter.delete(
       throw conflict('Remove uploaded scripts tied to your account before deleting it.');
     }
 
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, phone: true },
+    });
+    if (!user) {
+      throw notFound('User not found');
+    }
+
     await prisma.$transaction([
       prisma.projectMember.deleteMany({ where: { userId } }),
       prisma.pushToken.deleteMany({ where: { userId } }),
       prisma.notification.deleteMany({ where: { userId } }),
       prisma.authOtp.deleteMany({ where: { userId } }),
+      ...(user.email
+        ? [prisma.authOtp.deleteMany({ where: authOtpDeleteByEmailTargetWhere(user.email) })]
+        : []),
+      ...(user.phone
+        ? [prisma.authOtp.deleteMany({ where: authOtpDeleteByPhoneTargetWhere(user.phone) })]
+        : []),
       prisma.user.delete({ where: { id: userId } }),
     ]);
 

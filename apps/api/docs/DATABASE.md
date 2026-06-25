@@ -135,14 +135,14 @@ Legacy columns `phone` and `consumed` remain for backward compatibility but are 
 
 **OTP notes**
 
-- The legacy `EmailOtp` / `email_otps` table was migrated into `AuthOtp` (see
-  `20260624120000_drop_email_otps`). **TODO:** remove remaining `phone` / `consumed` legacy columns
-  once all readers use `target` + `consumedAt` only.
-- **Attempt counting:** both email and phone OTP verification share `otp.service.ts` — each failed
-  code increments `attempts` until `OTP_MAX_ATTEMPTS` (5), then verification is rejected. Resend
-  cooldown is rate-limit only and does not increment attempts.
-- **Logging:** OTP logs must use `targetMasked`, `emailMasked`, and `phoneMasked` — never raw
-  `target`, `email`, or `phone` (see `maskOtpLogFields` in `otp-target.ts`).
+- **Single table:** all phone and email OTPs use `AuthOtp` (`channel`, `target`, `purpose`).
+  The legacy `EmailOtp` / `email_otps` table was removed (`20260624120000_drop_email_otps`).
+  **Do not** add a second OTP model or channel-specific storage — see [OTP_STORAGE.md](./OTP_STORAGE.md).
+- **TODO:** remove legacy `phone` / `consumed` columns once all readers use `target` + `consumedAt` only.
+- **Attempt counting:** email and phone share `otp.service.ts` — each failed code increments
+  `attempts` until `OTP_MAX_ATTEMPTS` (5). Resend cooldown is rate-limit only.
+- **Logging:** use `targetMasked`, `emailMasked`, `phoneMasked` — never raw targets
+  (`maskOtpLogFields` in `otp-target.ts`).
 
 ---
 

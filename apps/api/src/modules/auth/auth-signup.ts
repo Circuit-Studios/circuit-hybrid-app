@@ -3,6 +3,7 @@ import { prisma } from '../../lib/prisma.js';
 import { badRequest, conflict } from '../../lib/http.js';
 import { hashPassword } from './password.service.js';
 import type { VerifyOtpBody } from './auth.schemas.js';
+import { signupPasswordSchema } from './auth.schemas.js';
 
 export async function linkPendingInvites(
   userId: string,
@@ -71,12 +72,13 @@ export async function findOrCreateUserAfterOtp(input: VerifyOtpBody): Promise<Us
       if (!input.signup.password) {
         throw badRequest('Password is required to create an account');
       }
+      const signupPassword = signupPasswordSchema.parse(input.signup.password);
       await assertOptionalSignupIdentifiersAvailable(undefined, input.signup.phone);
       const existingEmail = await prisma.user.findUnique({ where: { email: input.email } });
       if (existingEmail) {
         throw conflict('An account with this email already exists');
       }
-      const passwordHash = await hashPassword(input.signup.password);
+      const passwordHash = await hashPassword(signupPassword);
       user = await createSignupUser({
         email: input.email,
         emailVerified: true,
@@ -105,12 +107,13 @@ export async function findOrCreateUserAfterOtp(input: VerifyOtpBody): Promise<Us
     if (!input.signup.password) {
       throw badRequest('Password is required to create an account');
     }
+    const signupPassword = signupPasswordSchema.parse(input.signup.password);
     await assertOptionalSignupIdentifiersAvailable(input.signup.email, undefined);
     const existingPhone = await prisma.user.findUnique({ where: { phone: input.phone } });
     if (existingPhone) {
       throw conflict('An account with this phone number already exists');
     }
-    const passwordHash = await hashPassword(input.signup.password);
+    const passwordHash = await hashPassword(signupPassword);
     user = await createSignupUser({
       phone: input.phone,
       email: input.signup.email,
