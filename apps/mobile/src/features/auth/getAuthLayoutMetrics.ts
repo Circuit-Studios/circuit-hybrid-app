@@ -92,8 +92,8 @@ export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutM
   let horizontalPadding = 24;
   let contentMaxWidth = isTablet ? (isLandscape ? 920 : 520) : 620;
   let headerTopMargin = isSignUp ? 8 : 12;
-  let logoRingSize = isSignUp ? 58 : 74;
-  let logoInnerSize = isSignUp ? 36 : 46;
+  let logoRingSize = 74;
+  let logoInnerSize = 46;
   let wordmarkFontSize = authTypography.wordmarkFontSize;
   let subtitleFontSize = authTypography.taglineFontSize;
   let subtitleLetterSpacing = authTypography.taglineLetterSpacing;
@@ -112,10 +112,10 @@ export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutM
   let forgotMarginTop = 16;
   const helperFontSize = authTypography.helperFontSize;
   const helperLineHeight = authTypography.helperLineHeight;
-  let ctaHeight = isSignUp ? 54 : 58;
+  let ctaHeight = 58;
   let ctaRadius = 20;
   const ctaFontSize = authTypography.ctaFontSize;
-  let ctaMarginTop = isSignUp ? 0 : 34;
+  let ctaMarginTop = 34;
   let footerMarginTop = isSignUp ? 10 : 24;
   const footerFontSize = authTypography.footerFontSize;
   let bottomPadding = 28;
@@ -135,12 +135,12 @@ export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutM
 
   if (isSmallPhone) {
     horizontalPadding = 18;
-    logoRingSize = isSignUp ? 52 : 66;
+    logoRingSize = 66;
     logoInnerSize = Math.round(logoRingSize * 0.62);
     segmentHeight = 40;
     inputHeight = isSignUp ? 40 : 48;
     fieldGap = isSignUp ? 7 : 12;
-    ctaHeight = isSignUp ? 50 : 52;
+    ctaHeight = 52;
     watermarkScale = 0.85;
     watermarkOpacityMultiplier = 0.75;
     phoneHelperShort = true;
@@ -156,8 +156,6 @@ export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutM
   }
 
   if (isVeryShortHeight && isSignUp) {
-    logoRingSize = 52;
-    logoInnerSize = 32;
     segmentHeight = 40;
     inputHeight = 40;
     ctaHeight = 46;
@@ -196,8 +194,9 @@ export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutM
 
   const segmentInnerHeight = Math.max(32, segmentHeight - 8);
   const stickyFooterLinkHeight = isSignUp || hideStickyFooterLink ? 0 : FOOTER_LINK_HEIGHT;
-  const stickyFooterPaddingTop = isSignUp ? 10 : 0;
-  const stickyCtaBottomOffset = isSignUp ? (safeAreaBottom > 0 ? 8 : 16) : 12;
+  const stickyFooterPaddingTop = isSignUp ? 6 : 0;
+  /** Extra space below CTA (above home indicator) — larger value sits the button higher. */
+  const stickyCtaBottomOffset = isSignUp ? (safeAreaBottom > 0 ? 28 : 16) : 12;
   const stickyFooterHeight = ctaHeight + stickyFooterLinkHeight;
   const signupScrollPaddingBottom = isSignUp ? 12 : 0;
   const scrollBottomReserve = isSignUp ? 0 : 12;

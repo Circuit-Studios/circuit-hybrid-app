@@ -15,32 +15,27 @@ const TAB_META: Record<
   {
     label: string;
     icon: keyof typeof Ionicons.glyphMap;
-    activeIcon: keyof typeof Ionicons.glyphMap;
     href: `/(app)/(tabs)/${AppTabKey}`;
   }
 > = {
   home: {
     label: 'Home',
     icon: 'home-outline',
-    activeIcon: 'home',
     href: '/(app)/(tabs)/home',
   },
   activity: {
     label: 'Activity',
-    icon: 'notifications-outline',
-    activeIcon: 'notifications',
+    icon: 'pulse-outline',
     href: '/(app)/(tabs)/activity',
   },
   schedule: {
     label: 'Schedule',
     icon: 'calendar-outline',
-    activeIcon: 'calendar',
     href: '/(app)/(tabs)/schedule',
   },
   team: {
     label: 'Team',
     icon: 'people-outline',
-    activeIcon: 'people',
     href: '/(app)/(tabs)/team',
   },
 };
@@ -60,6 +55,7 @@ export function AppTabBar() {
   const items: FloatingTabItem[] = useMemo(() => {
     return (Object.keys(TAB_META) as AppTabKey[]).map((key) => {
       const meta = TAB_META[key];
+      const active = key === activeKey;
       return {
         key,
         label: meta.label,
@@ -68,15 +64,8 @@ export function AppTabBar() {
         icon: (
           <Ionicons
             name={meta.icon}
-            size={floatingTabIconSize(false)}
-            color={floatingTabIconColor(false)}
-          />
-        ),
-        activeIcon: (
-          <Ionicons
-            name={meta.activeIcon}
-            size={floatingTabIconSize(true)}
-            color={floatingTabIconColor(true)}
+            size={floatingTabIconSize(active)}
+            color={floatingTabIconColor(active)}
           />
         ),
         onPress: () => {
@@ -87,5 +76,5 @@ export function AppTabBar() {
     });
   }, [activeKey, router]);
 
-  return <FloatingTabBar items={items} activeKey={activeKey} />;
+  return <FloatingTabBar items={items} activeKey={activeKey} showLabels />;
 }

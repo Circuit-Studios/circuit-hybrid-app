@@ -92,7 +92,6 @@ src/
   features/                   # Business UI + hooks per domain
     auth/
       AuthScreen.tsx
-      AuthSignupStickyFooter.tsx
       SignupFormFields.tsx
       OtpForm.tsx
       getAuthLayoutMetrics.ts

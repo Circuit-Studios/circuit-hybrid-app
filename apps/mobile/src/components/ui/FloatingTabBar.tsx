@@ -11,8 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassSurface } from '@/components/GlassSurface';
 import {
-  FLOATING_TAB_BAR_ACTIVE_PILL_HEIGHT,
-  FLOATING_TAB_BAR_ACTIVE_PILL_WIDTH,
+  FLOATING_TAB_BAR_ACTIVE_CIRCLE_SIZE,
   FLOATING_TAB_BAR_HEIGHT,
   FLOATING_TAB_BAR_MAX_WIDTH,
   FLOATING_TAB_BAR_WIDTH_RATIO,
@@ -41,14 +40,14 @@ export type FloatingTabBarProps = {
 };
 
 /**
- * Instagram-style floating glass capsule tab bar.
+ * Floating glass capsule tab bar with yellow circular active highlight.
  * Absolutely positioned — pair screens with `useChromeInsets().projectTabBarReserve`.
  */
 export function FloatingTabBar({
   items,
   activeKey,
   bottomOffset,
-  showLabels = false,
+  showLabels = true,
   style,
   barWidth: barWidthProp,
 }: FloatingTabBarProps) {
@@ -81,18 +80,12 @@ export function FloatingTabBar({
                 onPress={item.onPress}
                 style={({ pressed }) => [
                   styles.slot,
-                  active ? styles.slotActive : styles.slotInactive,
                   pressed && !active && styles.slotPressed,
                 ]}
               >
-                {active ? <View style={styles.activePill} /> : null}
-                <View
-                  style={[
-                    styles.iconWell,
-                    active ? styles.iconWellActive : styles.iconWellInactive,
-                  ]}
-                >
-                  {icon}
+                <View style={styles.iconStack}>
+                  {active ? <View style={styles.activeCircle} /> : null}
+                  <View style={styles.iconWell}>{icon}</View>
                 </View>
                 {showLabels && item.label ? (
                   <Text style={[styles.label, active && styles.labelActive]} numberOfLines={1}>
@@ -108,12 +101,10 @@ export function FloatingTabBar({
   );
 }
 
-/** Near-black / muted icon colors for the dock. */
 export function floatingTabIconColor(active: boolean): string {
   return active ? tabBar.iconActive : tabBar.iconInactive;
 }
 
-/** Filled glyphs read larger — nudge active size down for optical balance. */
 export function floatingTabIconSize(active: boolean): number {
   return active ? tabBar.iconSizeActive : tabBar.iconSizeInactive;
 }
@@ -129,7 +120,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-around',
     height: FLOATING_TAB_BAR_HEIGHT,
     paddingHorizontal: spacing.md,
   },
@@ -137,46 +128,36 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  slotActive: {
-    height: FLOATING_TAB_BAR_ACTIVE_PILL_HEIGHT,
-    minWidth: FLOATING_TAB_BAR_ACTIVE_PILL_WIDTH,
-  },
-  slotInactive: {
-    minWidth: FLOATING_TAB_ITEM_MIN,
     minHeight: FLOATING_TAB_ITEM_MIN,
-  },
-  activePill: {
-    position: 'absolute',
-    width: FLOATING_TAB_BAR_ACTIVE_PILL_WIDTH,
-    height: FLOATING_TAB_BAR_ACTIVE_PILL_HEIGHT,
-    borderRadius: FLOATING_TAB_BAR_ACTIVE_PILL_HEIGHT / 2,
-    backgroundColor: tabBar.activePillFill,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: tabBar.activePillBorder,
+    paddingVertical: spacing.xs,
   },
   slotPressed: {
     opacity: tabBar.slotPressedOpacity,
+  },
+  iconStack: {
+    width: FLOATING_TAB_BAR_ACTIVE_CIRCLE_SIZE,
+    height: FLOATING_TAB_BAR_ACTIVE_CIRCLE_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeCircle: {
+    position: 'absolute',
+    width: FLOATING_TAB_BAR_ACTIVE_CIRCLE_SIZE,
+    height: FLOATING_TAB_BAR_ACTIVE_CIRCLE_SIZE,
+    borderRadius: FLOATING_TAB_BAR_ACTIVE_CIRCLE_SIZE / 2,
+    backgroundColor: tabBar.activePillFill,
   },
   iconWell: {
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
   },
-  iconWellActive: {
-    width: FLOATING_TAB_BAR_ACTIVE_PILL_WIDTH,
-    height: FLOATING_TAB_BAR_ACTIVE_PILL_HEIGHT,
-  },
-  iconWellInactive: {
-    width: FLOATING_TAB_ITEM_MIN,
-    height: FLOATING_TAB_ITEM_MIN,
-  },
   label: {
     ...typography.caption,
-    fontSize: 10,
+    fontSize: 11,
+    fontWeight: '500',
     color: tabBar.labelInactive,
-    marginTop: 2,
-    zIndex: 1,
+    marginTop: 4,
   },
   labelActive: {
     color: tabBar.labelActive,

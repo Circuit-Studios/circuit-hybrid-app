@@ -19,7 +19,6 @@ import { AuthHeader } from '@/features/auth/AuthHeader';
 import { AuthMetricsProvider } from '@/features/auth/AuthMetricsContext';
 import { AuthPrimaryButton } from '@/features/auth/AuthPrimaryButton';
 import { AuthSegmentControl } from '@/features/auth/AuthSegmentControl';
-import { AuthSignupStickyFooter } from '@/features/auth/AuthSignupStickyFooter';
 import { SignupFormFields } from '@/features/auth/SignupFormFields';
 import { getAuthMetrics } from '@/features/auth/getAuthLayoutMetrics';
 import { useAuth } from '@/auth/AuthContext';
@@ -34,31 +33,6 @@ import { authFormStyles } from '@/theme/authForm';
 import { typography } from '@/theme';
 import type { UserRole } from '@/api/types';
 import type { AuthTab } from '@/features/auth/AuthSegmentControl';
-
-function AuthFooterLink({
-  isSignup,
-  onSwitch,
-  fontSize,
-  marginTop,
-}: {
-  isSignup: boolean;
-  onSwitch: () => void;
-  fontSize: number;
-  marginTop: number;
-}) {
-  return (
-    <View style={[authFormStyles.footer, { marginTop }]}>
-      <Text style={[authFormStyles.footerText, { fontSize }]}>
-        {isSignup ? 'Already have an account?' : "Don't have an account?"}
-      </Text>
-      <Pressable accessibilityRole="button" hitSlop={8} onPress={onSwitch}>
-        <Text style={[authFormStyles.footerLink, { fontSize }]}>
-          {isSignup ? 'Sign in' : 'Sign up'}
-        </Text>
-      </Pressable>
-    </View>
-  );
-}
 
 export default function AuthScreen() {
   const router = useRouter();
@@ -213,9 +187,7 @@ export default function AuthScreen() {
     ? metrics.totalMaxWidth!
     : Math.min(width - metrics.horizontalPadding * 2, metrics.contentMaxWidth);
 
-  const scrollBottomPadding = isSignup
-    ? metrics.signupScrollPaddingBottom
-    : metrics.bottomPadding + insets.bottom;
+  const scrollBottomPadding = metrics.bottomPadding + insets.bottom;
 
   const handleCtaPress = useCallback(() => {
     setAttempted(true);
@@ -288,10 +260,20 @@ export default function AuthScreen() {
     </>
   );
 
-  const signupFeedback =
-    error || submitHint ? (
-      <View style={styles.signupFeedback}>{feedbackBlock}</View>
-    ) : null;
+  const submitBlock = (
+    <>
+      {feedbackBlock}
+      <View style={{ marginTop: metrics.ctaMarginTop }}>
+        <AuthPrimaryButton
+          title={ctaLabel}
+          disabled={!canSubmit || submitting}
+          loading={submitting}
+          mode={isSignup ? 'signUp' : 'signIn'}
+          onPress={handleCtaPress}
+        />
+      </View>
+    </>
+  );
 
   const mainContent = metrics.isLandscapeTwoColumn ? (
     <View
@@ -304,64 +286,20 @@ export default function AuthScreen() {
       ]}
     >
       <View style={{ width: metrics.brandColumnWidth }}>
-        <AuthHeader compact={isSignup} column />
+        <AuthHeader column />
       </View>
       <View style={{ flex: 1, maxWidth: metrics.formColumnWidth }}>
         <AuthSegmentControl value={tab} onChange={switchTab} compact={isSignup} />
         {formBlock}
-        {!isSignup ? feedbackBlock : null}
-        {!isSignup ? (
-          <>
-            <View style={{ marginTop: metrics.ctaMarginTop }}>
-              <AuthPrimaryButton
-                title={ctaLabel}
-                disabled={!canSubmit || submitting}
-                loading={submitting}
-                mode="signIn"
-                onPress={() => {
-                  setAttempted(true);
-                  void handleSubmit();
-                }}
-              />
-            </View>
-            <AuthFooterLink
-              isSignup={false}
-              onSwitch={() => switchTab('signup')}
-              fontSize={metrics.footerFontSize}
-              marginTop={metrics.footerMarginTop}
-            />
-          </>
-        ) : null}
+        {submitBlock}
       </View>
     </View>
   ) : (
     <>
-      <AuthHeader compact={isSignup} />
+      <AuthHeader />
       <AuthSegmentControl value={tab} onChange={switchTab} compact={isSignup} />
       {formBlock}
-      {!isSignup ? feedbackBlock : null}
-      {!isSignup ? (
-        <>
-          <View style={{ marginTop: metrics.ctaMarginTop }}>
-            <AuthPrimaryButton
-              title={ctaLabel}
-              disabled={!canSubmit || submitting}
-              loading={submitting}
-              mode="signIn"
-              onPress={() => {
-                setAttempted(true);
-                void handleSubmit();
-              }}
-            />
-          </View>
-          <AuthFooterLink
-            isSignup={false}
-            onSwitch={() => switchTab('signup')}
-            fontSize={metrics.footerFontSize}
-            marginTop={metrics.footerMarginTop}
-          />
-        </>
-      ) : null}
+      {submitBlock}
     </>
   );
 
@@ -381,44 +319,24 @@ export default function AuthScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
         >
-          <View style={styles.flex}>
-            <ScrollView
-              style={styles.flex}
-              contentContainerStyle={[
-                styles.scrollContent,
-                {
-                  paddingTop: metrics.topPadding,
-                  paddingHorizontal: metrics.horizontalPadding,
-                  paddingBottom: scrollBottomPadding,
-                  flexGrow: isSignup ? undefined : 1,
-                },
-              ]}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={isSignup}
-              nestedScrollEnabled
-              scrollEnabled={!rolePickerOpen}
-            >
-              <View style={[styles.inner, { maxWidth: contentMaxWidth }]}>{mainContent}</View>
-            </ScrollView>
-
-            {isSignup ? (
-              <AuthSignupStickyFooter
-                metrics={metrics}
-                contentMaxWidth={contentMaxWidth}
-                horizontalPadding={metrics.horizontalPadding}
-                safeBottom={insets.bottom}
-              >
-                {signupFeedback}
-                <AuthPrimaryButton
-                  title={ctaLabel}
-                  disabled={!canSubmit || submitting}
-                  loading={submitting}
-                  mode="signUp"
-                  onPress={handleCtaPress}
-                />
-              </AuthSignupStickyFooter>
-            ) : null}
-          </View>
+          <ScrollView
+            style={styles.flex}
+            contentContainerStyle={[
+              styles.scrollContent,
+              {
+                paddingTop: metrics.topPadding,
+                paddingHorizontal: metrics.horizontalPadding,
+                paddingBottom: scrollBottomPadding,
+                flexGrow: isSignup ? undefined : 1,
+              },
+            ]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={isSignup}
+            nestedScrollEnabled
+            scrollEnabled={!rolePickerOpen}
+          >
+            <View style={[styles.inner, { maxWidth: contentMaxWidth }]}>{mainContent}</View>
+          </ScrollView>
         </KeyboardAvoidingView>
       </View>
     </AuthMetricsProvider>
@@ -449,8 +367,5 @@ const styles = StyleSheet.create({
     ...typography.bodyStrong,
     color: authPalette.ink,
     textDecorationLine: 'underline',
-  },
-  signupFeedback: {
-    marginBottom: 8,
   },
 });

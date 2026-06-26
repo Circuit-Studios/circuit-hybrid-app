@@ -3,10 +3,13 @@ import { spacing, tabBar } from '@/theme';
 /** Visual height of the floating tab bar capsule (excluding safe-area padding). */
 export const FLOATING_TAB_BAR_HEIGHT = tabBar.height;
 
-/** Active icon highlight pill width. */
+/** Active icon yellow circle diameter. */
+export const FLOATING_TAB_BAR_ACTIVE_CIRCLE_SIZE = tabBar.activeCircleSize;
+
+/** @deprecated Use FLOATING_TAB_BAR_ACTIVE_CIRCLE_SIZE */
 export const FLOATING_TAB_BAR_ACTIVE_PILL_WIDTH = tabBar.activePillWidth;
 
-/** Active icon highlight pill height. */
+/** @deprecated Use FLOATING_TAB_BAR_ACTIVE_CIRCLE_SIZE */
 export const FLOATING_TAB_BAR_ACTIVE_PILL_HEIGHT = tabBar.activePillHeight;
 
 /** Minimum touch target for each tab item (inactive well). */

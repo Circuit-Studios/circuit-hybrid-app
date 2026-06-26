@@ -106,26 +106,27 @@ export const auth = {
   footerLink: '#B77B00',
 } as const;
 
-/** Floating glass tab bar — Instagram-style neutral dock. */
+/** Floating glass tab bar — yellow active highlight per app home mockup. */
 export const tabBar = {
-  height: 80,
-  activePillWidth: 88,
+  height: 84,
+  activeCircleSize: 44,
+  activePillWidth: 44,
   activePillHeight: 44,
   itemTouchMin: 56,
   blurIntensity: 70,
-  iconInactive: '#1A1A1A',
+  iconInactive: '#9CA3AF',
   iconActive: '#121212',
   iconSizeInactive: 24,
-  iconSizeActive: 22,
+  iconSizeActive: 24,
   glassOverlay: 'rgba(255,255,255,0.08)',
   glassBorder: 'rgba(255,255,255,0.52)',
   glassSpecular: 'rgba(255,255,255,0.9)',
-  glassFallback: 'rgba(255,255,255,0.78)',
+  glassFallback: 'rgba(255,255,255,0.92)',
   glassFallbackTint: 'rgba(255,255,255,0.45)',
-  activePillFill: 'rgba(255,255,255,0.72)',
-  activePillBorder: 'rgba(0,0,0,0.06)',
+  activePillFill: '#F5B301',
+  activePillBorder: 'transparent',
   labelInactive: '#9CA3AF',
-  labelActive: '#121212',
+  labelActive: '#F5B301',
   shadow: '#000000',
   slotPressedOpacity: 0.72,
 } as const;

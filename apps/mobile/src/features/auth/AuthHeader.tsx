@@ -4,7 +4,6 @@ import { useAuthMetrics } from '@/features/auth/AuthMetricsContext';
 import { authPalette } from '@/theme/authPalette';
 
 interface AuthHeaderProps {
-  compact?: boolean;
   /** Landscape two-column: brand block aligned left in column. */
   column?: boolean;
 }
@@ -12,8 +11,8 @@ interface AuthHeaderProps {
 /**
  * Auth brand header — original Circuit logo asset + original wordmark styling.
  */
-export function AuthHeader({ compact = false, column = false }: AuthHeaderProps) {
-  const metrics = useAuthMetrics(compact ? 'signUp' : 'signIn');
+export function AuthHeader({ column = false }: AuthHeaderProps) {
+  const metrics = useAuthMetrics();
 
   return (
     <View
@@ -31,7 +30,7 @@ export function AuthHeader({ compact = false, column = false }: AuthHeaderProps)
         style={[
           styles.wordmark,
           {
-            marginTop: compact ? 12 : metrics.headerBottomMargin * 0.6,
+            marginTop: metrics.headerBottomMargin * 0.6,
             fontSize: metrics.wordmarkFontSize,
           },
         ]}

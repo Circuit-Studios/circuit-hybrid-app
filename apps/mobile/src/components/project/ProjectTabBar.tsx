@@ -15,13 +15,12 @@ const TAB_META: Record<
   {
     label: string;
     icon: keyof typeof Ionicons.glyphMap;
-    activeIcon: keyof typeof Ionicons.glyphMap;
   }
 > = {
-  workspace: { label: 'Overview', icon: 'home-outline', activeIcon: 'home' },
-  tasks: { label: 'Tasks', icon: 'list-outline', activeIcon: 'list' },
-  schedule: { label: 'Schedule', icon: 'calendar-outline', activeIcon: 'calendar' },
-  team: { label: 'Team', icon: 'people-outline', activeIcon: 'people' },
+  workspace: { label: 'Overview', icon: 'home-outline' },
+  tasks: { label: 'Tasks', icon: 'list-outline' },
+  schedule: { label: 'Schedule', icon: 'calendar-outline' },
+  team: { label: 'Team', icon: 'people-outline' },
 };
 
 export interface ProjectTabBarProps {
@@ -46,6 +45,7 @@ export function ProjectTabBar({ projectId, active }: ProjectTabBarProps) {
 
   const items: FloatingTabItem[] = (Object.keys(TAB_META) as ProjectTab[]).map((tab) => {
     const meta = TAB_META[tab];
+    const isActive = tab === active;
     return {
       key: tab,
       label: meta.label,
@@ -53,15 +53,8 @@ export function ProjectTabBar({ projectId, active }: ProjectTabBarProps) {
       icon: (
         <Ionicons
           name={meta.icon}
-          size={floatingTabIconSize(false)}
-          color={floatingTabIconColor(false)}
-        />
-      ),
-      activeIcon: (
-        <Ionicons
-          name={meta.activeIcon}
-          size={floatingTabIconSize(true)}
-          color={floatingTabIconColor(true)}
+          size={floatingTabIconSize(isActive)}
+          color={floatingTabIconColor(isActive)}
         />
       ),
       onPress: () => {
@@ -71,5 +64,5 @@ export function ProjectTabBar({ projectId, active }: ProjectTabBarProps) {
     };
   });
 
-  return <FloatingTabBar items={items} activeKey={active} />;
+  return <FloatingTabBar items={items} activeKey={active} showLabels />;
 }

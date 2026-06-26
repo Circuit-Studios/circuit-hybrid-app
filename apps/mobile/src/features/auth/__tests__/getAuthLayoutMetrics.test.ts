@@ -20,7 +20,14 @@ describe('getAuthMetrics', () => {
     expect(metrics.signupScrollPaddingBottom).toBeGreaterThan(0);
     expect(metrics.stickyFooterPaddingTop).toBeGreaterThan(0);
     expect(metrics.scrollBottomReserve).toBe(0);
-    expect(metrics.stickyCtaBottomOffset).toBe(8);
+    expect(metrics.stickyCtaBottomOffset).toBe(28);
+  });
+
+  it('uses the same logo size on sign-in and sign-up', () => {
+    const signIn = getAuthMetrics(390, 844, 59, 34, 'signIn');
+    const signUp = getAuthMetrics(390, 844, 59, 34, 'signUp');
+    expect(signUp.logoRingSize).toBe(signIn.logoRingSize);
+    expect(signUp.logoInnerSize).toBe(signIn.logoInnerSize);
   });
 
   it('keeps sign-in in normal flow without sticky footer metrics', () => {
