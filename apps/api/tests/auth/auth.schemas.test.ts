@@ -89,6 +89,39 @@ describe('auth OTP schemas', () => {
     expect(parsed.phone).toBe('+919812345678');
   });
 
+  it('rejects whitespace-only signup password', () => {
+    expect(() =>
+      verifyOtpSchema.parse({
+        channel: 'PHONE',
+        phone: '+919812345678',
+        code: '111111',
+        purpose: 'signup',
+        signup: {
+          firstName: 'Kiran',
+          lastName: 'Kumar',
+          role: 'DIRECTOR',
+          password: '        ',
+        },
+      }),
+    ).toThrow();
+  });
+
+  it('rejects phone signup without password', () => {
+    expect(() =>
+      verifyOtpSchema.parse({
+        channel: 'PHONE',
+        phone: '+919812345678',
+        code: '111111',
+        purpose: 'signup',
+        signup: {
+          firstName: 'Kiran',
+          lastName: 'Kumar',
+          role: 'DIRECTOR',
+        },
+      }),
+    ).toThrow();
+  });
+
   it('strips unknown fields on discriminated channel payloads', () => {
     const parsed = requestOtpSchema.parse({
       channel: 'EMAIL',

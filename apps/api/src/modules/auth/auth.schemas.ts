@@ -15,6 +15,7 @@ export const emailSchema = z
 
 export const signupPasswordSchema = z
   .string()
+  .trim()
   .min(8, 'Password must be at least 8 characters')
   .max(128, 'Password is too long');
 

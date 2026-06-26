@@ -24,6 +24,90 @@ describe('findOrCreateUserAfterOtp', () => {
     prismaMock.projectMember.updateMany.mockResolvedValue({ count: 0 });
   });
 
+  it('returns 400 when email signup omits password', async () => {
+    prismaMock.user.findUnique.mockResolvedValueOnce(null);
+
+    const { findOrCreateUserAfterOtp } = await import('../../src/modules/auth/auth-signup.js');
+
+    await expect(
+      findOrCreateUserAfterOtp({
+        channel: 'EMAIL',
+        email: 'new@studio.com',
+        code: '111111',
+        purpose: 'signup',
+        signup: {
+          firstName: 'Ada',
+          lastName: 'Lovelace',
+          role: 'CREW',
+          password: '',
+        },
+      }),
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      message: expect.stringContaining('Password is required'),
+    });
+
+    expect(prismaMock.user.create).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when phone signup omits password', async () => {
+    prismaMock.user.findUnique.mockResolvedValueOnce(null);
+
+    const { findOrCreateUserAfterOtp } = await import('../../src/modules/auth/auth-signup.js');
+
+    await expect(
+      findOrCreateUserAfterOtp({
+        channel: 'PHONE',
+        phone: '+919812345679',
+        code: '111111',
+        purpose: 'signup',
+        signup: {
+          firstName: 'Ada',
+          lastName: 'Lovelace',
+          role: 'CREW',
+          password: '',
+        },
+      }),
+    ).rejects.toMatchObject({
+      statusCode: 400,
+      message: expect.stringContaining('Password is required'),
+    });
+
+    expect(prismaMock.user.create).not.toHaveBeenCalled();
+  });
+
+  it('hashes password when creating a new email signup user', async () => {
+    const { hashPassword } = await import('../../src/modules/auth/password.service.js');
+    prismaMock.user.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
+    prismaMock.user.create.mockResolvedValue({
+      id: 'user-1',
+      email: 'new@studio.com',
+      phone: null,
+    });
+
+    const { findOrCreateUserAfterOtp } = await import('../../src/modules/auth/auth-signup.js');
+
+    await findOrCreateUserAfterOtp({
+      channel: 'EMAIL',
+      email: 'new@studio.com',
+      code: '111111',
+      purpose: 'signup',
+      signup: {
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        role: 'CREW',
+        password: 'password123',
+      },
+    });
+
+    expect(hashPassword).toHaveBeenCalledWith('password123');
+    expect(prismaMock.user.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ passwordHash: 'hashed-password' }),
+      }),
+    );
+  });
+
   it('returns 409 when email signup phone is already taken', async () => {
     prismaMock.user.findUnique
       .mockResolvedValueOnce(null)

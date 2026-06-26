@@ -100,6 +100,7 @@ export default function AuthScreen() {
 
     const normalizedEmail = email.trim() ? normalizeEmail(email) : undefined;
     const phone = phoneField.e164 ?? undefined;
+    const signupPassword = password.trim();
     const { firstName, lastName } = splitFullName(fullName);
 
     if (signupChannel === 'EMAIL') {
@@ -112,7 +113,7 @@ export default function AuthScreen() {
         channel: 'EMAIL',
         email: normalizedEmail!,
         phone,
-        password,
+        password: signupPassword,
         mode: 'signup',
         firstName,
         lastName,
@@ -129,7 +130,7 @@ export default function AuthScreen() {
         channel: 'PHONE',
         phone: phone!,
         email: normalizedEmail,
-        password,
+        password: signupPassword,
         mode: 'signup',
         firstName,
         lastName,
