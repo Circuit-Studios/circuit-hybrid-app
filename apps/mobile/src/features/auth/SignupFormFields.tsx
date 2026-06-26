@@ -3,7 +3,6 @@ import { PhoneField, usePhoneFieldState } from '@/components/PhoneField';
 import { DropdownPicker } from '@/components/pickers/DropdownPicker';
 import { AuthField } from '@/components/auth/AuthField';
 import { PasswordField } from '@/components/auth/PasswordField';
-import { useAuthMetrics } from '@/features/auth/AuthMetricsContext';
 import type { UserRole } from '@/api/types';
 
 export type SignupVerificationChannel = 'EMAIL' | 'PHONE';
@@ -49,8 +48,6 @@ export function SignupFormFields({
   signupPhoneRequired,
   onRolePickerOpenChange,
 }: SignupFormFieldsProps) {
-  const metrics = useAuthMetrics('signUp');
-
   const otpTargetHint =
     channel === 'EMAIL'
       ? "We'll email a 6-digit code to verify your account."
@@ -65,7 +62,6 @@ export function SignupFormFields({
         onChangeText={onFullNameChange}
         autoCapitalize="words"
         icon="person-outline"
-        fieldVariant="signUp"
         hideLabel
       />
 
@@ -80,7 +76,6 @@ export function SignupFormFields({
           autoComplete="email"
           textContentType="emailAddress"
           icon="mail-outline"
-          fieldVariant="signUp"
           hideLabel
         />
       ) : null}
@@ -95,7 +90,6 @@ export function SignupFormFields({
             onNationalNumberChange={phoneField.setNationalNumber}
             showError={attempted && !!phoneField.nationalNumber && !phoneField.isValid}
             error={phoneField.error ?? undefined}
-            fieldVariant="signUp"
             hideLabel
             placeholder="Mobile number optional"
           />
@@ -113,7 +107,6 @@ export function SignupFormFields({
               attempted && signupPhoneRequired && !!phoneField.nationalNumber && !phoneField.isValid
             }
             error={phoneField.error ?? undefined}
-            fieldVariant="signUp"
           />
         </View>
       )}
@@ -129,12 +122,11 @@ export function SignupFormFields({
           autoComplete="email"
           textContentType="emailAddress"
           icon="mail-outline"
-          fieldVariant="signUp"
           hideLabel
         />
       ) : null}
 
-      <View style={[styles.roleBlock, { marginTop: metrics.fieldGap + 4 }]}>
+      <View style={styles.roleBlock}>
         <DropdownPicker
           label="I am a"
           placeholder="Select your role"
@@ -150,7 +142,6 @@ export function SignupFormFields({
         value={password}
         onChangeText={onPasswordChange}
         mode="new"
-        fieldVariant="signUp"
         containerStyle={styles.passwordField}
       />
     </>

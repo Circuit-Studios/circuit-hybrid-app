@@ -10,6 +10,7 @@ import {
   type View as ViewType,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuthMetrics } from '@/features/auth/AuthMetricsContext';
 import { authPalette } from '@/theme/authPalette';
 import { authInputChrome } from '@/theme/authInputChrome';
 import { authLayout } from '@/theme/authLayout';
@@ -53,6 +54,7 @@ export type DropdownPickerProps<T extends string> = DropdownPickerBaseProps<T> &
 export function DropdownPicker<T extends string>(props: DropdownPickerProps<T>) {
   const { label, hint, placeholder, options, onOpenChange, variant = 'default' } = props;
   const auth = variant === 'auth';
+  const authMetrics = useAuthMetrics();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
@@ -169,7 +171,13 @@ export function DropdownPicker<T extends string>(props: DropdownPickerProps<T>) 
   );
 
   return (
-    <View style={[styles.dropdownWrap, open && !useModalSheet && styles.dropdownWrapOpen]}>
+    <View
+      style={[
+        styles.dropdownWrap,
+        open && !useModalSheet && styles.dropdownWrapOpen,
+        auth && { marginBottom: authMetrics.fieldGap },
+      ]}
+    >
       <Text style={[styles.label, auth && authStyles.label]}>{label}</Text>
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
       <View ref={triggerRef} collapsable={false}>
@@ -276,7 +284,7 @@ const authStyles = StyleSheet.create({
   },
   dropdownTrigger: {
     ...authInputChrome.base,
-    minHeight: authLayout.fieldHeightSignUp,
+    minHeight: authLayout.fieldHeightSignIn,
   },
   dropdownTriggerOpen: authInputChrome.focused,
   dropdownTriggerPressed: authInputChrome.focused,

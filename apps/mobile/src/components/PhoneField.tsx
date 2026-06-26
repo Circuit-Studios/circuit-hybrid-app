@@ -66,7 +66,7 @@ export function PhoneField({
   placeholder = '10-digit mobile number',
 }: PhoneFieldProps) {
   const [focused, setFocused] = useState(false);
-  const metrics = useAuthMetrics(fieldVariant === 'signUp' ? 'signUp' : 'signIn');
+  const metrics = useAuthMetrics();
   const fieldHeight = metrics.inputHeight;
   const gap = metrics.fieldGap;
   const [pickerOpen, setPickerOpen] = useState(false);

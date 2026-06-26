@@ -30,6 +30,14 @@ describe('getAuthMetrics', () => {
     expect(signUp.logoInnerSize).toBe(signIn.logoInnerSize);
   });
 
+  it('uses the same text field size on sign-in and sign-up', () => {
+    const signIn = getAuthMetrics(390, 844, 59, 34, 'signIn');
+    const signUp = getAuthMetrics(390, 844, 59, 34, 'signUp');
+    expect(signUp.inputHeight).toBe(signIn.inputHeight);
+    expect(signUp.fieldGap).toBe(signIn.fieldGap);
+    expect(signUp.inputRadius).toBe(signIn.inputRadius);
+  });
+
   it('keeps sign-in in normal flow without sticky footer metrics', () => {
     const metrics = getAuthMetrics(390, 844, 59, 34, 'signIn');
     expect(metrics.signupScrollPaddingBottom).toBe(0);

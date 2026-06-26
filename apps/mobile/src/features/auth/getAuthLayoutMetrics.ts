@@ -102,13 +102,13 @@ export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutM
   let segmentMarginTop = isSignUp ? 16 : 28;
   let segmentMarginBottom = isSignUp ? 18 : 0;
   let formMarginTop = isSignUp ? 0 : 30;
-  let inputHeight = isSignUp ? 44 : 54;
+  let inputHeight = 54;
   let inputRadius = 15;
   const inputFontSize = authTypography.inputFontSize;
   const labelFontSize = authTypography.labelFontSize;
   const labelLetterSpacing = authTypography.labelLetterSpacing;
   let labelMarginBottom = 8;
-  let fieldGap = isSignUp ? 9 : 24;
+  let fieldGap = 12;
   let forgotMarginTop = 16;
   const helperFontSize = authTypography.helperFontSize;
   const helperLineHeight = authTypography.helperLineHeight;
@@ -138,15 +138,15 @@ export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutM
     logoRingSize = 66;
     logoInnerSize = Math.round(logoRingSize * 0.62);
     segmentHeight = 40;
-    inputHeight = isSignUp ? 40 : 48;
-    fieldGap = isSignUp ? 7 : 12;
+    inputHeight = 48;
+    fieldGap = 10;
     ctaHeight = 52;
     watermarkScale = 0.85;
     watermarkOpacityMultiplier = 0.75;
     phoneHelperShort = true;
   }
 
-  if (isShortHeight && !isSignUp) {
+  if (isShortHeight) {
     headerTopMargin -= 10;
     headerBottomMargin -= 8;
     segmentMarginTop -= 8;
@@ -157,7 +157,6 @@ export function getAuthLayoutMetrics(input: AuthLayoutMetricsInput): AuthLayoutM
 
   if (isVeryShortHeight && isSignUp) {
     segmentHeight = 40;
-    inputHeight = 40;
     ctaHeight = 46;
     hideSubtitle = true;
     useShortPasswordHelper = true;

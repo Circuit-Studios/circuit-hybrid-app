@@ -16,8 +16,8 @@ export const authLayout = {
   formMarginTopSignUp: 26,
 
   labelMarginBottom: 10,
-  fieldGapSignIn: 24,
-  fieldGapSignUp: 17,
+  fieldGapSignIn: 12,
+  fieldGapSignUp: 12,
   forgotMarginTop: 16,
 
   ctaMarginTopSignIn: 34,
@@ -29,6 +29,6 @@ export const authLayout = {
   footerMarginTopSignUp: 18,
 
   fieldHeightSignIn: 54,
-  fieldHeightSignUp: 50,
+  fieldHeightSignUp: 54,
   fieldRadius: 16,
 } as const;

@@ -46,7 +46,7 @@ export const LabeledInput = forwardRef<TextInput, LabeledInputProps>(function La
 ) {
   const [focused, setFocused] = useState(false);
   const [hidden, setHidden] = useState(secureTextEntry ?? false);
-  const metrics = useAuthMetrics(fieldVariant === 'signUp' ? 'signUp' : 'signIn');
+  const metrics = useAuthMetrics();
 
   const showEye = secureTextEntry;
 

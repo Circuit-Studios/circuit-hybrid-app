@@ -29,7 +29,7 @@ export function AuthField({
   ...rest
 }: AuthFieldProps) {
   const [focused, setFocused] = useState(false);
-  const metrics = useAuthMetrics(fieldVariant === 'signUp' ? 'signUp' : 'signIn');
+  const metrics = useAuthMetrics();
 
   return (
     <View style={[styles.field, { marginBottom: metrics.fieldGap }]}>
