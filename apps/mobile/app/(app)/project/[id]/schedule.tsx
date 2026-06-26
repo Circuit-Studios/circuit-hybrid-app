@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
@@ -15,6 +15,7 @@ import { listShootDays, deleteShootDay } from '@/api/workspace';
 import { qk } from '@/api/queryKeys';
 import { readApiError } from '@/api/client';
 import { colors, spacing, typography } from '@/theme';
+import type { ShootDay } from '@/api/types';
 
 export default function ScheduleScreen() {
   const { id: projectId } = useLocalSearchParams<{ id: string }>();
@@ -40,6 +41,26 @@ export default function ScheduleScreen() {
     },
   });
 
+  function confirmRemove(day: ShootDay) {
+    const dateLabel = new Date(day.date).toLocaleDateString(undefined, {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+    Alert.alert(
+      'Remove shoot day?',
+      `Day ${day.dayNumber} (${dateLabel}) will be removed from the schedule. This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => deleteMutation.mutate(day.id),
+        },
+      ],
+    );
+  }
+
   return (
     <ProjectScreenScaffold
       projectId={pid}
@@ -58,7 +79,7 @@ export default function ScheduleScreen() {
           visible={sheetOpen}
           onClose={() => setSheetOpen(false)}
           projectId={pid}
-          existingDays={days.map(d => d.dayNumber)}
+          existingDays={days.map((d) => d.dayNumber)}
         />
       }
     >
@@ -74,9 +95,9 @@ export default function ScheduleScreen() {
         />
       ) : days.length === 0 ? (
         <EmptyState
-          title="No shoot days yet"
-          body="Lock down your first shoot day to enable conflict detection and call-time tracking."
-          action={<PrimaryButton title="Add shoot day" onPress={() => setSheetOpen(true)} />}
+          title="Build your shoot calendar"
+          body="Add your first shoot day to unlock conflict detection, call-time tracking, and scene planning."
+          action={<PrimaryButton title="Add first shoot day" onPress={() => setSheetOpen(true)} />}
         />
       ) : (
         <View style={styles.timeline}>
@@ -101,15 +122,20 @@ export default function ScheduleScreen() {
                       year: 'numeric',
                     })}
                   </Text>
+                  {day.callTimeUserId ? (
+                    <Text style={styles.dayMeta}>Call time assigned</Text>
+                  ) : (
+                    <Text style={styles.dayMetaMuted}>Call time not set</Text>
+                  )}
                   {day.location ? <Text style={styles.dayLoc}>{day.location}</Text> : null}
                   {day.scenes && day.scenes.length > 0 ? (
                     <Text style={styles.daySceneCount}>
-                      {day.scenes.length} scene{day.scenes.length === 1 ? '' : 's'}
+                      {day.scenes.length} scene{day.scenes.length === 1 ? '' : 's'} scheduled
                     </Text>
                   ) : null}
                   {day.notes ? <Text style={styles.dayNotes}>{day.notes}</Text> : null}
                   <Pressable
-                    onPress={() => deleteMutation.mutate(day.id)}
+                    onPress={() => confirmRemove(day)}
                     hitSlop={8}
                     disabled={deleteMutation.isPending}
                   >
@@ -145,6 +171,8 @@ const styles = StyleSheet.create({
   timelineLine: { width: 2, flex: 1, backgroundColor: colors.border, marginTop: 4 },
   dayCard: { flex: 1, marginLeft: spacing.sm, marginBottom: spacing.md, gap: spacing.xs },
   dayDate: { ...typography.bodyStrong, color: colors.textPrimary },
+  dayMeta: { ...typography.caption, color: colors.accent },
+  dayMetaMuted: { ...typography.caption, color: colors.textMuted },
   dayLoc: { ...typography.body, color: colors.textSecondary },
   daySceneCount: { ...typography.caption, color: colors.textMuted },
   dayNotes: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },

@@ -1,22 +1,15 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { MembershipStatus, UserRole } from '@prisma/client';
+import { MembershipStatus } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { asyncHandler, badRequest, conflict, forbidden, notFound } from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { canManageSchedule } from '../../auth/permissions.js';
 import { emitToProject } from '../../realtime/socket.js';
 import { enqueueConflictScan } from '../../queues/conflicts.queue.js';
 import { dispatchNotification } from '../../notifications/notifications.service.js';
 
 const router: Router = Router();
-
-const SCHEDULE_MANAGER_ROLES: UserRole[] = [
-  UserRole.DIRECTOR,
-  UserRole.PRODUCER,
-  UserRole.EXECUTIVE_PRODUCER,
-  UserRole.LINE_PRODUCER,
-  UserRole.AD,
-];
 
 async function assertCanManageSchedule(userId: string, projectId: string): Promise<void> {
   const m = await prisma.projectMember.findFirst({
@@ -24,7 +17,7 @@ async function assertCanManageSchedule(userId: string, projectId: string): Promi
     select: { role: true },
   });
   if (!m) throw forbidden('You are not a member of this project');
-  if (!SCHEDULE_MANAGER_ROLES.includes(m.role)) {
+  if (!canManageSchedule(m.role)) {
     throw forbidden(`Role ${m.role} cannot manage the schedule`);
   }
 }
@@ -115,7 +108,7 @@ router.patch(
       if (dupe) throw conflict('Another shoot day already occupies that date');
     }
 
-    await prisma.$transaction(async tx => {
+    await prisma.$transaction(async (tx) => {
       if (input.sceneIds) {
         await tx.shootDayScene.deleteMany({ where: { shootDayId } });
         if (input.sceneIds.length > 0) {

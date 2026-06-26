@@ -41,6 +41,7 @@ export interface AuthUser {
   id: string;
   phone: string | null;
   email: string | null;
+  emailVerified?: boolean;
   firstName: string;
   lastName: string;
   defaultRole: UserRole;
@@ -288,10 +289,66 @@ export interface ProjectMember {
     email: string | null;
   } | null;
   projectDepartment?: { id: string; displayName: string; kind: DepartmentKind } | null;
+  setStatus?: SetStatus;
+  setStatusNote?: string | null;
+  setStatusUpdatedAt?: string | null;
 }
+
+export type SetStatus = 'ON_SET' | 'EN_ROUTE' | 'DONE' | 'OFF';
 
 export interface ProjectInvite extends ProjectMember {
   project: { id: string; name: string; language: ProjectLanguage; genre: string };
+}
+
+export interface HomeDashboard {
+  greeting: string;
+  projectId: string;
+  project: {
+    id: string;
+    name: string;
+    currentStage: ProjectStage;
+    shootStartDate: string | null;
+    shootEndDate: string | null;
+  };
+  stats: {
+    tasksDone: number;
+    tasksTotal: number;
+    shootDaysCompleted: number;
+    shootDaysTotal: number;
+    teamActive: number;
+  };
+  nextShootDay: {
+    id: string;
+    dayNumber: number;
+    date: string;
+    location: string | null;
+  } | null;
+  productions: {
+    id: string;
+    name: string;
+    currentStage: ProjectStage;
+    tasksDone: number;
+    subtitle: string;
+  }[];
+}
+
+export interface ActivityFeedItem {
+  id: string;
+  category: 'tasks' | 'schedule' | 'team';
+  userId: string | null;
+  userName: string;
+  userInitials: string;
+  action: string;
+  targetLabel: string | null;
+  statusBadge: string | null;
+  createdAt: string;
+  relativeTime: string;
+}
+
+export interface ActivityFeed {
+  projectId: string;
+  pulse: { actions: number; tasks: number; active: number };
+  items: ActivityFeedItem[];
 }
 
 // ---------------- Realtime ----------------

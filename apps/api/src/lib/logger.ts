@@ -3,15 +3,10 @@ import { env } from '../config/env.js';
 
 const isProduction = env.NODE_ENV === 'production';
 
-const appEnvironment =
-  process.env.APP_ENV ??
-  process.env.CIRCUIT_ENV ??
-  env.NODE_ENV;
+const appEnvironment = process.env.APP_ENV ?? process.env.CIRCUIT_ENV ?? env.NODE_ENV;
 
 const release =
-  process.env.RENDER_GIT_COMMIT ??
-  process.env.GIT_SHA ??
-  process.env.npm_package_version;
+  process.env.RENDER_GIT_COMMIT ?? process.env.GIT_SHA ?? process.env.npm_package_version;
 
 const loggerOptions: LoggerOptions = {
   level: env.LOG_LEVEL ?? (isProduction ? 'info' : 'debug'),
@@ -47,9 +42,24 @@ const loggerOptions: LoggerOptions = {
 
       'otp',
       '*.otp',
+      'body.otp',
       'code',
       '*.code',
       'body.code',
+
+      'email',
+      '*.email',
+      'body.email',
+      'body.signup.email',
+
+      'phone',
+      '*.phone',
+      'body.phone',
+      'body.signup.phone',
+
+      // Request-body targets only — OTP logs use `targetMasked` / `emailMasked` / `phoneMasked`.
+      'body.target',
+      'req.body.target',
 
       'token',
       '*.token',
@@ -60,6 +70,8 @@ const loggerOptions: LoggerOptions = {
 
       'DATABASE_URL',
       'OPENAI_API_KEY',
+      'RESEND_API_KEY',
+      'OTP_SECRET',
       'AWS_SECRET_ACCESS_KEY',
       'SUPABASE_SERVICE_ROLE_KEY',
     ],

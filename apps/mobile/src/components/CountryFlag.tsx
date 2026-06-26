@@ -12,7 +12,7 @@ import { colors, radius, typography } from '@/theme';
 function emojiFlag(code: CountryCode): string {
   return code
     .toUpperCase()
-    .replace(/./g, char => String.fromCodePoint(127397 + char.charCodeAt(0)));
+    .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)));
 }
 
 function flagUri(code: CountryCode): string {

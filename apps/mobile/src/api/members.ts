@@ -31,6 +31,18 @@ export async function removeMember(memberId: string): Promise<void> {
   await api.delete(`/members/${memberId}`);
 }
 
+export async function updateMemberSetStatus(
+  projectId: string,
+  memberId: string,
+  input: { setStatus: import('./types').SetStatus; setStatusNote?: string },
+): Promise<ProjectMember> {
+  const { data } = await api.patch<ProjectMember>(
+    `/projects/${projectId}/members/${memberId}/set-status`,
+    input,
+  );
+  return data;
+}
+
 export async function listMyInvites(): Promise<ProjectInvite[]> {
   const { data } = await api.get<ProjectInvite[]>('/auth/me/invites');
   return data;

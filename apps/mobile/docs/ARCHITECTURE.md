@@ -17,11 +17,10 @@
 app/
 ├── _layout.tsx                     # providers: Query, Auth, Realtime, theme, safe-area
 ├── index.tsx                       # gate → auth vs app
-├── (auth)/                         # phone OTP flow                         [v1 ✅ restyle]
-│   ├── welcome.tsx
-│   ├── login.tsx
-│   ├── signup.tsx
-│   └── otp.tsx
+├── (auth)/                         # sign-in / sign-up + OTP               [v1 ✅ restyle]
+│   ├── auth.tsx                    # unified AuthScreen (sign-in / sign-up tabs)
+│   ├── otp.tsx
+│   └── forgot-password.tsx
 └── (app)/
     ├── _layout.tsx                 # app shell / tabs
     ├── projects.tsx                # project list                          [v1 ✅ restyle]
@@ -92,10 +91,11 @@ src/
 
   features/                   # Business UI + hooks per domain
     auth/
-      hooks.ts
-      LoginForm.tsx
-      SignupForm.tsx
+      AuthScreen.tsx
+      SignupFormFields.tsx
       OtpForm.tsx
+      getAuthLayoutMetrics.ts
+      hooks.ts
     projects/
       hooks.ts
       ProjectCard.tsx
@@ -130,7 +130,7 @@ src/
 
   auth/                         # Global auth state (not feature UI)
     AuthContext.tsx
-    SignupSessionContext.tsx
+    OtpSessionContext.tsx
 
   realtime/
     RealtimeProvider.tsx
@@ -145,13 +145,13 @@ src/
 
 **Rules:**
 
-| Layer | Responsibility |
-|-------|----------------|
-| `app/` routes | Navigation + screen composition only (re-export feature screens) |
-| `src/features/*` | Reusable business UI, forms, hooks |
-| `src/api/*` | HTTP clients and shared types — no React |
-| `src/components/ui/*` | Generic buttons, inputs, empty/error/loading states |
-| `src/components/project/*` | Project workspace chrome (tab bar, scaffold) |
+| Layer                      | Responsibility                                                   |
+| -------------------------- | ---------------------------------------------------------------- |
+| `app/` routes              | Navigation + screen composition only (re-export feature screens) |
+| `src/features/*`           | Reusable business UI, forms, hooks                               |
+| `src/api/*`                | HTTP clients and shared types — no React                         |
+| `src/components/ui/*`      | Generic buttons, inputs, empty/error/loading states              |
+| `src/components/project/*` | Project workspace chrome (tab bar, scaffold)                     |
 
 **Migration status:** auth, projects list, and form sheets (`TaskSheet`, `ShootDaySheet`, `InviteMemberSheet`, `CreateProjectSheet`) extracted; `qk` query key factory and `components/ui/` in place; task board / schedule timeline / team list UI still in route files — move incrementally.
 
@@ -159,19 +159,19 @@ src/
 
 ## 5. v1 screens
 
-| Screen | v1 | Content source |
-|---|---|---|
-| Welcome / Login / Signup / OTP | ✅ | existing flow, restyled |
-| Projects list | ✅ | existing, restyled |
-| Create project | ✅ | existing, restyled |
-| Project workspace (overview + Health Ring) | ✅ | existing, restyled |
-| Tasks board | ✅ | existing, restyled |
-| Schedule | ✅ | existing, restyled |
-| Conflict / alerts (in‑app + notifications) | ✅ | Module 5, restyled |
-| Team (members/invite) | ✅ basic | existing; advanced roles deferred |
-| Notifications | ✅ | existing, restyled |
-| Account / settings | ✅ | existing, restyled |
-| Upload script / AI progress / AI results | ⏳ deferred | kept, not shipped in v1 |
+| Screen                                     | v1          | Content source                    |
+| ------------------------------------------ | ----------- | --------------------------------- |
+| Welcome / Login / Signup / OTP             | ✅          | existing flow, restyled           |
+| Projects list                              | ✅          | existing, restyled                |
+| Create project                             | ✅          | existing, restyled                |
+| Project workspace (overview + Health Ring) | ✅          | existing, restyled                |
+| Tasks board                                | ✅          | existing, restyled                |
+| Schedule                                   | ✅          | existing, restyled                |
+| Conflict / alerts (in‑app + notifications) | ✅          | Module 5, restyled                |
+| Team (members/invite)                      | ✅ basic    | existing; advanced roles deferred |
+| Notifications                              | ✅          | existing, restyled                |
+| Account / settings                         | ✅          | existing, restyled                |
+| Upload script / AI progress / AI results   | ⏳ deferred | kept, not shipped in v1           |
 
 Per‑screen field lists and copy follow the **PDF** — **TBD**.
 

@@ -58,9 +58,12 @@ export async function sendExpoPush(messages: ExpoPushMessage[]): Promise<ExpoPus
 
   if (env.EXPO_PUSH_PROVIDER === 'MOCK') {
     logger.debug({ count: messages.length }, '[expo-push:mock] dispatched');
-    return messages.map(m => ({
+    return messages.map((m) => ({
       to: m.to,
-      ticket: { status: 'ok' as const, id: `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` },
+      ticket: {
+        status: 'ok' as const,
+        id: `mock-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      },
     }));
   }
 
@@ -72,11 +75,9 @@ export async function sendExpoPush(messages: ExpoPushMessage[]): Promise<ExpoPus
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          Accept: 'application/json',
           'Accept-Encoding': 'gzip, deflate',
-          ...(env.EXPO_ACCESS_TOKEN
-            ? { Authorization: `Bearer ${env.EXPO_ACCESS_TOKEN}` }
-            : {}),
+          ...(env.EXPO_ACCESS_TOKEN ? { Authorization: `Bearer ${env.EXPO_ACCESS_TOKEN}` } : {}),
         },
         body: JSON.stringify(batch),
       });

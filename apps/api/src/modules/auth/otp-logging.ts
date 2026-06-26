@@ -1,0 +1,65 @@
+import { OtpChannel } from '@prisma/client';
+import { env } from '../../config/env.js';
+import { logger } from '../../lib/logger.js';
+import { maskOtpLogFields } from './otp-target.js';
+
+export function logOtpRequested(channel: OtpChannel, target: string, purpose: string): void {
+  logger.info(
+    {
+      channel,
+      ...maskOtpLogFields(channel, target),
+      purpose,
+    },
+    'auth.otp_requested',
+  );
+}
+
+export function logOtpDispatched(channel: OtpChannel, target: string, provider: string): void {
+  logger.info(
+    {
+      channel,
+      ...maskOtpLogFields(channel, target),
+      provider,
+    },
+    'auth.otp_dispatched',
+  );
+}
+
+export function logOtpVerified(channel: OtpChannel, target: string, purpose: string): void {
+  logger.info(
+    {
+      channel,
+      ...maskOtpLogFields(channel, target),
+      purpose,
+    },
+    'auth.otp_verified',
+  );
+}
+
+export function logOtpFailed(channel: OtpChannel, target: string, reason: string): void {
+  logger.warn(
+    {
+      channel,
+      ...maskOtpLogFields(channel, target),
+      reason,
+    },
+    'auth.otp_failed',
+  );
+}
+
+/** Dev/test only — never logs the code in production. */
+export function logOtpMock(channel: OtpChannel, target: string, code: string): void {
+  if (env.NODE_ENV === 'production') {
+    logOtpDispatched(channel, target, 'MOCK');
+    return;
+  }
+  logger.debug(
+    {
+      channel,
+      ...maskOtpLogFields(channel, target),
+      provider: 'MOCK',
+      code,
+    },
+    'OTP mock code (dev only)',
+  );
+}

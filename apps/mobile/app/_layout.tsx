@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useEffect, useMemo } from 'react';
 import { AuthProvider, useAuth } from '@/auth/AuthContext';
+import { AppConfigProvider } from '@/config/AppConfigContext';
 import { IdleActivityCapture } from '@/auth/IdleActivityCapture';
 import { createQueryClient } from '@/lib/queryClient';
 import { RealtimeProvider } from '@/realtime/RealtimeProvider';
@@ -32,22 +33,24 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <IdleActivityCapture>
-              <RealtimeProvider>
-                <StatusBar style="dark" />
-                <SplashGate>
-                  <Stack
-                    screenOptions={{
-                      headerShown: false,
-                      contentStyle: { backgroundColor: colors.bg },
-                      animation: 'slide_from_right',
-                    }}
-                  />
-                </SplashGate>
-              </RealtimeProvider>
-            </IdleActivityCapture>
-          </AuthProvider>
+          <AppConfigProvider>
+            <AuthProvider>
+              <IdleActivityCapture>
+                <RealtimeProvider>
+                  <StatusBar style="dark" />
+                  <SplashGate>
+                    <Stack
+                      screenOptions={{
+                        headerShown: false,
+                        contentStyle: { backgroundColor: colors.bg },
+                        animation: 'slide_from_right',
+                      }}
+                    />
+                  </SplashGate>
+                </RealtimeProvider>
+              </IdleActivityCapture>
+            </AuthProvider>
+          </AppConfigProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

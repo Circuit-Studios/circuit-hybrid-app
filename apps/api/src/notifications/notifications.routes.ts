@@ -17,6 +17,7 @@ import { PushPlatform } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { asyncHandler, badRequest, notFound } from '../lib/http.js';
 import { requireAuth } from '../middleware/auth.js';
+import { requireFeature } from '../middleware/require-feature.js';
 
 const router: Router = Router();
 
@@ -31,6 +32,7 @@ const registerTokenSchema = z.object({
 router.post(
   '/me/push-tokens',
   requireAuth,
+  requireFeature('notifications.push'),
   asyncHandler(async (req, res) => {
     const userId = req.user!.sub;
     const input = registerTokenSchema.parse(req.body);
@@ -78,7 +80,7 @@ const listQuerySchema = z.object({
   unreadOnly: z
     .string()
     .optional()
-    .transform(v => v === 'true' || v === '1'),
+    .transform((v) => v === 'true' || v === '1'),
 });
 
 // GET /me/notifications
@@ -103,7 +105,7 @@ router.get(
     const items = hasMore ? rows.slice(0, q.limit) : rows;
 
     res.json({
-      items: items.map(n => ({
+      items: items.map((n) => ({
         id: n.id,
         kind: n.kind,
         title: n.title,
@@ -114,7 +116,7 @@ router.get(
         createdAt: n.createdAt.toISOString(),
         contextJson: n.contextJson ?? null,
       })),
-      nextCursor: hasMore ? items[items.length - 1]?.id ?? null : null,
+      nextCursor: hasMore ? (items[items.length - 1]?.id ?? null) : null,
     });
   }),
 );

@@ -25,20 +25,20 @@ describe('Script-analysis eval (canned-summary fixture)', () => {
   it('returns at least 5 characters with 2 leads', () => {
     const { characters } = cannedSummary.characters;
     expect(characters.length).toBeGreaterThanOrEqual(5);
-    const leads = characters.filter(c => c.importance === 'LEAD');
+    const leads = characters.filter((c) => c.importance === 'LEAD');
     expect(leads.length).toBeGreaterThanOrEqual(2);
   });
 
   it('returns at least 5 scenes including stunts/VFX/song coverage', () => {
     const { scenes } = cannedSummary.scenes;
     expect(scenes.length).toBeGreaterThanOrEqual(5);
-    expect(scenes.some(s => s.hasStunts)).toBe(true);
-    expect(scenes.some(s => s.hasVFX)).toBe(true);
-    expect(scenes.some(s => s.hasSong)).toBe(true);
+    expect(scenes.some((s) => s.hasStunts)).toBe(true);
+    expect(scenes.some((s) => s.hasVFX)).toBe(true);
+    expect(scenes.some((s) => s.hasSong)).toBe(true);
   });
 
   it('every scene references a known character', () => {
-    const names = new Set(cannedSummary.characters.characters.map(c => c.name));
+    const names = new Set(cannedSummary.characters.characters.map((c) => c.name));
     for (const scene of cannedSummary.scenes.scenes) {
       for (const name of scene.charactersPresent) {
         expect(names.has(name)).toBe(true);
@@ -47,7 +47,7 @@ describe('Script-analysis eval (canned-summary fixture)', () => {
   });
 
   it('flags departments matching scene flags (STUNTS, VFX, MUSIC)', () => {
-    const kinds = new Set(cannedSummary.departments.departments.map(d => d.kind));
+    const kinds = new Set(cannedSummary.departments.departments.map((d) => d.kind));
     expect(kinds.has('STUNTS')).toBe(true);
     expect(kinds.has('VFX')).toBe(true);
     expect(kinds.has('MUSIC')).toBe(true);
@@ -59,8 +59,8 @@ describe('Script-analysis eval (canned-summary fixture)', () => {
   });
 
   it('per-actor estimates exist for every character', () => {
-    const names = new Set(cannedSummary.characters.characters.map(c => c.name));
-    const estimateNames = new Set(cannedSummary.shootDays.perActor.map(a => a.character));
+    const names = new Set(cannedSummary.characters.characters.map((c) => c.name));
+    const estimateNames = new Set(cannedSummary.shootDays.perActor.map((a) => a.character));
     for (const n of names) {
       expect(estimateNames.has(n)).toBe(true);
     }
@@ -78,9 +78,9 @@ describe('Script-analysis eval (canned-summary fixture)', () => {
 
   it('cast-fees line is the largest department spend', () => {
     const lines = cannedSummary.budget.lines;
-    const cast = lines.find(l => l.department === 'CASTING');
+    const cast = lines.find((l) => l.department === 'CASTING');
     expect(cast).toBeDefined();
-    const otherLines = lines.filter(l => l.department !== 'CASTING');
+    const otherLines = lines.filter((l) => l.department !== 'CASTING');
     for (const o of otherLines) {
       expect(cast!.amountINR).toBeGreaterThanOrEqual(o.amountINR);
     }

@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { useAuth } from '@/auth/AuthContext';
 import { storage } from '@/lib/storage';
 
-/** Resets the idle timer on taps and gestures anywhere in the signed-in app. */
+/** Resets the idle timer on taps and gestures only (not API polling). */
 export function IdleActivityCapture({ children }: { children: ReactNode }) {
   const { status } = useAuth();
 

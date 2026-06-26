@@ -26,21 +26,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { LabeledInput } from '@/components/LabeledInput';
 import { StatusBadge } from '@/components/StatusBadge';
-import {
-  patchBudgetLine,
-  patchCharacter,
-  patchDepartment,
-  patchScene,
-} from '@/api/edits';
+import { patchBudgetLine, patchCharacter, patchDepartment, patchScene } from '@/api/edits';
 import { readApiError } from '@/api/client';
 import { qk } from '@/api/queryKeys';
 import { colors, radius, spacing, typography } from '@/theme';
-import type {
-  BudgetLineRecord,
-  CharacterRecord,
-  DepartmentRecord,
-  SceneRecord,
-} from '@/api/types';
+import type { BudgetLineRecord, CharacterRecord, DepartmentRecord, SceneRecord } from '@/api/types';
 
 // ============================================================
 // Base sheet
@@ -56,12 +46,7 @@ interface BaseSheetProps {
 
 function BaseSheet({ visible, title, subtitle, onClose, children }: BaseSheetProps) {
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <Pressable style={styles.backdropPressable} onPress={onClose} />
         <KeyboardAvoidingView
@@ -137,7 +122,11 @@ export function CharacterEditSheet({
     <BaseSheet
       visible={!!character}
       title="Edit character"
-      subtitle={character?.isEdited ? 'Previously edited — your override stays' : 'Override the AI extraction'}
+      subtitle={
+        character?.isEdited
+          ? 'Previously edited — your override stays'
+          : 'Override the AI extraction'
+      }
       onClose={onClose}
     >
       <LabeledInput
@@ -149,17 +138,14 @@ export function CharacterEditSheet({
       />
       <Text style={styles.fieldLabel}>Importance</Text>
       <View style={styles.optionRow}>
-        {IMPORTANCE_OPTIONS.map(opt => (
+        {IMPORTANCE_OPTIONS.map((opt) => (
           <Pressable
             key={opt}
             onPress={() => setImportance(opt)}
             style={[styles.optionChip, importance === opt && styles.optionChipActive]}
           >
             <Text
-              style={[
-                styles.optionChipText,
-                importance === opt && styles.optionChipTextActive,
-              ]}
+              style={[styles.optionChipText, importance === opt && styles.optionChipTextActive]}
             >
               {opt.replace('_', ' ')}
             </Text>
@@ -180,9 +166,7 @@ export function CharacterEditSheet({
         multiline
         numberOfLines={3}
       />
-      {mutation.error ? (
-        <Text style={styles.error}>{readApiError(mutation.error)}</Text>
-      ) : null}
+      {mutation.error ? <Text style={styles.error}>{readApiError(mutation.error)}</Text> : null}
       <PrimaryButton
         title="Save"
         onPress={() => mutation.mutate()}
@@ -258,17 +242,14 @@ export function SceneEditSheet({
       />
       <Text style={styles.fieldLabel}>Location type</Text>
       <View style={styles.optionRow}>
-        {LOCATION_TYPES.map(opt => (
+        {LOCATION_TYPES.map((opt) => (
           <Pressable
             key={opt}
             onPress={() => setLocationType(opt)}
             style={[styles.optionChip, locationType === opt && styles.optionChipActive]}
           >
             <Text
-              style={[
-                styles.optionChipText,
-                locationType === opt && styles.optionChipTextActive,
-              ]}
+              style={[styles.optionChipText, locationType === opt && styles.optionChipTextActive]}
             >
               {opt === 'INT_EXT' ? 'INT/EXT' : opt}
             </Text>
@@ -277,18 +258,13 @@ export function SceneEditSheet({
       </View>
       <Text style={styles.fieldLabel}>Time of day</Text>
       <View style={styles.optionRow}>
-        {TIMES_OF_DAY.map(opt => (
+        {TIMES_OF_DAY.map((opt) => (
           <Pressable
             key={opt}
             onPress={() => setTimeOfDay(opt)}
             style={[styles.optionChip, timeOfDay === opt && styles.optionChipActive]}
           >
-            <Text
-              style={[
-                styles.optionChipText,
-                timeOfDay === opt && styles.optionChipTextActive,
-              ]}
-            >
+            <Text style={[styles.optionChipText, timeOfDay === opt && styles.optionChipTextActive]}>
               {opt}
             </Text>
           </Pressable>
@@ -297,14 +273,8 @@ export function SceneEditSheet({
       <FlagRow label="Has stunts" value={hasStunts} onValueChange={setHasStunts} />
       <FlagRow label="Has VFX" value={hasVFX} onValueChange={setHasVFX} />
       <FlagRow label="Has song" value={hasSong} onValueChange={setHasSong} />
-      {mutation.error ? (
-        <Text style={styles.error}>{readApiError(mutation.error)}</Text>
-      ) : null}
-      <PrimaryButton
-        title="Save"
-        onPress={() => mutation.mutate()}
-        loading={mutation.isPending}
-      />
+      {mutation.error ? <Text style={styles.error}>{readApiError(mutation.error)}</Text> : null}
+      <PrimaryButton title="Save" onPress={() => mutation.mutate()} loading={mutation.isPending} />
     </BaseSheet>
   );
 }
@@ -352,18 +322,12 @@ export function DepartmentEditSheet({
         onChangeText={setDisplayName}
         maxLength={80}
       />
-      <FlagRow
-        label="Required for this project"
-        value={required}
-        onValueChange={setRequired}
-      />
+      <FlagRow label="Required for this project" value={required} onValueChange={setRequired} />
       <Text style={styles.fieldHint}>
-        Unticking suppresses the "{department?.displayName ?? 'department'} is behind"
-        alert engine for this project.
+        Unticking suppresses the "{department?.displayName ?? 'department'} is behind" alert engine
+        for this project.
       </Text>
-      {mutation.error ? (
-        <Text style={styles.error}>{readApiError(mutation.error)}</Text>
-      ) : null}
+      {mutation.error ? <Text style={styles.error}>{readApiError(mutation.error)}</Text> : null}
       <PrimaryButton
         title="Save"
         onPress={() => mutation.mutate()}
@@ -414,12 +378,7 @@ export function BudgetLineEditSheet({
       subtitle={line ? line.department.replace(/_/g, ' ') : undefined}
       onClose={onClose}
     >
-      <LabeledInput
-        label="Label"
-        value={label}
-        onChangeText={setLabel}
-        maxLength={200}
-      />
+      <LabeledInput label="Label" value={label} onChangeText={setLabel} maxLength={200} />
       <LabeledInput
         label="Amount (INR)"
         value={amount}
@@ -437,14 +396,10 @@ export function BudgetLineEditSheet({
       {line?.isAIDraft ? (
         <View style={styles.aiDraftBadge}>
           <StatusBadge label="AI DRAFT" tone="info" />
-          <Text style={styles.fieldHint}>
-            Saving converts this row to a human-confirmed line.
-          </Text>
+          <Text style={styles.fieldHint}>Saving converts this row to a human-confirmed line.</Text>
         </View>
       ) : null}
-      {mutation.error ? (
-        <Text style={styles.error}>{readApiError(mutation.error)}</Text>
-      ) : null}
+      {mutation.error ? <Text style={styles.error}>{readApiError(mutation.error)}</Text> : null}
       <PrimaryButton
         title="Save"
         onPress={() => mutation.mutate()}

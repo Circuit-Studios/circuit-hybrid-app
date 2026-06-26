@@ -4,15 +4,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { Card } from '@/components/Card';
 import { StatusBadge } from '@/components/StatusBadge';
 import { colors, radius, spacing, typography } from '@/theme';
-import { formatProjectLanguages, formatRole, formatStatus } from '@/lib/format';
+import { formatProjectLanguages, formatRole, formatStatus, relativeTimeFrom } from '@/lib/format';
 import type { Project } from '@/api/types';
 
 interface ProjectCardProps {
   project: Project;
+  nextShootDay?: { dayNumber: number; date: string } | null;
 }
 
-export function ProjectCard({ project }: ProjectCardProps) {
+export function ProjectCard({ project, nextShootDay }: ProjectCardProps) {
   const router = useRouter();
+
   return (
     <Pressable
       onPress={() => router.push(`/(app)/project/${project.id}`)}
@@ -24,17 +26,29 @@ export function ProjectCard({ project }: ProjectCardProps) {
           <View style={styles.poster}>
             <Text style={styles.posterLetter}>{project.name.charAt(0).toUpperCase()}</Text>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.projectName}>{project.name}</Text>
-            <Text style={styles.projectMeta}>
-              {formatProjectLanguages(project)} · {project.genre}
+          <View style={styles.main}>
+            <Text style={styles.projectName} numberOfLines={2}>
+              {project.name}
             </Text>
-            <View style={styles.rowBottom}>
+            <View style={styles.chipRow}>
+              {project.role ? <StatusBadge label={formatRole(project.role)} tone="accent" /> : null}
               <StatusBadge label={formatStatus(project.currentStage)} tone="info" />
-              {project.role ? (
-                <StatusBadge label={formatRole(project.role)} tone="accent" />
-              ) : null}
             </View>
+            <Text style={styles.projectMeta}>
+              {project.genre} · {formatProjectLanguages(project)}
+            </Text>
+            {project.updatedAt ? (
+              <Text style={styles.projectFoot}>Updated {relativeTimeFrom(project.updatedAt)}</Text>
+            ) : null}
+            {nextShootDay ? (
+              <Text style={styles.projectFoot}>
+                Next shoot · Day {nextShootDay.dayNumber} ·{' '}
+                {new Date(nextShootDay.date).toLocaleDateString(undefined, {
+                  month: 'short',
+                  day: 'numeric',
+                })}
+              </Text>
+            ) : null}
           </View>
           <Ionicons name="chevron-forward" size={22} color={colors.textMuted} />
         </View>
@@ -61,17 +75,13 @@ const styles = StyleSheet.create({
     color: colors.brand,
     fontSize: 26,
   },
-  rowBottom: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: spacing.md,
-    gap: spacing.sm,
-  },
+  main: { flex: 1, gap: spacing.xs },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   projectName: {
     ...typography.title,
     fontSize: 20,
     color: colors.textPrimary,
-    marginBottom: 4,
   },
   projectMeta: { ...typography.caption, color: colors.textSecondary },
+  projectFoot: { ...typography.micro, color: colors.textMuted },
 });

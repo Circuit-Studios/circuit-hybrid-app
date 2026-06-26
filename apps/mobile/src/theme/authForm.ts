@@ -1,23 +1,39 @@
 import { StyleSheet } from 'react-native';
-import { colors, spacing, typography } from './tokens';
+import { authPalette } from './authPalette';
+import { authLayout } from './authLayout';
+import { typography } from './tokens';
 
 /** Shared layout styles for login, signup, and related auth screens. */
 export const authFormStyles = StyleSheet.create({
-  fieldFlush: { marginBottom: spacing.md },
-  actions: { marginTop: spacing.xl, gap: spacing.sm },
+  fieldFlush: { marginBottom: 0 },
+  actions: { marginTop: 0, gap: 8 },
   submitHint: {
     ...typography.caption,
-    color: colors.textMuted,
+    color: authPalette.muted,
     textAlign: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: 8,
+    marginTop: 4,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.md,
+    flexWrap: 'wrap',
+    gap: 4,
   },
-  footerText: { ...typography.body, color: colors.textSecondary },
-  footerLink: { ...typography.bodyStrong, color: colors.accent },
+  footerText: { ...typography.caption, color: authPalette.muted },
+  footerLink: { ...typography.caption, color: authPalette.footerLink, fontWeight: '700' },
+  error: {
+    ...typography.caption,
+    color: authPalette.error,
+    marginBottom: 8,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  form: {
+    marginTop: authLayout.formMarginTopSignIn,
+  },
+  formSignUp: {
+    marginTop: authLayout.formMarginTopSignUp,
+  },
 });

@@ -11,9 +11,7 @@ import type {
 } from './types';
 
 export async function listCharacters(projectId: string): Promise<CharacterRecord[]> {
-  const { data } = await api.get<CharacterRecord[]>(
-    `/projects/${projectId}/characters`,
-  );
+  const { data } = await api.get<CharacterRecord[]>(`/projects/${projectId}/characters`);
   return data;
 }
 
@@ -56,9 +54,7 @@ export async function patchScene(
 }
 
 export async function listDepartments(projectId: string): Promise<DepartmentRecord[]> {
-  const { data } = await api.get<DepartmentRecord[]>(
-    `/projects/${projectId}/departments`,
-  );
+  const { data } = await api.get<DepartmentRecord[]>(`/projects/${projectId}/departments`);
   return data;
 }
 
@@ -71,9 +67,7 @@ export async function patchDepartment(
 }
 
 export async function listBudgetLines(projectId: string): Promise<BudgetLineRecord[]> {
-  const { data } = await api.get<BudgetLineRecord[]>(
-    `/projects/${projectId}/budget-lines`,
-  );
+  const { data } = await api.get<BudgetLineRecord[]>(`/projects/${projectId}/budget-lines`);
   return data;
 }
 
@@ -99,10 +93,7 @@ export async function createBudgetLine(
     notes?: string;
   },
 ): Promise<BudgetLineRecord> {
-  const { data } = await api.post<BudgetLineRecord>(
-    `/projects/${projectId}/budget-lines`,
-    body,
-  );
+  const { data } = await api.post<BudgetLineRecord>(`/projects/${projectId}/budget-lines`, body);
   return data;
 }
 

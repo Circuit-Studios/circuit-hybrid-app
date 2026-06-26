@@ -20,19 +20,17 @@ export const POPULAR_COUNTRIES: CountryCode[] = [
   'JP',
 ];
 
-const ALL_COUNTRIES = getCountries().sort((a, b) =>
-  countryName(a).localeCompare(countryName(b)),
-);
+const ALL_COUNTRIES = getCountries().sort((a, b) => countryName(a).localeCompare(countryName(b)));
 
 export function listCountries(search = ''): CountryCode[] {
   const q = search.trim().toLowerCase();
   if (!q) {
     const popular = new Set(POPULAR_COUNTRIES);
-    const rest = ALL_COUNTRIES.filter(c => !popular.has(c));
+    const rest = ALL_COUNTRIES.filter((c) => !popular.has(c));
     return [...POPULAR_COUNTRIES, ...rest];
   }
   return ALL_COUNTRIES.filter(
-    c =>
+    (c) =>
       countryName(c).toLowerCase().includes(q) ||
       c.toLowerCase().includes(q) ||
       `+${getCountryCallingCode(c)}`.includes(q),
@@ -63,7 +61,7 @@ export function countryName(code: CountryCode): string {
 export function countryFlag(code: CountryCode): string {
   return code
     .toUpperCase()
-    .replace(/./g, char => String.fromCodePoint(127397 + char.charCodeAt(0)));
+    .replace(/./g, (char) => String.fromCodePoint(127397 + char.charCodeAt(0)));
 }
 
 export function dialCode(country: CountryCode): string {

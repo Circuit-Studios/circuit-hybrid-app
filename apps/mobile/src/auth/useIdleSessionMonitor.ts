@@ -3,11 +3,8 @@ import { AppState, type AppStateStatus } from 'react-native';
 import { IDLE_CHECK_INTERVAL_MS, isIdleSessionExpired } from '@/lib/session';
 import { storage } from '@/lib/storage';
 
-/** Sign out when the user has been idle longer than IDLE_TIMEOUT_MS. */
-export function useIdleSessionMonitor(
-  enabled: boolean,
-  onIdle: () => void | Promise<void>,
-): void {
+/** Sign out when the user has been idle longer than IDLE_TIMEOUT_MS (user input only). */
+export function useIdleSessionMonitor(enabled: boolean, onIdle: () => void | Promise<void>): void {
   useEffect(() => {
     if (!enabled) return;
 

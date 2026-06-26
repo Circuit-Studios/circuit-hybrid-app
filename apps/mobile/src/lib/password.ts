@@ -1,7 +1,9 @@
 export const MIN_PASSWORD_LENGTH = 8;
+export const MAX_PASSWORD_LENGTH = 128;
 
 export function isValidPassword(password: string): boolean {
-  return password.length >= MIN_PASSWORD_LENGTH;
+  const trimmed = password.trim();
+  return trimmed.length >= MIN_PASSWORD_LENGTH && trimmed.length <= MAX_PASSWORD_LENGTH;
 }
 
 export function passwordTooShortHint(): string {

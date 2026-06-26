@@ -1,7 +1,20 @@
 import type { ViewStyle } from 'react-native';
+import {
+  FLOATING_TAB_BAR_HEIGHT,
+  FLOATING_TAB_BAR_MAX_WIDTH,
+  FLOATING_TAB_ITEM_MIN,
+  getAppTabBarReserve,
+  getProjectTabBarReserve,
+} from '@/components/ui/floatingTabBarMetrics';
 import { spacing } from './tokens';
 
-/** Width at which we treat the device as a tablet layout. */
+export {
+  FLOATING_TAB_BAR_HEIGHT,
+  FLOATING_TAB_BAR_MAX_WIDTH,
+  FLOATING_TAB_ITEM_MIN,
+  getAppTabBarReserve,
+  getProjectTabBarReserve,
+};
 export const TABLET_BREAKPOINT = 768;
 
 /** Width at which we add a third column in dense grids. */
@@ -50,7 +63,11 @@ export function resolveContentMaxWidth(
   return isTabletWidth(width) ? CONTENT_MAX_WIDTH.app : undefined;
 }
 
-export function getContentWidth(width: number, horizontalPadding: number, maxWidth?: number): number {
+export function getContentWidth(
+  width: number,
+  horizontalPadding: number,
+  maxWidth?: number,
+): number {
   const padded = width - horizontalPadding * 2;
   if (maxWidth == null) return padded;
   return Math.min(padded, maxWidth);
@@ -92,3 +109,59 @@ export function getHealthRingSize(contentWidth: number, isWide: boolean, height:
   if (!isWide) return 220;
   return Math.min(260, Math.max(200, Math.round(contentWidth * 0.28)));
 }
+
+const DROPDOWN_OPTION_ROW_HEIGHT = 48;
+const DROPDOWN_MIN_LIST_HEIGHT = 120;
+const DROPDOWN_MAX_LIST_HEIGHT = 240;
+
+/** Max height for an inline dropdown list from trigger position and viewport. */
+export function getDropdownListMaxHeight(params: {
+  windowHeight: number;
+  triggerY: number;
+  triggerHeight: number;
+  safeBottom: number;
+  optionCount: number;
+  extraChrome?: number;
+}): { maxHeight: number; useModalSheet: boolean } {
+  const {
+    windowHeight,
+    triggerY,
+    triggerHeight,
+    safeBottom,
+    optionCount,
+    extraChrome = 0,
+  } = params;
+
+  const margin = spacing.lg;
+  const availableBelow = windowHeight - safeBottom - margin - (triggerY + triggerHeight);
+  const fullListHeight = optionCount * DROPDOWN_OPTION_ROW_HEIGHT + extraChrome;
+  const idealHeight = Math.min(DROPDOWN_MAX_LIST_HEIGHT, fullListHeight);
+
+  if (availableBelow >= idealHeight) {
+    return { maxHeight: idealHeight, useModalSheet: false };
+  }
+
+  if (availableBelow >= DROPDOWN_MIN_LIST_HEIGHT) {
+    return {
+      maxHeight: Math.min(idealHeight, availableBelow),
+      useModalSheet: false,
+    };
+  }
+
+  const modalHeight = Math.min(
+    DROPDOWN_MAX_LIST_HEIGHT,
+    fullListHeight,
+    Math.max(DROPDOWN_MIN_LIST_HEIGHT, windowHeight * 0.5 - safeBottom),
+  );
+
+  return {
+    maxHeight: modalHeight,
+    useModalSheet: true,
+  };
+}
+
+export const dropdownLayout = {
+  optionRowHeight: DROPDOWN_OPTION_ROW_HEIGHT,
+  minListHeight: DROPDOWN_MIN_LIST_HEIGHT,
+  maxListHeight: DROPDOWN_MAX_LIST_HEIGHT,
+} as const;

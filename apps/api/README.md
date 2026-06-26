@@ -1,6 +1,6 @@
 # Circuit Backend
 
-Node.js + Express + Prisma + Postgres + OpenAI + Redis backend for the Circuit MVP.
+Node.js + Express + Prisma + Postgres + OpenAI backend for the Circuit MVP.
 
 ## Quick start (local)
 
@@ -11,14 +11,16 @@ npm run setup:env
 # Edit .env.development — see ../../docs/ENVIRONMENT.md (Workflow B)
 
 docker compose up -d
-npm run dev:db
+npm run db:prepare:dev
 npm run dev               # http://localhost:3009
 curl http://localhost:3009/health
 ```
 
-**Dev OTP:** with `OTP_PROVIDER=MOCK`, sign-in code is **`111111`**.
+From monorepo root: `npm run setup:env:api` then `npm run api:dev`
 
-**Production:** deploy to [Render](docs/DEPLOYMENT.md) using `render.yaml`. See [Environment matrix](docs/DEPLOYMENT.md#recommended-environment-matrix) for how local, preview, and production line up across mobile, backend, DB, and OTP.
+**Dev OTP:** `EMAIL_OTP_PROVIDER=MOCK` + `PHONE_OTP_PROVIDER=MOCK` → code **`111111`**.
+
+**Production:** deploy via the [Render dashboard](docs/DEPLOYMENT.md) (manual web service).
 
 Mobile app: see [`../mobile/README.md`](../mobile/README.md) or the [root README](../../README.md).
 
@@ -26,23 +28,23 @@ Mobile app: see [`../mobile/README.md`](../mobile/README.md) or the [root README
 
 ## Scripts
 
-| Command | Purpose |
-|---------|---------|
-| `npm run dev` | API with hot reload |
-| `npm run dev:db` | Apply migrations (local) |
-| `npm run build` | Compile TypeScript |
-| `npm start` | Production server (`dist/server/index.js`) |
-| `npm run start:prod` | Local only: migrate + start (not used on Render) |
-| `npm run prisma:studio` | DB browser |
-| `npm test` | Vitest suite |
+| Command                  | Purpose                                    |
+| ------------------------ | ------------------------------------------ |
+| `npm run dev`            | API with hot reload                        |
+| `npm run db:prepare:dev` | Apply migrations + generate client (local) |
+| `npm run build`          | Compile TypeScript                         |
+| `npm start`              | Production server (`dist/server/index.js`) |
+| `npm run prisma:deploy`  | Apply migrations (staging/prod)            |
+| `npm run prisma:studio`  | DB browser                                 |
+| `npm test`               | Vitest suite                               |
 
 ---
 
 ## Docs
 
-| Doc | Contents |
-|-----|----------|
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Local dev + Render deploy |
+| Doc                                          | Contents                  |
+| -------------------------------------------- | ------------------------- |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)     | Local dev + Render deploy |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Modules, routes, realtime |
-| [docs/DATABASE.md](docs/DATABASE.md) | Prisma schema reference |
-| [prisma/README.md](prisma/README.md) | Migrations |
+| [docs/DATABASE.md](docs/DATABASE.md)         | Prisma schema reference   |
+| [prisma/README.md](prisma/README.md)         | Migrations                |

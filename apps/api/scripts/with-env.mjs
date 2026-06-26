@@ -14,7 +14,7 @@ const nodeEnv = process.env.NODE_ENV ?? 'development';
 const envFile = resolve(`.env.${nodeEnv}`);
 
 if (!existsSync(envFile)) {
-  console.error(`Missing ${envFile}. Run: npm run setup:env`);
+  console.error(`Missing ${envFile}. Run: npm run setup:env:api`);
   process.exit(1);
 }
 

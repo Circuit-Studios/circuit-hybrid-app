@@ -3,6 +3,7 @@ import { MembershipStatus, UserRole } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { asyncHandler, forbidden, notFound } from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { hasFullProjectVisibility } from '../../auth/permissions.js';
 
 const router: Router = Router();
 
@@ -12,10 +13,7 @@ interface Membership {
   projectDepartmentId: string | null;
 }
 
-async function getMembershipOrThrow(
-  userId: string,
-  projectId: string,
-): Promise<Membership> {
+async function getMembershipOrThrow(userId: string, projectId: string): Promise<Membership> {
   const m = await prisma.projectMember.findFirst({
     where: { projectId, userId, status: MembershipStatus.ACTIVE },
     select: { id: true, role: true, projectDepartmentId: true },
@@ -26,14 +24,6 @@ async function getMembershipOrThrow(
 
 // Spider mode: dept heads see *only* their department's work surface — this
 // matches Module 4 "role-scoped data view". Leadership roles get everything.
-const FULL_VISIBILITY_ROLES: UserRole[] = [
-  UserRole.DIRECTOR,
-  UserRole.PRODUCER,
-  UserRole.EXECUTIVE_PRODUCER,
-  UserRole.LINE_PRODUCER,
-  UserRole.AD,
-];
-
 function isDeptScoped(m: Membership): boolean {
   return m.role === UserRole.DEPT_HEAD && !!m.projectDepartmentId;
 }
@@ -96,7 +86,10 @@ router.get(
     ]);
 
     // Fold the groupBy result into a per-department task count map.
-    const tasksByDept = new Map<string, { todo: number; inProgress: number; done: number; blocked: number }>();
+    const tasksByDept = new Map<
+      string,
+      { todo: number; inProgress: number; done: number; blocked: number }
+    >();
     for (const row of taskAgg) {
       const bucket = tasksByDept.get(row.departmentId) ?? {
         todo: 0,
@@ -105,15 +98,23 @@ router.get(
         blocked: 0,
       };
       switch (row.status) {
-        case 'TODO': bucket.todo += row._count; break;
-        case 'IN_PROGRESS': bucket.inProgress += row._count; break;
-        case 'DONE': bucket.done += row._count; break;
-        case 'BLOCKED': bucket.blocked += row._count; break;
+        case 'TODO':
+          bucket.todo += row._count;
+          break;
+        case 'IN_PROGRESS':
+          bucket.inProgress += row._count;
+          break;
+        case 'DONE':
+          bucket.done += row._count;
+          break;
+        case 'BLOCKED':
+          bucket.blocked += row._count;
+          break;
       }
       tasksByDept.set(row.departmentId, bucket);
     }
 
-    const segments = departments.map(d => ({
+    const segments = departments.map((d) => ({
       ...d,
       tasks: tasksByDept.get(d.id) ?? { todo: 0, inProgress: 0, done: 0, blocked: 0 },
     }));
@@ -121,7 +122,7 @@ router.get(
     // Weighted average across required departments only — optional depts
     // (like POST_DI in early pre-prod) shouldn't drag the headline number
     // down before they've started.
-    const required = segments.filter(s => s.required);
+    const required = segments.filter((s) => s.required);
     const overallProgress = required.length
       ? Math.round(required.reduce((sum, s) => sum + s.progress, 0) / required.length)
       : 0;
@@ -154,9 +155,7 @@ router.get(
     // Dept head: see only their department.
     // Leadership: unscoped (default).
     const crewScope =
-      !FULL_VISIBILITY_ROLES.includes(me.role) && me.role !== UserRole.DEPT_HEAD
-        ? userId
-        : null;
+      !hasFullProjectVisibility(me.role) && me.role !== UserRole.DEPT_HEAD ? userId : null;
 
     const tasks = await prisma.task.findMany({
       where: {

@@ -8,10 +8,7 @@
 import { Queue, Worker, type ConnectionOptions, type Job } from 'bullmq';
 import { getProducerConnection, getWorkerConnection } from './redis.js';
 import { logger } from '../lib/logger.js';
-import {
-  scanProjectConflicts,
-  type ConflictScanInput,
-} from './conflict-detector.service.js';
+import { scanProjectConflicts, type ConflictScanInput } from './conflict-detector.service.js';
 
 const QUEUE_NAME = 'circuit.conflicts';
 
@@ -72,13 +69,13 @@ export function startConflictWorker(): Worker<ConflictScanInput> | null {
     { connection: conn as ConnectionOptions, concurrency: 3, lockDuration: 60_000 },
   );
 
-  worker.on('completed', job => {
+  worker.on('completed', (job) => {
     logger.debug({ jobId: job.id, data: job.data }, 'Conflict job completed');
   });
   worker.on('failed', (job, err) => {
     logger.error({ jobId: job?.id, err, data: job?.data }, 'Conflict job failed');
   });
-  worker.on('error', err => logger.error({ err }, 'Conflict worker error'));
+  worker.on('error', (err) => logger.error({ err }, 'Conflict worker error'));
 
   logger.info('Conflict worker started');
   return worker;

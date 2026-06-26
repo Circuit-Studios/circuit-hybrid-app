@@ -1,8 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import DateTimePicker, {
-  type DateTimePickerEvent,
-} from '@react-native-community/datetimepicker';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { colors, radius, spacing, typography } from '@/theme';
 
 interface DateFieldProps {
@@ -68,7 +66,7 @@ export function DateField({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${label}, ${hasValue ? displayValue : placeholder}`}
-        onPress={() => setOpen(prev => !prev)}
+        onPress={() => setOpen((prev) => !prev)}
         style={({ pressed }) => [
           styles.inputWrap,
           error ? styles.inputError : null,

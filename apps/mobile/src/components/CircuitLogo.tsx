@@ -1,33 +1,72 @@
-import { StyleSheet, View, type ViewStyle } from 'react-native';
-import CircuitLogoSvg from '../../assets/circuit-logo.svg';
-import { shadows } from '@/theme';
+import { Image, Platform, StyleSheet, View, type ViewStyle } from 'react-native';
+import { authPalette } from '@/theme/authPalette';
+
+const LOGO_SOURCE = require('../../assets/circuit-logo.png');
+
+type LogoSize = 'sm' | 'md' | 'lg' | 'auth';
 
 interface CircuitLogoProps {
-  size?: 'sm' | 'md' | 'lg';
+  size?: LogoSize;
+  /** Outer diameter — overrides `size` when set (responsive auth layouts). */
+  ringSize?: number;
   style?: ViewStyle;
 }
 
-/** Render sizes — SVG viewBox is 104×104. */
-const SIZES = {
-  sm: 52,
-  md: 80,
-  lg: 104,
-} as const;
+const DIAMETERS: Record<LogoSize, number> = {
+  sm: 60,
+  md: 78,
+  lg: 96,
+  auth: 82,
+};
 
-/** Welcome / in-app branding — always sourced from assets/circuit-logo.svg. */
-export function CircuitLogo({ size = 'md', style }: CircuitLogoProps) {
-  const side = SIZES[size];
+/**
+ * Circular Circuit emblem — original raster mark at
+ * apps/mobile/assets/circuit-logo.png (classical bust, no overlays).
+ * Image fills the ring exactly as in the source asset.
+ */
+export function CircuitLogo({ size = 'md', ringSize, style }: CircuitLogoProps) {
+  const diameter = ringSize ?? DIAMETERS[size];
 
   return (
-    <View style={[styles.wrap, { width: side, height: side }, shadows.glow, style]}>
-      <CircuitLogoSvg width={side} height={side} accessibilityLabel="Circuit" />
+    <View
+      style={[
+        styles.shell,
+        {
+          width: diameter,
+          height: diameter,
+          borderRadius: diameter / 2,
+        },
+        style,
+      ]}
+    >
+      <Image
+        source={LOGO_SOURCE}
+        style={{
+          width: diameter,
+          height: diameter,
+          borderRadius: diameter / 2,
+        }}
+        resizeMode="cover"
+        accessibilityLabel="Circuit"
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  shell: {
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: authPalette.logoBorder,
+    ...Platform.select({
+      ios: {
+        shadowColor: authPalette.brand,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.22,
+        shadowRadius: 8,
+      },
+      android: { elevation: 3 },
+      default: {},
+    }),
   },
 });

@@ -22,6 +22,7 @@ model User {
   id            String   @id @default(uuid())
   phone         String?  @unique
   email         String?  @unique
+  emailVerified Boolean  @default(false)
   firstName     String
   lastName      String
   defaultRole   UserRole @default(CREW) // role declared during signup
@@ -76,19 +77,54 @@ enum UserRole {
   VENDOR
 }
 
+enum OtpChannel {
+  PHONE
+  EMAIL
+}
+
+enum OtpPurpose {
+  SIGNUP
+  LOGIN
+  VERIFY_EMAIL
+  PASSWORD_RESET
+}
+
 model AuthOtp {
-  id        String   @id @default(uuid())
-  userId    String?
-  phone     String
-  codeHash  String
-  expiresAt DateTime
-  consumed  Boolean  @default(false)
-  createdAt DateTime @default(now())
+  /// Unified OTP storage for phone and email (channel + target + purpose).
+  ///
+  /// Canonical model — the legacy EmailOtp / email_otps table was removed
+  /// (migration 20260624120000_drop_email_otps). All OTP lifecycle logic lives in
+  /// otp.service.ts; do NOT add a second OTP table or channel-specific storage.
+  ///
+  /// TODO: drop legacy `phone` and `consumed` columns once all code uses
+  /// `target` + `consumedAt` only. See docs/OTP_STORAGE.md.
+  id         String     @id @default(uuid())
+  userId     String?
+  channel    OtpChannel @default(PHONE)
+  target     String?
+  phone      String?
+  purpose    OtpPurpose @default(LOGIN)
+  codeHash   String
+  attempts   Int        @default(0)
+  expiresAt  DateTime
+  consumed   Boolean    @default(false)
+  consumedAt DateTime?
+  createdAt  DateTime   @default(now())
 
-  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user       User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  @@index([phone, consumed])
+  @@index([channel, target, purpose, consumedAt])
   @@index([expiresAt])
+}
+
+model FeatureFlag {
+  key        String   @id
+  enabled    Boolean  @default(true)
+  configJson Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("feature_flags")
 }
 
 // ---------------- Project ----------------
@@ -135,6 +171,10 @@ model Project {
   shootDays       ShootDay[]
   conflictAlerts  ConflictAlert[]
   budgetLines     BudgetLine[]
+  backgroundJobs  BackgroundJob[]
+  shootingPlans   ShootingPlan[]
+  taskSuggestions TaskSuggestion[]
+  llmRuns         LlmRun[]
 
   @@index([ownerUserId])
 }
@@ -152,6 +192,9 @@ model ProjectMember {
   // For DEPT_HEAD / CREW, links them to a specific department on this project.
   projectDepartmentId String?
   status              MembershipStatus  @default(INVITED)
+  setStatus           SetStatus         @default(OFF)
+  setStatusNote       String?
+  setStatusUpdatedAt  DateTime?
   invitedAt           DateTime          @default(now())
   acceptedAt          DateTime?
 
@@ -171,6 +214,13 @@ enum MembershipStatus {
   INVITED
   ACTIVE
   REMOVED
+}
+
+enum SetStatus {
+  ON_SET
+  EN_ROUTE
+  DONE
+  OFF
 }
 
 // ---------------- Script & AI intelligence ----------------
@@ -214,6 +264,10 @@ model Script {
 
   project           Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
   uploadedBy        User                  @relation(fields: [uploadedByUserId], references: [id])
+  backgroundJobs    BackgroundJob[]
+  shootingPlans     ShootingPlan[]
+  taskSuggestions   TaskSuggestion[]
+  llmRuns           LlmRun[]
 
   @@index([projectId])
 }
@@ -533,4 +587,117 @@ model Notification {
   @@index([userId, readAt])
   @@index([userId, createdAt])
   @@index([projectId])
+}
+
+// ---------------- AI jobs, shooting plans, task suggestions ----------------
+
+enum BackgroundJobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+enum BackgroundJobKind {
+  SCRIPT_ANALYSIS
+  SHOOTING_PLAN
+}
+
+model BackgroundJob {
+  id         String              @id @default(uuid())
+  kind       BackgroundJobKind
+  status     BackgroundJobStatus @default(PENDING)
+  projectId  String
+  scriptId   String?
+  payload    Json?
+  error      String?
+  startedAt  DateTime?
+  endedAt    DateTime?
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+
+  project    Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  script     Script?             @relation(fields: [scriptId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, status])
+  @@index([scriptId])
+}
+
+enum TaskSuggestionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CONVERTED
+}
+
+model TaskSuggestion {
+  id                     String               @id @default(uuid())
+  projectId              String
+  scriptId               String?
+  shootingPlanId         String?
+  title                  String
+  description            String?
+  departmentKind         DepartmentKind
+  priority               TaskPriority         @default(MEDIUM)
+  sceneNumbers           String[]             @default([])
+  characterNames         String[]             @default([])
+  estimatedDueOffsetDays Int?
+  status                 TaskSuggestionStatus @default(PENDING)
+  convertedTaskId        String?
+  reviewedByUserId       String?
+  reviewedAt             DateTime?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  project                Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  script                 Script?              @relation(fields: [scriptId], references: [id], onDelete: SetNull)
+  shootingPlan           ShootingPlan?        @relation(fields: [shootingPlanId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, status])
+  @@index([scriptId])
+}
+
+model ShootingPlan {
+  id              String   @id @default(uuid())
+  projectId       String
+  scriptId        String
+  summary         String   @db.Text
+  totalShootDays  Int
+  risks           Json
+  plan            Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  project         Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  script          Script           @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  taskSuggestions TaskSuggestion[]
+
+  @@index([projectId])
+  @@index([scriptId])
+}
+
+enum LlmRunStatus {
+  SUCCEEDED
+  FAILED
+}
+
+model LlmRun {
+  id           String       @id @default(uuid())
+  provider     String
+  model        String
+  stage        String
+  projectId    String?
+  scriptId     String?
+  inputTokens  Int?
+  outputTokens Int?
+  durationMs   Int
+  status       LlmRunStatus
+  error        String?
+  createdAt    DateTime     @default(now())
+
+  project      Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  script       Script?      @relation(fields: [scriptId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt])
+  @@index([scriptId, createdAt])
 }

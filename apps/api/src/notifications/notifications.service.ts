@@ -21,11 +21,7 @@ import type { NotificationChannel, NotificationKind, Prisma } from '@prisma/clie
 import { prisma } from '../lib/prisma.js';
 import { logger } from '../lib/logger.js';
 import { emitToUser } from '../realtime/socket.js';
-import {
-  FATAL_PUSH_ERRORS,
-  sendExpoPush,
-  type ExpoPushMessage,
-} from './expo-push.provider.js';
+import { FATAL_PUSH_ERRORS, sendExpoPush, type ExpoPushMessage } from './expo-push.provider.js';
 
 export interface DispatchNotificationInput {
   userIds: string[];
@@ -55,7 +51,7 @@ export async function dispatchNotification(input: DispatchNotificationInput): Pr
   try {
     // ---- 1. Always: write IN_APP inbox rows + push events --------------
     const inAppRows = await Promise.all(
-      recipients.map(userId =>
+      recipients.map((userId) =>
         prisma.notification.create({
           data: {
             userId,
@@ -92,7 +88,7 @@ export async function dispatchNotification(input: DispatchNotificationInput): Pr
     });
     if (tokens.length === 0) return;
 
-    const messages: ExpoPushMessage[] = tokens.map(t => ({
+    const messages: ExpoPushMessage[] = tokens.map((t) => ({
       to: t.token,
       title: input.title,
       body: input.body,
@@ -114,7 +110,7 @@ export async function dispatchNotification(input: DispatchNotificationInput): Pr
       results.map(async (result, idx) => {
         const token = tokens[idx];
         if (!token) return;
-        const inApp = inAppRows.find(r => r.userId === token.userId);
+        const inApp = inAppRows.find((r) => r.userId === token.userId);
         const baseUpdate = inApp
           ? prisma.notification.update({
               where: { id: inApp.id },
@@ -143,7 +139,10 @@ export async function dispatchNotification(input: DispatchNotificationInput): Pr
     }
   } catch (err) {
     // Never let notification failures bubble up to the caller.
-    logger.error({ err, kind: input.kind, recipients: recipients.length }, 'dispatchNotification failed');
+    logger.error(
+      { err, kind: input.kind, recipients: recipients.length },
+      'dispatchNotification failed',
+    );
   }
 }
 

@@ -5,10 +5,7 @@ import { FormErrorText } from '@/components/FormErrorText';
 import { LabeledInput } from '@/components/LabeledInput';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { LanguagePicker } from '@/components/LanguagePicker';
-import {
-  FormSheetActions,
-  FormSheetChrome,
-} from '@/components/ui/FormSheet';
+import { FormSheetActions, FormSheetChrome } from '@/components/ui/FormSheet';
 import { createProject, type CreateProjectInput } from '@/api/projects';
 import { qk } from '@/api/queryKeys';
 import { readApiError } from '@/api/client';
@@ -48,14 +45,14 @@ export function CreateProjectSheet({ onClose, onCreated }: CreateProjectSheetPro
 
   const mutation = useMutation({
     mutationFn: (input: CreateProjectInput) => createProject(input),
-    onSuccess: project => {
+    onSuccess: (project) => {
       void qc.invalidateQueries({ queryKey: qk.projects() });
       onCreated(project.id);
     },
   });
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
-    setForm(prev => ({ ...prev, [key]: value }));
+    setForm((prev) => ({ ...prev, [key]: value }));
   }
 
   function handleClose() {
@@ -111,14 +108,14 @@ export function CreateProjectSheet({ onClose, onCreated }: CreateProjectSheetPro
             label="Film Name"
             placeholder="e.g. Vajra"
             value={form.name}
-            onChangeText={v => update('name', v)}
+            onChangeText={(v) => update('name', v)}
             autoCapitalize="words"
           />
           <View style={styles.spacer} />
           <LanguagePicker
             multiple
             value={form.languages}
-            onChange={v => update('languages', v)}
+            onChange={(v) => update('languages', v)}
             variant="dropdown"
             placeholder="Select a Language"
           />
@@ -127,7 +124,7 @@ export function CreateProjectSheet({ onClose, onCreated }: CreateProjectSheetPro
             label="Genre"
             placeholder="e.g. Action thriller"
             value={form.genre}
-            onChangeText={v => update('genre', v)}
+            onChangeText={(v) => update('genre', v)}
           />
         </View>
       ) : null}
@@ -144,14 +141,14 @@ export function CreateProjectSheet({ onClose, onCreated }: CreateProjectSheetPro
             placeholder="e.g. 12"
             keyboardType="decimal-pad"
             value={form.budgetMin}
-            onChangeText={v => update('budgetMin', v)}
+            onChangeText={(v) => update('budgetMin', v)}
           />
           <LabeledInput
             label="Max budget (₹ crore)"
             placeholder="e.g. 18"
             keyboardType="decimal-pad"
             value={form.budgetMax}
-            onChangeText={v => update('budgetMax', v)}
+            onChangeText={(v) => update('budgetMax', v)}
           />
         </View>
       ) : null}

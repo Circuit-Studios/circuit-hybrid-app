@@ -79,16 +79,16 @@ flowchart LR
 
 ### Why these choices
 
-| Concern | Decision | Reason |
-|---|---|---|
-| API framework | **Express 4** | Minimal, battle-tested, easy to host on Render/Railway |
-| ORM | **Prisma** | Typed schema, painless migrations, strong dev ergonomics |
-| Realtime | **Socket.IO** | Built-in JWT handshake, rooms, auto-reconnect, RN-friendly |
-| Background jobs | **BullMQ + Redis** | Per-event conflict scans without a 1-minute cron lag |
-| AI calls | **OpenAI strict JSON schema + Zod** | Removes 90% of "AI returned garbage" failures |
-| File storage | **Local disk (`uploads/`)** | Simple on Render; add persistent disk for prod uploads |
-| OTP | **MSG91 / Twilio adapters behind one interface** | Swap providers without touching routes |
-| Push | **Expo Push API** | Single endpoint for iOS + Android dev clients |
+| Concern         | Decision                                         | Reason                                                     |
+| --------------- | ------------------------------------------------ | ---------------------------------------------------------- |
+| API framework   | **Express 4**                                    | Minimal, battle-tested, easy to host on Render/Railway     |
+| ORM             | **Prisma**                                       | Typed schema, painless migrations, strong dev ergonomics   |
+| Realtime        | **Socket.IO**                                    | Built-in JWT handshake, rooms, auto-reconnect, RN-friendly |
+| Background jobs | **BullMQ + Redis**                               | Per-event conflict scans without a 1-minute cron lag       |
+| AI calls        | **OpenAI strict JSON schema + Zod**              | Removes 90% of "AI returned garbage" failures              |
+| File storage    | **Local disk (`uploads/`)**                      | Simple on Render; add persistent disk for prod uploads     |
+| OTP             | **MSG91 / Twilio adapters behind one interface** | Swap providers without touching routes                     |
+| Push            | **Expo Push API**                                | Single endpoint for iOS + Android dev clients              |
 
 ---
 
@@ -123,7 +123,11 @@ apps/api/
 │   │   ├── auth/                    # /auth/* — OTP, JWT, /me
 │   │   │   ├── auth.routes.ts
 │   │   │   ├── otp.service.ts
-│   │   │   └── providers/msg91.provider.ts
+│   │   │   └── providers/
+│   │   │       ├── otp-delivery.ts          # getOtpDeliveryProvider + MOCK selection
+│   │   │       ├── msg91-phone.provider.ts  # MSG91 SMS (channel=PHONE)
+│   │   │       ├── resend-email.provider.ts # Resend hosted template (channel=EMAIL)
+│   │   │       └── types.ts
 │   │   ├── projects/                # /projects/* — create + list
 │   │   ├── scripts/                 # /projects/:id/scripts upload + analyze
 │   │   ├── members/                 # invite / accept / remove
@@ -217,7 +221,18 @@ sequenceDiagram
 3. `express.json({ limit: '2mb' })` — small JSON only; PDFs use multer
 4. `cors()` — allow-list in prod, permissive in dev
 5. `pino-http` — request log line, skips `/health`
-6. **Public routes:** `/health`, `/auth/request-otp`, `/auth/verify-otp`
+   **Auth API (public):**
+
+| Route                    | Purpose                                                         |
+| ------------------------ | --------------------------------------------------------------- |
+| `POST /auth/request-otp` | Signup/login OTP (`purpose`: `signup` or `login`) |
+| `POST /auth/verify-otp`  | Verify signup/login OTP → session JWT              |
+| `POST /email/request-otp` | Post-account email verification (send code)       |
+| `POST /email/verify-otp`  | Confirm email verification → `emailVerified`      |
+| `POST /auth/login`       | Email + password sign-in                                        |
+| `POST /auth/register`    | Local dev only (`APP_ENV=local` + `ALLOW_DIRECT_REGISTER=true`) |
+
+6. **Public routes:** `/health`, `/auth/*` (see table above), `/app/config`
    (rate-limited 10 req/min in prod)
 7. **Protected routes:** everything else, gated by `requireAuth` and (where
    relevant) `requireProjectRole`
@@ -225,39 +240,40 @@ sequenceDiagram
 
 ---
 
-## 4. Authentication flow (phone OTP)
+## 4. Authentication flow (unified OTP)
+
+Phone and email OTPs share one `AuthOtp` table (`channel`, `target`, `purpose`) and
+`otp.service.ts`. Delivery adapters (MSG91, Resend, MOCK) send codes only — they do not
+persist rows. See [OTP_STORAGE.md](./OTP_STORAGE.md).
 
 ```mermaid
 sequenceDiagram
   participant App
   participant API
-  participant OTP as OTP provider
+  participant Delivery as OTP delivery (MSG91 / Resend / MOCK)
   participant DB as Postgres
 
-  App->>API: POST /auth/request-otp { phone }
-  API->>DB: insert AuthOtp { phone, codeHash, expiresAt = now+5m }
-  API->>OTP: send SMS (MSG91 / TWILIO / MOCK)
+  App->>API: POST /auth/request-otp { channel, email|phone, purpose }
+  API->>DB: insert AuthOtp { channel, target, purpose, codeHash, expiresAt }
+  API->>Delivery: send code (SMS or email)
   API-->>App: { ok, ttlSeconds }
 
-  App->>API: POST /auth/verify-otp { phone, code, signup? }
-  API->>DB: find unconsumed AuthOtp for phone
-  API->>API: compare codeHash, mark consumed
-  alt user exists
-    API->>DB: select User by phone
-  else first sign-in
-    API->>DB: insert User { name, defaultRole }
-    API->>DB: ProjectMember.updateMany — link pending invites by phone
+  App->>API: POST /auth/verify-otp { channel, email|phone, code, signup? }
+  API->>DB: find active AuthOtp for channel+target+purpose
+  API->>API: verify codeHash, increment attempts or mark consumedAt
+  alt signup
+    API->>DB: insert User { …, passwordHash }
+  else login / verify_email
+    API->>DB: select or update User
   end
-  API->>API: signJwt({ sub, phone, name, defaultRole })
-  API-->>App: { token, user }
+  API->>API: signJwt({ sub, … })
+  API-->>App: { token, user } or { emailVerified }
 ```
 
-- **Dev:** `OTP_PROVIDER=MOCK` returns a fixed code `111111` (server-side
-  check), so testers don't need real SMS.
-- **Prod:** flip to `MSG91` (or `TWILIO`) and provide the auth key + template id.
-- **Auto-linking:** if an invite was created against the same phone, the
-  invitee's `userId` gets backfilled on first sign-in, so their pending
-  invites surface immediately under `GET /auth/me/invites`.
+- **Dev:** `EMAIL_OTP_PROVIDER=MOCK` / `PHONE_OTP_PROVIDER=MOCK` use fixed code `111111`.
+- **Prod:** configure Resend (email) and MSG91 (phone) via env — see [ENVIRONMENT.md](../../docs/ENVIRONMENT.md).
+- **Sign-in (mobile):** email + password via `POST /auth/login` — not OTP login.
+- **Auto-linking:** pending project invites link on first sign-in when phone/email matches.
 
 ---
 
@@ -289,15 +305,15 @@ flowchart LR
 
 ### Per-stage contract
 
-| Stage | Prompt builder | Output schema | Persisted to |
-|---|---|---|---|
-| 0 | n/a | raw text | `Script.rawText`, `Script.pageCount` |
-| 1 | `buildCharactersPrompt` | `aiCharactersResponseSchema` | `Character` |
-| 2 | `buildScenesPrompt` | `aiScenesResponseSchema` | `Scene` + `SceneAppearance` |
-| 3 | `buildCombinationsPrompt` | `aiCombinationsResponseSchema` | `Script.aiSummary.combinations` |
-| 4 | `buildDepartmentsPrompt` | `aiDepartmentsResponseSchema` | `ProjectDepartment` |
-| 5 | `buildShootDaysPrompt` | `aiShootDaysResponseSchema` | `Script.aiSummary.estimatedShootDays` |
-| 6 | `buildBudgetPrompt` | `aiBudgetResponseSchema` | `BudgetLine` |
+| Stage | Prompt builder            | Output schema                  | Persisted to                          |
+| ----- | ------------------------- | ------------------------------ | ------------------------------------- |
+| 0     | n/a                       | raw text                       | `Script.rawText`, `Script.pageCount`  |
+| 1     | `buildCharactersPrompt`   | `aiCharactersResponseSchema`   | `Character`                           |
+| 2     | `buildScenesPrompt`       | `aiScenesResponseSchema`       | `Scene` + `SceneAppearance`           |
+| 3     | `buildCombinationsPrompt` | `aiCombinationsResponseSchema` | `Script.aiSummary.combinations`       |
+| 4     | `buildDepartmentsPrompt`  | `aiDepartmentsResponseSchema`  | `ProjectDepartment`                   |
+| 5     | `buildShootDaysPrompt`    | `aiShootDaysResponseSchema`    | `Script.aiSummary.estimatedShootDays` |
+| 6     | `buildBudgetPrompt`       | `aiBudgetResponseSchema`       | `BudgetLine`                          |
 
 - **`chatJson()`** uses OpenAI **strict JSON Schema** + Zod parse as a safety
   net. On a schema mismatch it retries once with a tighter system prompt
@@ -437,13 +453,13 @@ it:
 
 Wired call sites:
 
-| Trigger | Kind |
-|---|---|
-| Conflict detector | `CONFLICT_ALERT` |
-| Shoot-day call upsert | `SHOOT_DAY_CALL` |
-| Member invite (existing user) | `PROJECT_INVITE` |
-| Task create / reassignment | `TASK_ASSIGNED` |
-| AI pipeline COMPLETED | `AI_ANALYSIS_DONE` |
+| Trigger                       | Kind               |
+| ----------------------------- | ------------------ |
+| Conflict detector             | `CONFLICT_ALERT`   |
+| Shoot-day call upsert         | `SHOOT_DAY_CALL`   |
+| Member invite (existing user) | `PROJECT_INVITE`   |
+| Task create / reassignment    | `TASK_ASSIGNED`    |
+| AI pipeline COMPLETED         | `AI_ANALYSIS_DONE` |
 
 ---
 
@@ -463,16 +479,16 @@ Cross-stack view (mobile + backend + DB + OTP): see [DEPLOYMENT.md § Recommende
 
 Backend-only variables by tier:
 
-| Variable | Dev (Docker) | Prod (Render) |
-|---|---|---|
-| `NODE_ENV` | `development` | `production` |
-| `DATABASE_URL` | `postgresql://circuit@localhost:5432/circuit_dev` | Supabase pooler or Render Postgres |
-| `REDIS_URL` | `redis://localhost:6379` *(optional)* | Render Redis URL *(optional)* |
-| `JWT_SECRET` | dev placeholder | strong random ≥ 32 chars |
-| `OTP_PROVIDER` | `MOCK` (fixed code `111111`) | `MSG91` / `TWILIO` |
-| `EXPO_PUSH_PROVIDER` | `MOCK` | `EXPO` |
-| `OPENAI_API_KEY` | dev key | real key |
-| `CORS_ORIGINS` | localhost origins | empty OK for mobile-only |
+| Variable             | Dev (Docker)                                      | Prod (Render)                 |
+| -------------------- | ------------------------------------------------- | ----------------------------- |
+| `NODE_ENV`           | `development`                                     | `production`                  |
+| `DATABASE_URL`       | `postgresql://circuit@localhost:5432/circuit_dev` | Supabase pooler URL           |
+| `REDIS_URL`          | `redis://localhost:6379` _(optional)_             | Render Redis URL _(optional)_ |
+| `JWT_SECRET`         | dev placeholder                                   | strong random ≥ 32 chars      |
+| `OTP_PROVIDER`       | `MOCK` (fixed code `111111`)                      | `MSG91` / `TWILIO`            |
+| `EXPO_PUSH_PROVIDER` | `MOCK`                                            | `EXPO`                        |
+| `OPENAI_API_KEY`     | dev key                                           | real key                      |
+| `CORS_ORIGINS`       | localhost origins                                 | empty OK for mobile-only      |
 
 Full schema lives in `src/config/env.ts` — invalid envs **fail boot** with
 a printed list of missing/invalid values.
@@ -516,14 +532,14 @@ tests/
 
 ## 14. Operational playbook
 
-| Symptom | Look at |
-|---|---|
-| Sign-in stuck "Sending code" | `auth.routes.ts` log; check `OTP_PROVIDER` env |
-| Script stuck "ANALYZING_…" | `script-analysis.pipeline.ts` log line; OpenAI quota |
-| Conflict alerts not firing | `conflicts.queue.ts` worker log; `REDIS_URL` reachable? |
-| Push not delivered | `expo-push.provider.ts` ticket result + `PushToken.pushError` |
-| Realtime not updating UI | confirm client joined `project:{id}` room; check JWT in handshake |
-| 401 loop on mobile | `requireAuth` rejected the JWT — likely `JWT_SECRET` rotated |
+| Symptom                      | Look at                                                           |
+| ---------------------------- | ----------------------------------------------------------------- |
+| Sign-in stuck "Sending code" | `auth.routes.ts` log; check `OTP_PROVIDER` env                    |
+| Script stuck "ANALYZING\_…"  | `script-analysis.pipeline.ts` log line; OpenAI quota              |
+| Conflict alerts not firing   | `conflicts.queue.ts` worker log; `REDIS_URL` reachable?           |
+| Push not delivered           | `expo-push.provider.ts` ticket result + `PushToken.pushError`     |
+| Realtime not updating UI     | confirm client joined `project:{id}` room; check JWT in handshake |
+| 401 loop on mobile           | `requireAuth` rejected the JWT — likely `JWT_SECRET` rotated      |
 
 ---
 

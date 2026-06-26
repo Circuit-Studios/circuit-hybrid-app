@@ -22,6 +22,15 @@ import {
   normalizeNationalDigits,
   toE164,
 } from '@/lib/phone';
+import { authPalette } from '@/theme/authPalette';
+import { authInputChrome } from '@/theme/authInputChrome';
+import { authFieldLabelStyle } from '@/theme/authTypography';
+import {
+  authFieldRowStyleFromMetrics,
+  authInputTextStyle,
+  type AuthFieldVariant,
+} from '@/theme/fields';
+import { useAuthMetrics } from '@/features/auth/AuthMetricsContext';
 import { colors, radius, spacing, typography } from '@/theme';
 
 interface PhoneFieldProps {
@@ -36,6 +45,9 @@ interface PhoneFieldProps {
   error?: string;
   containerStyle?: ViewStyle;
   showError?: boolean;
+  fieldVariant?: AuthFieldVariant;
+  hideLabel?: boolean;
+  placeholder?: string;
 }
 
 export function PhoneField({
@@ -49,8 +61,14 @@ export function PhoneField({
   error: errorProp,
   containerStyle,
   showError = true,
+  fieldVariant = 'signIn',
+  hideLabel = false,
+  placeholder = '10-digit mobile number',
 }: PhoneFieldProps) {
   const [focused, setFocused] = useState(false);
+  const metrics = useAuthMetrics();
+  const fieldHeight = metrics.inputHeight;
+  const gap = metrics.fieldGap;
   const [pickerOpen, setPickerOpen] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -85,7 +103,11 @@ export function PhoneField({
 
     // Backspace on a formatting character (space, dash, parens) does not change
     // digitsOnly(text) — treat that as deleting the last digit instead.
-    if (text.length < nationalNumber.length && nextDigits.length === prevDigits.length && prevDigits.length > 0) {
+    if (
+      text.length < nationalNumber.length &&
+      nextDigits.length === prevDigits.length &&
+      prevDigits.length > 0
+    ) {
       nextDigits = prevDigits.slice(0, -1);
     }
 
@@ -104,20 +126,26 @@ export function PhoneField({
   }
 
   return (
-    <View style={[styles.wrap, containerStyle]}>
-      <Text style={styles.label}>{label}</Text>
+    <View style={[styles.wrap, { marginBottom: gap }, containerStyle]}>
+      {!hideLabel ? <Text style={styles.label}>{label}</Text> : null}
       <View
         style={[
+          authFieldRowStyleFromMetrics(metrics),
           styles.row,
-          focused && !error ? styles.rowFocused : null,
-          error ? styles.rowError : null,
+          authInputChrome.base,
+          focused && !error ? authInputChrome.focused : null,
+          error ? authInputChrome.error : null,
         ]}
       >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Country code, ${countryName(country)}, ${dialCode(country)}`}
           onPress={() => setPickerOpen(true)}
-          style={({ pressed }) => [styles.countryBtn, pressed && styles.countryBtnPressed]}
+          style={({ pressed }) => [
+            styles.countryBtn,
+            { height: fieldHeight },
+            pressed && styles.countryBtnPressed,
+          ]}
         >
           <CountryFlag code={country} size={20} />
           <Text style={styles.dial}>{dialCode(country)}</Text>
@@ -128,12 +156,12 @@ export function PhoneField({
           style={styles.input}
           value={nationalNumber}
           onChangeText={updateNational}
-          placeholder="10-digit mobile number"
-          placeholderTextColor={colors.textMuted}
+          placeholder={placeholder}
+          placeholderTextColor={authPalette.inputPlaceholder}
           keyboardType="number-pad"
           autoComplete="tel"
           textContentType="telephoneNumber"
-          selectionColor={colors.accent}
+          selectionColor={authPalette.brand}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           accessibilityLabel="Mobile number"
@@ -172,7 +200,7 @@ export function PhoneField({
           />
           <FlatList
             data={countries}
-            keyExtractor={item => item}
+            keyExtractor={(item) => item}
             keyboardShouldPersistTaps="handled"
             renderItem={({ item }) => {
               const active = item === country;
@@ -217,52 +245,42 @@ export function usePhoneFieldState(initialCountry?: CountryCode) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginBottom: spacing.lg },
+  wrap: {},
   label: {
-    ...typography.micro,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
+    ...authFieldLabelStyle,
+    color: authPalette.label,
+    marginBottom: 8,
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.glass,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    borderRadius: radius.lg,
-    minHeight: 52,
     overflow: 'hidden',
   },
-  rowFocused: {
-    borderColor: colors.accent,
-    backgroundColor: colors.surface,
-  },
-  rowError: { borderColor: colors.danger },
   countryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
     gap: spacing.xs,
   },
   countryBtnPressed: { opacity: 0.85 },
-  dial: { ...typography.bodyStrong, color: colors.textPrimary },
-  chev: { ...typography.caption, color: colors.textMuted, marginLeft: 2 },
+  dial: { ...typography.bodyStrong, color: authPalette.inputText },
+  chev: { ...typography.caption, color: authPalette.muted, marginLeft: 2 },
   divider: {
     width: 1,
     alignSelf: 'stretch',
-    backgroundColor: colors.glassBorder,
+    backgroundColor: authPalette.inputBorder,
     marginVertical: spacing.sm,
   },
   input: {
     flex: 1,
-    color: colors.textPrimary,
+    color: authPalette.inputText,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    ...typography.body,
+    ...authInputTextStyle,
   },
-  hint: { ...typography.caption, color: colors.textMuted, marginTop: spacing.xs },
-  errorText: { ...typography.caption, color: colors.danger, marginTop: spacing.xs },
+  hint: {
+    ...typography.caption,
+    color: authPalette.segmentInactiveText,
+    marginTop: 8,
+  },
+  errorText: { ...typography.caption, color: authPalette.error, marginTop: spacing.xs },
   modal: {
     flex: 1,
     backgroundColor: colors.bg,

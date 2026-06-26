@@ -1,61 +1,180 @@
-import { randomInt } from 'node:crypto';
-import bcrypt from 'bcryptjs';
+/**
+ * Unified OTP issue + verify for all channels and purposes.
+ *
+ * Storage: AuthOtp only (channel + target + purpose). The legacy EmailOtp table
+ * was removed — do not add channel-specific OTP services or models.
+ *
+ * Delivery (send SMS/email) is delegated to providers/; this module owns DB lifecycle.
+ * See docs/OTP_STORAGE.md.
+ */
+import { OtpChannel, OtpPurpose } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { badRequest, unauthorized } from '../../lib/http.js';
-import { getOtpProvider } from './providers/msg91.provider.js';
-import { env } from '../../config/env.js';
+import {
+  OTP_MAX_ATTEMPTS,
+  OTP_RESEND_COOLDOWN_SECONDS,
+  OTP_TTL_SECONDS,
+} from './auth.constants.js';
+import { activeAuthOtpWhere, consumeAuthOtpData } from './auth-otp.store.js';
+import { normalizeOtpTarget } from './otp-target.js';
+import { getOtpDeliveryProvider } from './providers/otp-delivery.js';
+import { generateSixDigitOtp, hashOtpCode, normalizeEmail, verifyOtpCode } from './otp-crypto.js';
+import {
+  flowPurposeToOtpPurpose,
+  purposeToApiLabel,
+  toOtpDeliveryPurpose,
+  toOtpPurpose,
+  type OtpFlowPurpose,
+} from './otp-purpose.js';
+import { assertOtpChannelEnabled } from './verification-policy.js';
+import { logOtpFailed, logOtpRequested, logOtpVerified } from './otp-logging.js';
 
-import { OTP_TTL_SECONDS } from './auth.constants.js';
+export const OTP_TTL_MS = OTP_TTL_SECONDS * 1000;
+export const GENERIC_SEND_SUCCESS = 'If the email is valid, a verification code has been sent.';
 
-const OTP_RESEND_COOLDOWN_SECONDS = 30;
+const GENERIC_VERIFY_FAILURE = 'Invalid or expired verification code.';
 
-// Dev convenience: when the OTP provider is MOCK (no real SMS), use a fixed
-// code so testers don't have to scrape it from server logs. Production
-// providers (MSG91, TWILIO, ...) always use a random 6-digit code.
-const DEV_FIXED_OTP = '111111';
-
-function generateOtp(): string {
-  if (env.OTP_PROVIDER === 'MOCK') return DEV_FIXED_OTP;
-  return randomInt(100_000, 1_000_000).toString();
+export interface RequestOtpInput {
+  channel: OtpChannel;
+  target: string;
+  purpose?: OtpFlowPurpose;
 }
 
-async function deliver(phone: string, code: string): Promise<void> {
-  await getOtpProvider().send(phone, code);
+export interface VerifyOtpInput {
+  channel: OtpChannel;
+  target: string;
+  code: string;
+  purpose?: OtpFlowPurpose;
 }
 
-export async function requestOtp(phone: string): Promise<void> {
+function normalizeTarget(channel: OtpChannel, target: string): string {
+  return channel === OtpChannel.EMAIL
+    ? normalizeEmail(target)
+    : normalizeOtpTarget(channel, target);
+}
+
+function deliveryChannel(channel: OtpChannel): 'EMAIL' | 'PHONE' {
+  return channel === OtpChannel.EMAIL ? 'EMAIL' : 'PHONE';
+}
+
+async function issueOtp(
+  channel: OtpChannel,
+  target: string,
+  otpPurpose: OtpPurpose,
+): Promise<void> {
+  const normalized = normalizeTarget(channel, target);
+  const now = new Date();
+  const activeWhere = activeAuthOtpWhere(channel, normalized, otpPurpose);
+
   const recent = await prisma.authOtp.findFirst({
-    where: { phone, consumed: false },
+    where: activeWhere,
     orderBy: { createdAt: 'desc' },
   });
   if (recent && Date.now() - recent.createdAt.getTime() < OTP_RESEND_COOLDOWN_SECONDS * 1000) {
-    throw badRequest(`Please wait before requesting another code (${OTP_RESEND_COOLDOWN_SECONDS}s).`);
+    throw badRequest(
+      `Please wait ${OTP_RESEND_COOLDOWN_SECONDS} seconds before requesting another code.`,
+    );
   }
 
-  const code = generateOtp();
-  const codeHash = await bcrypt.hash(code, 10);
-  const expiresAt = new Date(Date.now() + OTP_TTL_SECONDS * 1000);
+  await prisma.authOtp.updateMany({
+    where: activeWhere,
+    data: consumeAuthOtpData(now),
+  });
+
+  const plainOtp = generateSixDigitOtp(deliveryChannel(channel));
+  const codeHash = hashOtpCode(plainOtp);
+  const expiresAt = new Date(Date.now() + OTP_TTL_MS);
 
   await prisma.authOtp.create({
-    data: { phone, codeHash, expiresAt },
+    data: {
+      channel,
+      target: normalized,
+      phone: channel === OtpChannel.PHONE ? normalized : undefined,
+      purpose: otpPurpose,
+      codeHash,
+      expiresAt,
+    },
   });
 
-  await deliver(phone, code);
+  const deliveryPurpose = toOtpDeliveryPurpose(otpPurpose);
+  logOtpRequested(channel, normalized, purposeToApiLabel(otpPurpose));
+
+  try {
+    await getOtpDeliveryProvider(deliveryChannel(channel)).send({
+      channel: deliveryChannel(channel),
+      target: normalized,
+      code: plainOtp,
+      purpose: deliveryPurpose,
+    });
+  } catch (err) {
+    logOtpFailed(channel, normalized, err instanceof Error ? err.message : 'send_failed');
+    throw err;
+  }
 }
 
-export async function verifyOtp(phone: string, code: string): Promise<true> {
-  const candidate = await prisma.authOtp.findFirst({
-    where: { phone, consumed: false, expiresAt: { gt: new Date() } },
+async function verifyIssuedOtp(
+  channel: OtpChannel,
+  target: string,
+  code: string,
+  otpPurpose: OtpPurpose,
+): Promise<void> {
+  const normalized = normalizeTarget(channel, target);
+  const record = await prisma.authOtp.findFirst({
+    where: {
+      ...activeAuthOtpWhere(channel, normalized, otpPurpose),
+      expiresAt: { gt: new Date() },
+    },
     orderBy: { createdAt: 'desc' },
   });
-  if (!candidate) throw unauthorized('No active OTP for this phone number');
 
-  const ok = await bcrypt.compare(code, candidate.codeHash);
-  if (!ok) throw unauthorized('Invalid OTP');
+  if (!record) {
+    throw unauthorized(GENERIC_VERIFY_FAILURE);
+  }
 
-  await prisma.authOtp.update({
-    where: { id: candidate.id },
-    data: { consumed: true },
-  });
+  if (record.attempts >= OTP_MAX_ATTEMPTS) {
+    throw unauthorized(GENERIC_VERIFY_FAILURE);
+  }
+
+  const valid = verifyOtpCode(code, record.codeHash);
+  if (!valid) {
+    await prisma.authOtp.update({
+      where: { id: record.id },
+      data: { attempts: { increment: 1 } },
+    });
+    logOtpFailed(channel, normalized, 'invalid_code');
+    throw unauthorized(GENERIC_VERIFY_FAILURE);
+  }
+
+  const verifiedAt = new Date();
+  if (channel === OtpChannel.EMAIL && otpPurpose === OtpPurpose.VERIFY_EMAIL) {
+    await prisma.$transaction([
+      prisma.authOtp.update({
+        where: { id: record.id },
+        data: consumeAuthOtpData(verifiedAt),
+      }),
+      prisma.user.updateMany({
+        where: { email: normalized },
+        data: { emailVerified: true },
+      }),
+    ]);
+  } else {
+    await prisma.authOtp.update({
+      where: { id: record.id },
+      data: consumeAuthOtpData(verifiedAt),
+    });
+  }
+  logOtpVerified(channel, normalized, purposeToApiLabel(otpPurpose));
+}
+
+export async function requestOtp({ channel, target, purpose }: RequestOtpInput): Promise<void> {
+  await assertOtpChannelEnabled(channel);
+  await issueOtp(channel, target, flowPurposeToOtpPurpose(purpose));
+}
+
+export async function verifyOtp({ channel, target, code, purpose }: VerifyOtpInput): Promise<true> {
+  await assertOtpChannelEnabled(channel);
+  await verifyIssuedOtp(channel, target, code, flowPurposeToOtpPurpose(purpose));
   return true;
 }
+
+export { flowPurposeToOtpPurpose, toOtpPurpose };

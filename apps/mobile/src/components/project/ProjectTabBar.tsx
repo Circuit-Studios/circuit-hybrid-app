@@ -1,26 +1,37 @@
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useContentFrame } from '@/hooks/useContentFrame';
-import { colors, radius, shadows, spacing, typography } from '@/theme';
+import {
+  FloatingTabBar,
+  floatingTabIconColor,
+  floatingTabIconSize,
+  type FloatingTabItem,
+} from '@/components/ui/FloatingTabBar';
 
 export type ProjectTab = 'workspace' | 'tasks' | 'schedule' | 'team';
 
-interface ProjectTabBarProps {
+const TAB_META: Record<
+  ProjectTab,
+  {
+    label: string;
+    icon: keyof typeof Ionicons.glyphMap;
+  }
+> = {
+  workspace: { label: 'Overview', icon: 'home-outline' },
+  tasks: { label: 'Tasks', icon: 'list-outline' },
+  schedule: { label: 'Schedule', icon: 'calendar-outline' },
+  team: { label: 'Team', icon: 'people-outline' },
+};
+
+export interface ProjectTabBarProps {
   projectId: string;
   active: ProjectTab;
 }
 
-const TABS: { id: ProjectTab; label: string }[] = [
-  { id: 'workspace', label: 'Workspace' },
-  { id: 'tasks', label: 'Tasks' },
-  { id: 'schedule', label: 'Schedule' },
-  { id: 'team', label: 'Team' },
-];
-
+/** Project workspace navigation — floating glass capsule tab bar. */
 export function ProjectTabBar({ projectId, active }: ProjectTabBarProps) {
   const router = useRouter();
-  const { horizontalPadding, maxWidth } = useContentFrame('auto');
+
   const targets = useMemo(
     () =>
       ({
@@ -32,70 +43,26 @@ export function ProjectTabBar({ projectId, active }: ProjectTabBarProps) {
     [projectId],
   );
 
-  return (
-    <View style={[styles.outer, { paddingHorizontal: horizontalPadding }]}>
-      <View
-        style={[
-          styles.frame,
-          maxWidth != null && { maxWidth, width: '100%', alignSelf: 'center' },
-        ]}
-      >
-        <View style={[styles.bar, shadows.md]}>
-          {TABS.map(tab => {
-            const isActive = tab.id === active;
-            return (
-              <Pressable
-                key={tab.id}
-                style={[styles.btn, isActive && styles.btnActive]}
-                onPress={() => {
-                  if (isActive) return;
-                  router.replace(targets[tab.id]);
-                }}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: isActive }}
-              >
-                <Text style={[styles.label, isActive && styles.labelActive]}>{tab.label}</Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-    </View>
-  );
-}
+  const items: FloatingTabItem[] = (Object.keys(TAB_META) as ProjectTab[]).map((tab) => {
+    const meta = TAB_META[tab];
+    const isActive = tab === active;
+    return {
+      key: tab,
+      label: meta.label,
+      accessibilityLabel: meta.label,
+      icon: (
+        <Ionicons
+          name={meta.icon}
+          size={floatingTabIconSize(isActive)}
+          color={floatingTabIconColor(isActive)}
+        />
+      ),
+      onPress: () => {
+        if (tab === active) return;
+        router.replace(targets[tab]);
+      },
+    };
+  });
 
-const styles = StyleSheet.create({
-  outer: {
-    paddingBottom: spacing.lg,
-    paddingTop: spacing.sm,
-    backgroundColor: 'transparent',
-  },
-  frame: { width: '100%' },
-  bar: {
-    flexDirection: 'row',
-    backgroundColor: colors.surfaceGlass,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    padding: spacing.xs,
-    gap: spacing.xs,
-  },
-  btn: {
-    flex: 1,
-    paddingVertical: spacing.md,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-  },
-  btnActive: {
-    backgroundColor: colors.brandSoft,
-  },
-  label: {
-    ...typography.caption,
-    color: colors.textMuted,
-    fontWeight: '600',
-  },
-  labelActive: {
-    color: colors.textPrimary,
-    fontWeight: '700',
-  },
-});
+  return <FloatingTabBar items={items} activeKey={active} showLabels />;
+}

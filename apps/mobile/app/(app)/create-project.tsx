@@ -7,7 +7,7 @@ export default function CreateProjectScreen() {
   return (
     <CreateProjectSheet
       onClose={() => router.back()}
-      onCreated={projectId => router.replace(`/(app)/project/${projectId}/upload-script`)}
+      onCreated={(projectId) => router.replace(`/(app)/project/${projectId}/upload-script`)}
     />
   );
 }

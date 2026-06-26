@@ -7,7 +7,7 @@
 //   - Tap to mark-read + deep link
 //   - "Mark all read" action
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -17,8 +17,10 @@ import {
   Text,
   View,
 } from 'react-native';
+import { GlassFilterChip } from '@/components/GlassFilterChip';
 import { useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import { leaveOverlayScreen } from '@/lib/appNavigation';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { AccountButton } from '@/components/AccountButton';
@@ -61,7 +63,7 @@ export default function NotificationsScreen() {
         limit: 30,
       }),
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: last => last.nextCursor ?? undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
   });
 
   const markRead = useMutation({
@@ -80,13 +82,21 @@ export default function NotificationsScreen() {
     },
   });
 
-  const items: NotificationRecord[] =
-    infinite.data?.pages.flatMap(p => p.items) ?? [];
+  const items = useMemo(
+    () => infinite.data?.pages.flatMap((p) => p.items) ?? [],
+    [infinite.data?.pages],
+  );
+
+  const listData = useMemo(() => buildNotificationSections(items), [items]);
 
   return (
-    <ScreenContainer>
+    <ScreenContainer topAligned edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12} accessibilityRole="button">
+        <Pressable
+          onPress={() => leaveOverlayScreen(router)}
+          hitSlop={12}
+          accessibilityRole="button"
+        >
           <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />
         </Pressable>
         <Text style={styles.title}>Notifications</Text>
@@ -94,8 +104,8 @@ export default function NotificationsScreen() {
       </View>
 
       <View style={styles.filterRow}>
-        <FilterPill label="All" active={!unreadOnly} onPress={() => setUnreadOnly(false)} />
-        <FilterPill label="Unread" active={unreadOnly} onPress={() => setUnreadOnly(true)} />
+        <GlassFilterChip label="All" active={!unreadOnly} onPress={() => setUnreadOnly(false)} />
+        <GlassFilterChip label="Unread" active={unreadOnly} onPress={() => setUnreadOnly(true)} />
         <Pressable
           onPress={() => markAll.mutate()}
           disabled={markAll.isPending || items.length === 0}
@@ -124,17 +134,23 @@ export default function NotificationsScreen() {
         />
       ) : (
         <FlatList
-          data={items}
-          keyExtractor={n => n.id}
-          renderItem={({ item }) => (
-            <NotificationRow
-              n={item}
-              onPress={() => {
-                if (!item.readAt) markRead.mutate(item.id);
-                if (item.deepLink) router.push(item.deepLink as never);
-              }}
-            />
-          )}
+          data={listData}
+          keyExtractor={(entry) =>
+            entry.type === 'header' ? `header-${entry.title}` : entry.item.id
+          }
+          renderItem={({ item: entry }) =>
+            entry.type === 'header' ? (
+              <Text style={styles.sectionHeader}>{entry.title}</Text>
+            ) : (
+              <NotificationRow
+                n={entry.item}
+                onPress={() => {
+                  if (!entry.item.readAt) markRead.mutate(entry.item.id);
+                  if (entry.item.deepLink) router.push(entry.item.deepLink as never);
+                }}
+              />
+            )
+          }
           ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
           contentContainerStyle={styles.list}
           onEndReached={() => {
@@ -145,10 +161,7 @@ export default function NotificationsScreen() {
           onEndReachedThreshold={0.4}
           ListFooterComponent={
             infinite.isFetchingNextPage ? (
-              <ActivityIndicator
-                color={colors.accent}
-                style={{ marginVertical: spacing.lg }}
-              />
+              <ActivityIndicator color={colors.accent} style={{ marginVertical: spacing.lg }} />
             ) : null
           }
           refreshControl={
@@ -164,44 +177,63 @@ export default function NotificationsScreen() {
   );
 }
 
-function FilterPill({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.pill, active && styles.pillActive]}
-      accessibilityRole="button"
-    >
-      <Text style={[styles.pillText, active && styles.pillTextActive]}>{label}</Text>
-    </Pressable>
-  );
+function buildNotificationSections(items: NotificationRecord[]) {
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const todayMs = startOfToday.getTime();
+
+  const today: NotificationRecord[] = [];
+  const earlier: NotificationRecord[] = [];
+
+  for (const item of items) {
+    if (new Date(item.createdAt).getTime() >= todayMs) {
+      today.push(item);
+    } else {
+      earlier.push(item);
+    }
+  }
+
+  const rows: ({ type: 'header'; title: string } | { type: 'item'; item: NotificationRecord })[] =
+    [];
+
+  if (today.length > 0) {
+    rows.push({ type: 'header', title: 'Today' });
+    for (const item of today) rows.push({ type: 'item', item });
+  }
+  if (earlier.length > 0) {
+    rows.push({ type: 'header', title: 'Earlier' });
+    for (const item of earlier) rows.push({ type: 'item', item });
+  }
+
+  return rows;
 }
 
-function NotificationRow({
-  n,
-  onPress,
-}: {
-  n: NotificationRecord;
-  onPress: () => void;
-}) {
+function NotificationRow({ n, onPress }: { n: NotificationRecord; onPress: () => void }) {
   const meta = KIND_META[n.kind] ?? KIND_META.GENERIC;
   const unread = !n.readAt;
+  const isCriticalConflict =
+    n.kind === 'CONFLICT_ALERT' &&
+    typeof n.contextJson?.severity === 'string' &&
+    n.contextJson.severity === 'CRITICAL';
   return (
     <Pressable onPress={onPress} accessibilityRole="button">
-      <Card style={unread ? [styles.row, styles.rowUnread] : [styles.row]}>
+      <Card
+        style={
+          isCriticalConflict
+            ? [styles.row, styles.rowCritical]
+            : unread
+              ? [styles.row, styles.rowUnread]
+              : [styles.row]
+        }
+      >
         <View style={[styles.iconWrap, { backgroundColor: meta.tint + '22' }]}>
           <Ionicons name={meta.icon} size={18} color={meta.tint} />
         </View>
         <View style={{ flex: 1 }}>
           <View style={styles.rowHead}>
-            <Text style={styles.kind}>{meta.label.toUpperCase()}</Text>
+            <Text style={[styles.kind, isCriticalConflict && styles.kindCritical]}>
+              {isCriticalConflict ? 'CRITICAL CONFLICT' : meta.label.toUpperCase()}
+            </Text>
             <Text style={styles.time}>{relativeTimeFrom(n.createdAt)}</Text>
           </View>
           <Text style={styles.rowTitle}>{n.title}</Text>
@@ -231,24 +263,26 @@ const styles = StyleSheet.create({
   filterRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: spacing.sm,
     marginBottom: spacing.lg,
   },
-  pill: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  pillActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  pillText: { ...typography.bodyStrong, color: colors.textSecondary },
-  pillTextActive: { color: colors.accentInk },
   loading: { paddingVertical: spacing.xxl, alignItems: 'center' },
   list: { paddingBottom: spacing.xxxl },
+  sectionHeader: {
+    ...typography.micro,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
   row: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
   rowUnread: { borderColor: colors.accentMuted },
+  rowCritical: {
+    borderColor: colors.danger,
+    borderWidth: 1,
+    backgroundColor: colors.danger + '0D',
+  },
   iconWrap: {
     width: 36,
     height: 36,
@@ -263,6 +297,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   kind: { ...typography.micro, color: colors.textMuted },
+  kindCritical: { color: colors.danger, fontWeight: '700' },
   time: { ...typography.micro, color: colors.textMuted },
   rowTitle: { ...typography.bodyStrong, color: colors.textPrimary, marginBottom: 2 },
   rowBody: { ...typography.caption, color: colors.textSecondary },

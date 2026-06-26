@@ -14,9 +14,24 @@ import type {
 } from '../../../src/ai/schemas.js';
 
 const characters: AICharacter[] = [
-  { name: 'Rajesh', importance: 'LEAD', estimatedScreenTimeMinutes: 45, notes: 'Lead lawyer protagonist' },
-  { name: 'Anjali', importance: 'LEAD', estimatedScreenTimeMinutes: 35, notes: 'Junior lawyer / co-lead' },
-  { name: 'Inspector Kumar', importance: 'SUPPORT', estimatedScreenTimeMinutes: 12, notes: 'Investigating officer' },
+  {
+    name: 'Rajesh',
+    importance: 'LEAD',
+    estimatedScreenTimeMinutes: 45,
+    notes: 'Lead lawyer protagonist',
+  },
+  {
+    name: 'Anjali',
+    importance: 'LEAD',
+    estimatedScreenTimeMinutes: 35,
+    notes: 'Junior lawyer / co-lead',
+  },
+  {
+    name: 'Inspector Kumar',
+    importance: 'SUPPORT',
+    estimatedScreenTimeMinutes: 12,
+    notes: 'Investigating officer',
+  },
   { name: 'Mohan', importance: 'SUPPORT', estimatedScreenTimeMinutes: 8, notes: 'Witness' },
   { name: 'Meera', importance: 'SUPPORT', estimatedScreenTimeMinutes: 6, notes: 'Judge' },
 ];
@@ -90,7 +105,12 @@ const scenes: AIScene[] = [
 ];
 
 const departments: AIDepartment[] = [
-  { kind: 'DIRECTION', displayName: 'Direction', required: true, reasoning: 'Every project needs direction' },
+  {
+    kind: 'DIRECTION',
+    displayName: 'Direction',
+    required: true,
+    reasoning: 'Every project needs direction',
+  },
   { kind: 'PRODUCTION', displayName: 'Production', required: true, reasoning: 'Coordinator hub' },
   { kind: 'DOP_CAMERA', displayName: 'DOP / Camera', required: true, reasoning: 'Cinematography' },
   { kind: 'ART', displayName: 'Art', required: true, reasoning: 'Set design needed' },
@@ -111,9 +131,19 @@ const budgetLines: AIBudgetLine[] = [
   { department: 'DOP_CAMERA', label: 'DOP package + 8 days', amountINR: 3_200_000, notes: null },
   { department: 'ART', label: 'Court + warehouse build', amountINR: 1_500_000, notes: null },
   { department: 'COSTUME', label: 'Hero + supporting wardrobe', amountINR: 600_000, notes: null },
-  { department: 'STUNTS', label: 'Stunt coordinator + warehouse day', amountINR: 1_200_000, notes: null },
+  {
+    department: 'STUNTS',
+    label: 'Stunt coordinator + warehouse day',
+    amountINR: 1_200_000,
+    notes: null,
+  },
   { department: 'VFX', label: 'Courtroom VFX shots', amountINR: 1_000_000, notes: null },
-  { department: 'MUSIC', label: 'Song composition + 2 days shoot', amountINR: 1_800_000, notes: null },
+  {
+    department: 'MUSIC',
+    label: 'Song composition + 2 days shoot',
+    amountINR: 1_800_000,
+    notes: null,
+  },
   { department: 'SOUND', label: 'Production sound + sync', amountINR: 500_000, notes: null },
   { department: 'MAKEUP_HAIR', label: 'Hair + makeup team', amountINR: 400_000, notes: null },
   { department: 'EDITORIAL', label: 'Editor + DI', amountINR: 1_500_000, notes: null },
@@ -154,9 +184,6 @@ export const cannedSummary: AIScriptSummary = {
     lines: budgetLines,
     totalINR: budgetLines.reduce((sum, l) => sum + l.amountINR, 0),
     confidence: 'MEDIUM',
-    caveats: [
-      'Stunt insurance not yet quoted',
-      'VFX scope assumes 5-10 shots',
-    ],
+    caveats: ['Stunt insurance not yet quoted', 'VFX scope assumes 5-10 shots'],
   },
 };

@@ -1,21 +1,22 @@
-// Core design tokens — Circuit v1 orange/glass light theme.
+// Core design tokens — Circuit v1 gold/glass light theme.
 
 export const colors = {
-  // Brand — orange→amber
-  brand: '#F47A1F',
-  brandStrong: '#E8650C',
-  brandSoft: 'rgba(244,122,31,0.12)',
-  amber: '#F9B233',
-  amberLight: '#FCC55A',
+  // Brand — vivid golden yellow (auth mockup)
+  brand: '#F5B301',
+  brandStrong: '#DD9E00',
+  brandSoft: 'rgba(245,179,1,0.14)',
+  brandDisabled: 'rgba(245,179,1,0.30)',
+  amber: '#F5B301',
+  amberLight: '#FFCB3D',
 
   // Hero gradient (top → bottom)
-  heroFrom: '#FFA033',
-  heroMid: '#F2790E',
-  heroTo: '#140D06',
+  heroFrom: '#FFCB3D',
+  heroMid: '#F5B301',
+  heroTo: '#121212',
 
   // Neutrals (light theme)
-  bg: '#ECECEC',
-  bgElevated: '#F5F5F5',
+  bg: '#FDFCF8',
+  bgElevated: '#F5F4F0',
   surface: '#FFFFFF',
   surfaceGlass: 'rgba(255,255,255,0.72)',
   surfaceElevated: '#FFFFFF',
@@ -25,18 +26,18 @@ export const colors = {
   border: 'rgba(0,0,0,0.06)',
   borderSubtle: 'rgba(0,0,0,0.04)',
 
-  textPrimary: '#141414',
+  textPrimary: '#121212',
   textSecondary: '#5C5C5C',
-  textMuted: '#9B9B9B',
-  onBrand: '#FFFFFF',
+  textMuted: '#9CA3AF',
+  onBrand: '#121212',
 
   // Backward-compatible aliases (used across existing screens)
-  accent: '#F47A1F',
-  accentLight: '#FCC55A',
-  accentMuted: '#E8650C',
-  accentSoft: 'rgba(244,122,31,0.12)',
-  accentGlow: 'rgba(244,122,31,0.35)',
-  accentInk: '#FFFFFF',
+  accent: '#F5B301',
+  accentLight: '#FFCB3D',
+  accentMuted: '#DD9E00',
+  accentSoft: 'rgba(245,179,1,0.14)',
+  accentGlow: 'rgba(245,179,1,0.38)',
+  accentInk: '#121212',
 
   // Semantic
   success: '#1E8E5A',
@@ -56,6 +57,78 @@ export const colors = {
   ringMakeup: '#EAB308',
   ringDefault: '#94A3B8',
   ringTrack: 'rgba(0,0,0,0.08)',
+} as const;
+
+/** Auth screens — white-glassy film studio aesthetic (approved mockup). */
+export const auth = {
+  bg: '#FEFCFB',
+  bgWarm: '#FFFEFC',
+  bgGlow: '#FFF6E0',
+
+  ink: '#111111',
+  inkSoft: '#24211D',
+  muted: '#807A70',
+  muted2: '#A49D92',
+  label: '#6E685F',
+
+  gold: '#E7A914',
+  gold2: '#F6C347',
+  goldDark: '#B77B00',
+  goldSoft: '#FFF2C7',
+
+  segmentBg: 'rgba(244, 242, 237, 0.82)',
+  segmentActive: '#171717',
+  segmentInactiveText: '#8F8980',
+  segmentActiveText: '#FFFFFF',
+
+  fieldBg: 'rgba(255, 255, 255, 0.88)',
+  fieldBorder: '#E7E0D6',
+  fieldBorderFocus: '#E8A914',
+  fieldText: '#24211D',
+  fieldPlaceholder: '#AAA49B',
+  fieldIcon: '#8F8980',
+
+  cardBg: 'rgba(255, 255, 255, 0.82)',
+  cardBorder: 'rgba(231, 224, 214, 0.9)',
+
+  watermark: '#D8C6A3',
+  watermarkDark: '#C8B58F',
+
+  danger: '#B84A3A',
+
+  ctaGradientStart: '#F8CE5A',
+  ctaGradientMid: '#F0B629',
+  ctaGradientEnd: '#E4A318',
+  ctaShadow: '#D89A12',
+  ctaDisabled: 'rgba(232, 169, 20, 0.45)',
+
+  subtitle: '#7F7A70',
+  footerLink: '#B77B00',
+} as const;
+
+/** Floating glass tab bar — yellow active highlight per app home mockup. */
+export const tabBar = {
+  height: 84,
+  activeCircleSize: 44,
+  activePillWidth: 44,
+  activePillHeight: 44,
+  itemTouchMin: 56,
+  blurIntensity: 70,
+  iconInactive: '#9CA3AF',
+  iconActive: '#121212',
+  iconSizeInactive: 24,
+  iconSizeActive: 24,
+  glassOverlay: 'rgba(255,255,255,0.08)',
+  glassBorder: 'rgba(255,255,255,0.52)',
+  glassSpecular: 'rgba(255,255,255,0.9)',
+  glassFallback: 'rgba(255,255,255,0.92)',
+  glassFallbackTint: 'rgba(255,255,255,0.45)',
+  activePillFill: '#F5B301',
+  activePillBorder: 'transparent',
+  labelInactive: '#9CA3AF',
+  labelActive: '#F5B301',
+  shadow: '#000000',
+  slotPressedOpacity: 0.72,
 } as const;
 
 export const spacing = {

@@ -2,12 +2,14 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { MembershipStatus, ScriptAnalysisStatus, UserRole } from '@prisma/client';
+import { MembershipStatus, ScriptAnalysisStatus } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { asyncHandler, badRequest, forbidden, notFound } from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';
-import { analyzeScript } from '../../ai/pipelines/script-analysis.pipeline.js';
-import { logger } from '../../lib/logger.js';
+import { requireFeature } from '../../middleware/require-feature.js';
+import { canEditScripts, getActiveMembership } from '../../auth/permissions.js';
+import { createScriptAnalysisJob, enqueueBackgroundJob } from '../../jobs/background-jobs.js';
+import { assertPdfMagicBytes, sanitizeDownloadFilename } from '../../lib/pdf-upload.js';
 import { getStorage } from '../../storage/index.js';
 
 const router: Router = Router();
@@ -27,18 +29,9 @@ const upload = multer({
 });
 
 async function assertCanEditProject(userId: string, projectId: string): Promise<void> {
-  const membership = await prisma.projectMember.findFirst({
-    where: { projectId, userId, status: MembershipStatus.ACTIVE },
-    select: { role: true },
-  });
+  const membership = await getActiveMembership(userId, projectId);
   if (!membership) throw forbidden('You are not a member of this project');
-  const allowed: UserRole[] = [
-    UserRole.DIRECTOR,
-    UserRole.PRODUCER,
-    UserRole.EXECUTIVE_PRODUCER,
-    UserRole.LINE_PRODUCER,
-  ];
-  if (!allowed.includes(membership.role)) {
+  if (!canEditScripts(membership.role)) {
     throw forbidden(`Role ${membership.role} cannot upload scripts`);
   }
 }
@@ -46,6 +39,7 @@ async function assertCanEditProject(userId: string, projectId: string): Promise<
 router.post(
   '/projects/:projectId/scripts',
   requireAuth,
+  requireFeature('scripts.upload'),
   upload.single('script'),
   asyncHandler(async (req, res) => {
     const projectId = req.params.projectId!;
@@ -53,6 +47,8 @@ router.post(
     await assertCanEditProject(userId, projectId);
 
     if (!req.file) throw badRequest('Missing script file (field "script")');
+
+    assertPdfMagicBytes(req.file.buffer);
 
     // Object keys are deterministic-ish per script for clean tracing: every
     // file lives under scripts/<projectId>/<uuid><ext>. Easy to inventory.
@@ -84,6 +80,7 @@ router.post(
 router.post(
   '/scripts/:scriptId/analyze',
   requireAuth,
+  requireFeature('scripts.aiAnalysis'),
   asyncHandler(async (req, res) => {
     const scriptId = req.params.scriptId!;
     const userId = req.user!.sub;
@@ -104,13 +101,11 @@ router.post(
       throw badRequest(`Analysis already in progress (status=${script.analysisStatus})`);
     }
 
-    // Fire-and-forget. The pipeline emits its own progress updates which
-    // the workspace screens listen to over Socket.IO.
-    void analyzeScript(scriptId).catch(err => {
-      logger.error({ err, scriptId }, 'analyzeScript background failure');
-    });
+    // Durable background job — pipeline emits progress over Socket.IO.
+    const job = await createScriptAnalysisJob(scriptId, script.projectId);
+    enqueueBackgroundJob(job.id);
 
-    res.status(202).json({ status: 'STARTED', scriptId });
+    res.status(202).json({ status: 'STARTED', scriptId, jobId: job.id });
   }),
 );
 
@@ -158,12 +153,10 @@ router.get(
     if (!membership) throw forbidden('You are not a member of this project');
 
     const obj = await getStorage().get(script.storageKey);
+    const safeName = sanitizeDownloadFilename(script.originalFileName);
     res.setHeader('Content-Type', obj.contentType);
     res.setHeader('Content-Length', String(obj.contentLength));
-    res.setHeader(
-      'Content-Disposition',
-      `inline; filename="${script.originalFileName.replace(/"/g, '')}"`,
-    );
+    res.setHeader('Content-Disposition', `inline; filename="${safeName}"`);
     obj.stream.pipe(res);
   }),
 );

@@ -4,16 +4,16 @@ Production conventions for this repo. Architecture layout: [docs/ARCHITECTURE.md
 
 ## Layers
 
-| Layer | Rule |
-|-------|------|
-| `app/` | Routes only — re-export feature screens or wire navigation params |
-| `src/features/*` | Business UI + hooks; no raw axios calls outside `src/api` |
-| `src/api/*` | HTTP + types + `qk` query keys only |
-| `src/components/ui/*` | Generic, domain-agnostic UI |
-| `src/components/project/*` | Project workspace chrome |
-| `src/auth/` | Global session state (contexts), not screen UI |
-| `src/lib/` | Pure helpers, storage, query client factory |
-| `src/config/` | Validated runtime env (`appEnv.ts`) |
+| Layer                      | Rule                                                              |
+| -------------------------- | ----------------------------------------------------------------- |
+| `app/`                     | Routes only — re-export feature screens or wire navigation params |
+| `src/features/*`           | Business UI + hooks; no raw axios calls outside `src/api`         |
+| `src/api/*`                | HTTP + types + `qk` query keys only                               |
+| `src/components/ui/*`      | Generic, domain-agnostic UI                                       |
+| `src/components/project/*` | Project workspace chrome                                          |
+| `src/auth/`                | Global session state (contexts), not screen UI                    |
+| `src/lib/`                 | Pure helpers, storage, query client factory                       |
+| `src/config/`              | Validated runtime env (`appEnv.ts`)                               |
 
 ## TypeScript
 

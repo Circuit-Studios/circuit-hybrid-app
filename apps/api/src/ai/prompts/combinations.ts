@@ -8,11 +8,14 @@ export function buildCombinationsPrompt(
   return `Genre: ${projectGenre}
 
 CHARACTERS:
-${characters.map(c => `- ${c.name} (${c.importance})`).join('\n')}
+${characters.map((c) => `- ${c.name} (${c.importance})`).join('\n')}
 
 SCENES (sceneNumber → characters):
 ${scenes
-  .map(s => `${s.sceneNumber}: [${s.charactersPresent.join(', ')}] ${s.locationType} ${s.timeOfDay}${s.hasSong ? ' SONG' : ''}${s.hasStunts ? ' STUNTS' : ''}`)
+  .map(
+    (s) =>
+      `${s.sceneNumber}: [${s.charactersPresent.join(', ')}] ${s.locationType} ${s.timeOfDay}${s.hasSong ? ' SONG' : ''}${s.hasStunts ? ' STUNTS' : ''}`,
+  )
   .join('\n')}
 
 TASK: Identify high-value "combination scene" groups. A combination group is a

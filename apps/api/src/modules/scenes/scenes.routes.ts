@@ -7,27 +7,15 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
-import {
-  MembershipStatus,
-  SceneLocationType,
-  SceneTimeOfDay,
-  UserRole,
-} from '@prisma/client';
+import { MembershipStatus, SceneLocationType, SceneTimeOfDay, UserRole } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { asyncHandler, forbidden, notFound } from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { canManageSchedule } from '../../auth/permissions.js';
 import { emitToProject } from '../../realtime/socket.js';
 import { enqueueConflictScan } from '../../queues/conflicts.queue.js';
 
 const router: Router = Router();
-
-const EDITOR_ROLES: UserRole[] = [
-  UserRole.DIRECTOR,
-  UserRole.PRODUCER,
-  UserRole.EXECUTIVE_PRODUCER,
-  UserRole.LINE_PRODUCER,
-  UserRole.AD,
-];
 
 async function assertCanEdit(userId: string, projectId: string): Promise<void> {
   const m = await prisma.projectMember.findFirst({
@@ -35,7 +23,7 @@ async function assertCanEdit(userId: string, projectId: string): Promise<void> {
     select: { role: true },
   });
   if (!m) throw forbidden('You are not a member of this project');
-  if (!EDITOR_ROLES.includes(m.role)) {
+  if (!canManageSchedule(m.role)) {
     throw forbidden(`Role ${m.role} cannot edit scenes`);
   }
 }

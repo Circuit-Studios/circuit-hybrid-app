@@ -4,11 +4,11 @@
 > **limited‑functionality v1** now, full features later, with a **new visual language**.
 > The v1 plan lives in [`docs/`](./docs/README.md):
 >
-> | Doc | Contents |
-> |---|---|
-> | [docs/DESIGN-SYSTEM.md](./docs/DESIGN-SYSTEM.md) | **New styling** — orange/amber, glass, from the design screenshots |
-> | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) | **v1 navigation + screens** (existing screens, restyled; AI screens deferred) |
-> | [docs/CODING_STANDARDS.md](./docs/CODING_STANDARDS.md) | **Production conventions** — layers, types, `qk`, env, tests |
+> | Doc                                                    | Contents                                                                      |
+> | ------------------------------------------------------ | ----------------------------------------------------------------------------- |
+> | [docs/DESIGN-SYSTEM.md](./docs/DESIGN-SYSTEM.md)       | **New styling** — orange/amber, glass, from the design screenshots            |
+> | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)         | **v1 navigation + screens** (existing screens, restyled; AI screens deferred) |
+> | [docs/CODING_STANDARDS.md](./docs/CODING_STANDARDS.md) | **Production conventions** — layers, types, `qk`, env, tests                  |
 >
 > The **layout + content source is a PDF (pending)**; unresolved specifics are marked **TBD**.
 > Existing screens are **kept** — v1 ships a subset and restyles it (nothing removed).
@@ -153,22 +153,22 @@ npx expo prebuild --platform android
 
 #### Environment matrix
 
-| Environment | Mobile (`EXPO_PUBLIC_*`) | Backend | Database | OTP |
-|-------------|--------------------------|---------|----------|-----|
-| **Local** | `EXPO_PUBLIC_APP_ENV=local`<br>`EXPO_PUBLIC_API_BASE_URL=http://localhost:3009` | Mac backend | Local Postgres or Supabase dev | `MOCK` (`111111`) |
-| **Dev / Preview** | `EXPO_PUBLIC_APP_ENV=development` or `preview`<br>`EXPO_PUBLIC_API_BASE_URL=https://circuit-api-dev.onrender.com` | Render Free | Supabase *(shared OK while testing)* | `MOCK` |
-| **Production** | `EXPO_PUBLIC_APP_ENV=production`<br>Custom API URL *(later)* | Render paid / stable host | Supabase prod | MSG91 / Twilio |
+| Environment       | Mobile (`EXPO_PUBLIC_*`)                                                                                          | Backend                   | Database                             | OTP               |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------- | ------------------------------------ | ----------------- |
+| **Local**         | `EXPO_PUBLIC_APP_ENV=local`<br>`EXPO_PUBLIC_API_BASE_URL=http://localhost:3009`                                   | Mac backend               | Local Postgres or Supabase dev       | `MOCK` (`111111`) |
+| **Dev / Preview** | `EXPO_PUBLIC_APP_ENV=development` or `preview`<br>`EXPO_PUBLIC_API_BASE_URL=https://circuit-api-dev.onrender.com` | Render Free               | Supabase _(shared OK while testing)_ | `MOCK`            |
+| **Production**    | `EXPO_PUBLIC_APP_ENV=production`<br>Custom API URL _(later)_                                                      | Render paid / stable host | Supabase prod                        | MSG91 / Twilio    |
 
 While testing, dev and preview can share the same Render backend. Before App Store or public users, use separate Supabase **dev** and **production** projects so test users and real users never share a database. Full cross-stack notes: [`../api/docs/DEPLOYMENT.md#recommended-environment-matrix`](../api/docs/DEPLOYMENT.md#recommended-environment-matrix).
 
 Mobile env files (no secrets in git):
 
-| File | Committed? | Purpose |
-|------|------------|---------|
-| `.env` | No (gitignored) | Local dev values — copy from `.env.example` |
-| `.env.example` | Yes | Placeholders + docs only |
-| `eas.json` | Yes | EAS build profiles only — **no env values** |
-| `app.json` | Yes | App config — **no API URLs** |
+| File           | Committed?      | Purpose                                     |
+| -------------- | --------------- | ------------------------------------------- |
+| `.env`         | No (gitignored) | Local dev values — copy from `.env.example` |
+| `.env.example` | Yes             | Placeholders + docs only                    |
+| `eas.json`     | Yes             | EAS build profiles only — **no env values** |
+| `app.json`     | Yes             | App config — **no API URLs**                |
 
 Set `EXPO_PUBLIC_API_BASE_URL` (and optionally `EXPO_PUBLIC_APP_ENV`) in `.env` (local) or [EAS Environment Variables](https://docs.expo.dev/eas/environment-variables/) (cloud builds). Expo inlines `EXPO_PUBLIC_*` into the app bundle — fine for a public API URL; **never** put database URLs, API keys, JWT secrets, or AWS credentials in `EXPO_PUBLIC_*`.
 
@@ -197,11 +197,11 @@ For a **physical device** on the same WiFi, use your laptop's LAN IP instead of
 
 `eas.json` maps each build profile to an [EAS environment](https://docs.expo.dev/eas/environment-variables/) — env values live in the Expo dashboard, not in git:
 
-| Profile | Use case | EAS environment |
-|---------|----------|-----------------|
-| `development` | Dev client (simulator / internal) | `development` |
-| `preview` | Internal TestFlight / ad hoc | `preview` |
-| `production` | App Store / Play Store | `production` |
+| Profile       | Use case                          | EAS environment |
+| ------------- | --------------------------------- | --------------- |
+| `development` | Dev client (simulator / internal) | `development`   |
+| `preview`     | Internal TestFlight / ad hoc      | `preview`       |
+| `production`  | App Store / Play Store            | `production`    |
 
 Set these in the Expo dashboard (Project → Environment variables) or via CLI:
 
@@ -276,8 +276,7 @@ Full module rules and migration status: [docs/ARCHITECTURE.md § Module structur
 ```
 apps/mobile/
 ├── app/                       # Expo Router — navigation + composition only
-│   ├── (auth)/login.tsx       # → features/auth/LoginForm
-│   ├── (auth)/signup.tsx      # → features/auth/SignupForm
+│   ├── (auth)/auth.tsx        # → features/auth/AuthScreen (sign-in / sign-up tabs)
 │   ├── (auth)/otp.tsx         # → features/auth/OtpForm
 │   ├── (app)/projects.tsx     # → features/projects/ProjectList
 │   └── project/[id]/…         # tasks, schedule, team use feature sheets + scaffold
@@ -288,7 +287,7 @@ apps/mobile/
 │   ├── components/
 │   │   ├── ui/                # Button, TextField, EmptyState, FormSheet, …
 │   │   └── project/           # ProjectTabBar, ProjectScreenScaffold
-│   ├── auth/                  # AuthContext, SignupSessionContext
+│   ├── auth/                  # AuthContext, OtpSessionContext
 │   ├── realtime/              # socket, RealtimeProvider, push
 │   ├── lib/                   # storage, session, phone, format
 │   └── theme/

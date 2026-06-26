@@ -7,23 +7,14 @@
 
 import { Router } from 'express';
 import { z } from 'zod';
-import { CharacterImportance, MembershipStatus, UserRole } from '@prisma/client';
+import { CharacterImportance, MembershipStatus } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { asyncHandler, forbidden, notFound } from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { canManageSchedule } from '../../auth/permissions.js';
 import { emitToProject } from '../../realtime/socket.js';
 
 const router: Router = Router();
-
-// Only leadership can override AI output. Casting decisions especially are
-// not for crew to flip.
-const EDITOR_ROLES: UserRole[] = [
-  UserRole.DIRECTOR,
-  UserRole.PRODUCER,
-  UserRole.EXECUTIVE_PRODUCER,
-  UserRole.LINE_PRODUCER,
-  UserRole.AD,
-];
 
 async function getMembershipOrThrow(userId: string, projectId: string) {
   const m = await prisma.projectMember.findFirst({
@@ -31,7 +22,7 @@ async function getMembershipOrThrow(userId: string, projectId: string) {
     select: { role: true },
   });
   if (!m) throw forbidden('You are not a member of this project');
-  if (!EDITOR_ROLES.includes(m.role)) {
+  if (!canManageSchedule(m.role)) {
     throw forbidden(`Role ${m.role} cannot edit AI-derived data`);
   }
   return m;

@@ -33,7 +33,7 @@ function shouldLog(level: LogLevel): boolean {
 function sanitize(value: unknown, key = ''): unknown {
   if (value == null) return value;
   if (key && REDACT_KEY_PATTERN.test(key)) return '[REDACTED]';
-  if (Array.isArray(value)) return value.map(item => sanitize(item));
+  if (Array.isArray(value)) return value.map((item) => sanitize(item));
   if (typeof value === 'object') {
     const record = value as Record<string, unknown>;
     const out: Record<string, unknown> = {};

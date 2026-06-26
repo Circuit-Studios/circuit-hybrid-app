@@ -5,12 +5,12 @@
 > provided screenshots; **layout + content** from the PDF (pending). Existing screens are kept;
 > v1 ships a subset and restyles it. Unresolved specifics are marked **TBD**.
 
-| Doc | Contents |
-|---|---|
-| [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) | New visual language — colors, typography, components, motion |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | v1 navigation, screens, data layer, realtime, theming |
-| [CODING_STANDARDS.md](./CODING_STANDARDS.md) | Layers, `qk`, env, tests |
-| `assets/` | Reference screenshots (`home.png`, `nav-primary.png`, `nav-alt.png`) |
+| Doc                                          | Contents                                                             |
+| -------------------------------------------- | -------------------------------------------------------------------- |
+| [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md)       | New visual language — colors, typography, components, motion         |
+| [ARCHITECTURE.md](./ARCHITECTURE.md)         | v1 navigation, screens, data layer, realtime, theming                |
+| [CODING_STANDARDS.md](./CODING_STANDARDS.md) | Layers, `qk`, env, tests                                             |
+| `assets/`                                    | Reference screenshots (`home.png`, `nav-primary.png`, `nav-alt.png`) |
 
 **Monorepo index:** [`../../docs/README.md`](../../docs/README.md)
 

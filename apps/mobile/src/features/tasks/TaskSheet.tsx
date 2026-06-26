@@ -10,11 +10,7 @@ import {
   formSheetStyles,
 } from '@/components/ui/FormSheet';
 import { readApiError } from '@/api/client';
-import {
-  useCreateTask,
-  useDeleteTask,
-  useUpdateTask,
-} from '@/features/tasks/hooks';
+import { useCreateTask, useDeleteTask, useUpdateTask } from '@/features/tasks/hooks';
 import { formatStatus } from '@/lib/format';
 import type { DepartmentSummary, Task, TaskPriority, TaskStatus } from '@/api/types';
 
@@ -137,14 +133,23 @@ export function TaskSheet({
       />
 
       <FormSheetFieldLabel>Department</FormSheetFieldLabel>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={formSheetStyles.chipRow}>
-        {departments.map(d => (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={formSheetStyles.chipRow}
+      >
+        {departments.map((d) => (
           <Pressable
             key={d.id}
             onPress={() => setDepartmentId(d.id)}
             style={[formSheetStyles.chip, departmentId === d.id && formSheetStyles.chipActive]}
           >
-            <Text style={[formSheetStyles.chipText, departmentId === d.id && formSheetStyles.chipTextActive]}>
+            <Text
+              style={[
+                formSheetStyles.chipText,
+                departmentId === d.id && formSheetStyles.chipTextActive,
+              ]}
+            >
               {d.displayName}
             </Text>
           </Pressable>
@@ -153,13 +158,15 @@ export function TaskSheet({
 
       <FormSheetFieldLabel>Priority</FormSheetFieldLabel>
       <View style={formSheetStyles.chipRow}>
-        {PRIORITIES.map(p => (
+        {PRIORITIES.map((p) => (
           <Pressable
             key={p}
             onPress={() => setPriority(p)}
             style={[formSheetStyles.chip, priority === p && formSheetStyles.chipActive]}
           >
-            <Text style={[formSheetStyles.chipText, priority === p && formSheetStyles.chipTextActive]}>
+            <Text
+              style={[formSheetStyles.chipText, priority === p && formSheetStyles.chipTextActive]}
+            >
               {p}
             </Text>
           </Pressable>
@@ -168,13 +175,15 @@ export function TaskSheet({
 
       <FormSheetFieldLabel>Status</FormSheetFieldLabel>
       <View style={formSheetStyles.chipRow}>
-        {TASK_STATUSES.map(s => (
+        {TASK_STATUSES.map((s) => (
           <Pressable
             key={s.id}
             onPress={() => setStatus(s.id)}
             style={[formSheetStyles.chip, status === s.id && formSheetStyles.chipActive]}
           >
-            <Text style={[formSheetStyles.chipText, status === s.id && formSheetStyles.chipTextActive]}>
+            <Text
+              style={[formSheetStyles.chipText, status === s.id && formSheetStyles.chipTextActive]}
+            >
               {formatStatus(s.id)}
             </Text>
           </Pressable>

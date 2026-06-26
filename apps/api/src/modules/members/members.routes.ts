@@ -1,19 +1,16 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { MembershipStatus, UserRole } from '@prisma/client';
+import { MembershipStatus, UserRole, SetStatus } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { asyncHandler, badRequest, conflict, forbidden, notFound } from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';
+import { requireFeature } from '../../middleware/require-feature.js';
+import { canInviteMembers, getActiveMembership } from '../../auth/permissions.js';
 import { dispatchNotification } from '../../notifications/notifications.service.js';
 
 const router: Router = Router();
 
-// Phone format mirrors auth.routes.ts so the same string can be matched
-// against a future signup.
-const phoneSchema = z
-  .string()
-  .trim()
-  .regex(/^\+\d{8,15}$/, 'Phone must be E.164 format like +919812345678');
+import { phoneSchema } from '../auth/auth.schemas.js';
 
 const inviteMemberSchema = z
   .object({
@@ -23,28 +20,16 @@ const inviteMemberSchema = z
     email: z.string().email().optional(),
     projectDepartmentId: z.string().uuid().optional(),
   })
-  .refine(v => v.phone || v.email, {
+  .refine((v) => v.phone || v.email, {
     message: 'Either phone or email is required',
   });
 
-// Only Director/Producer/Line Producer can invite people into a project. This
-// matches Module 1 in the spec: directors hand-pick their crew. Once we wire
-// up Spider mode in Module 4, dept heads will be allowed to invite their own
-// crew within their department — we'll add that exception then.
-const INVITER_ROLES: UserRole[] = [
-  UserRole.DIRECTOR,
-  UserRole.PRODUCER,
-  UserRole.EXECUTIVE_PRODUCER,
-  UserRole.LINE_PRODUCER,
-];
+// Only Director/Producer/Line Producer can invite people into a project.
 
 async function assertCanInvite(userId: string, projectId: string): Promise<void> {
-  const membership = await prisma.projectMember.findFirst({
-    where: { projectId, userId, status: MembershipStatus.ACTIVE },
-    select: { role: true },
-  });
+  const membership = await getActiveMembership(userId, projectId);
   if (!membership) throw forbidden('You are not a member of this project');
-  if (!INVITER_ROLES.includes(membership.role)) {
+  if (!canInviteMembers(membership.role)) {
     throw forbidden(`Role ${membership.role} cannot invite members`);
   }
 }
@@ -56,6 +41,7 @@ async function assertCanInvite(userId: string, projectId: string): Promise<void>
 router.post(
   '/projects/:projectId/members',
   requireAuth,
+  requireFeature('team.invites'),
   asyncHandler(async (req, res) => {
     const projectId = req.params.projectId!;
     const userId = req.user!.sub;
@@ -144,6 +130,54 @@ router.get(
   }),
 );
 
+const updateSetStatusSchema = z.object({
+  setStatus: z.nativeEnum(SetStatus),
+  setStatusNote: z.string().trim().max(200).optional(),
+});
+
+// PATCH /projects/:projectId/members/:memberId/set-status
+router.patch(
+  '/projects/:projectId/members/:memberId/set-status',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const projectId = req.params.projectId!;
+    const memberId = req.params.memberId!;
+    const userId = req.user!.sub;
+    const input = updateSetStatusSchema.parse(req.body);
+
+    const me = await prisma.projectMember.findFirst({
+      where: { projectId, userId, status: MembershipStatus.ACTIVE },
+    });
+    if (!me) throw forbidden('You are not a member of this project');
+
+    const member = await prisma.projectMember.findFirst({
+      where: { id: memberId, projectId, status: MembershipStatus.ACTIVE },
+    });
+    if (!member) throw notFound('Member not found');
+
+    const isSelf = member.userId === userId;
+    const canManage = canInviteMembers(me.role);
+    if (!isSelf && !canManage) {
+      throw forbidden('You can only update your own on-set status');
+    }
+
+    const updated = await prisma.projectMember.update({
+      where: { id: memberId },
+      data: {
+        setStatus: input.setStatus,
+        setStatusNote: input.setStatusNote,
+        setStatusUpdatedAt: new Date(),
+      },
+      include: {
+        user: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
+        projectDepartment: { select: { id: true, displayName: true, kind: true } },
+      },
+    });
+
+    res.json(updated);
+  }),
+);
+
 // POST /members/:memberId/accept
 //   The invitee accepts (or declines via DELETE) the invite. We re-verify
 //   identity here even though the JWT subject is authoritative — defence in
@@ -208,7 +242,7 @@ router.delete(
       where: { projectId: member.projectId, userId, status: MembershipStatus.ACTIVE },
       select: { role: true },
     });
-    const isInviter = inviter && INVITER_ROLES.includes(inviter.role);
+    const isInviter = inviter && canInviteMembers(inviter.role);
     const isSelf = member.userId === userId;
 
     if (!isInviter && !isSelf) {

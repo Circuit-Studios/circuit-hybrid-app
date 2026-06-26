@@ -6,8 +6,7 @@ export const qk = {
   project: (id: string) => ['project', id] as const,
   health: (projectId: string) => ['health', projectId] as const,
 
-  tasks: (projectId: string, departmentId = 'all') =>
-    ['tasks', projectId, departmentId] as const,
+  tasks: (projectId: string, departmentId = 'all') => ['tasks', projectId, departmentId] as const,
   tasksRoot: (projectId: string) => ['tasks', projectId] as const,
 
   schedule: (projectId: string) => ['schedule', projectId] as const,
@@ -26,4 +25,8 @@ export const qk = {
   scenes: (projectId: string) => ['scenes', projectId] as const,
   departments: (projectId: string) => ['departments', projectId] as const,
   budgetLines: (projectId: string) => ['budget-lines', projectId] as const,
+
+  home: (projectId?: string) => ['home', projectId ?? 'primary'] as const,
+  activity: (projectId: string | undefined, filter: string) =>
+    ['activity', projectId ?? 'primary', filter] as const,
 };

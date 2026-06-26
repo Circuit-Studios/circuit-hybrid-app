@@ -6,11 +6,11 @@ export function buildDepartmentsPrompt(
   projectLanguage: string,
 ): string {
   const flags = {
-    hasStunts: scenes.some(s => s.hasStunts),
-    hasVFX: scenes.some(s => s.hasVFX),
-    hasSongs: scenes.some(s => s.hasSong),
-    hasExteriors: scenes.some(s => s.locationType !== 'INTERIOR'),
-    hasNight: scenes.some(s => s.timeOfDay === 'NIGHT'),
+    hasStunts: scenes.some((s) => s.hasStunts),
+    hasVFX: scenes.some((s) => s.hasVFX),
+    hasSongs: scenes.some((s) => s.hasSong),
+    hasExteriors: scenes.some((s) => s.locationType !== 'INTERIOR'),
+    hasNight: scenes.some((s) => s.timeOfDay === 'NIGHT'),
   };
 
   return `Genre: ${projectGenre}

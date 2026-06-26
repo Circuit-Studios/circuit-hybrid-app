@@ -9,34 +9,44 @@ import {
 } from 'react';
 import { logger } from '@/lib/logger';
 import { storage } from '@/lib/storage';
-import { setUnauthorizedHandler } from '@/api/client';
+import { setUnauthorizedHandler, setAuthToken, wakeApi } from '@/api/client';
 import {
   getMe,
-  login as apiLogin,
+  deleteAccount as apiDeleteAccount,
+  loginWithPassword as apiLoginWithPassword,
   verifyOtp as apiVerifyOtp,
   type VerifyOtpInput,
 } from '@/api/auth';
 import { teardownPushRegistration } from '@/realtime/push';
-import {
-  isIdleSessionExpired,
-  isSessionExpired,
-  resolveSessionExpiresAtMs,
-} from '@/lib/session';
+import { isIdleSessionExpired, isSessionExpired, resolveSessionExpiresAtMs } from '@/lib/session';
 import { useIdleSessionMonitor } from '@/auth/useIdleSessionMonitor';
 import type { AuthUser, VerifyOtpResponse } from '@/api/types';
+import type { StoredUser } from '@/lib/storage';
 
 type AuthStatus = 'loading' | 'signedOut' | 'signedIn';
 
 interface AuthContextValue {
   status: AuthStatus;
   user: AuthUser | null;
-  login(phone: string, password: string): Promise<void>;
   verifyOtp(input: VerifyOtpInput): Promise<void>;
+  loginWithPassword(email: string, password: string): Promise<void>;
+  deleteAccount(): Promise<void>;
   signOut(): Promise<void>;
   refresh(): Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+function storedUserToAuthUser(user: StoredUser): AuthUser {
+  return {
+    id: user.id,
+    phone: user.phone,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    defaultRole: user.defaultRole as AuthUser['defaultRole'],
+  };
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('loading');
@@ -45,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     await teardownPushRegistration();
     await storage.clearSession();
+    setAuthToken(null);
     setUser(null);
     setStatus('signedOut');
   }, []);
@@ -67,13 +78,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }, 8000);
 
+    const finishBoot = () => {
+      clearTimeout(bootTimeout);
+    };
+
     (async () => {
       try {
-        const session = await storage.loadSession().catch(err => {
+        const session = await storage.loadSession().catch((err) => {
           logger.warn('auth loadSession failed; treating as signed-out', { error: String(err) });
           return null;
         });
         if (!session) {
+          finishBoot();
           if (!cancelled) setStatus('signedOut');
           return;
         }
@@ -83,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             ? session.expiresAtMs
             : resolveSessionExpiresAtMs(undefined, session.token);
         if (jwtExpiresAtMs != null && isSessionExpired(jwtExpiresAtMs)) {
+          finishBoot();
           if (!cancelled) {
             await storage.clearSession().catch(() => {});
             setStatus('signedOut');
@@ -94,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (lastActivityAtMs == null) {
           await storage.touchActivity();
         } else if (isIdleSessionExpired(lastActivityAtMs)) {
+          finishBoot();
           if (!cancelled) {
             await storage.clearSession().catch(() => {});
             setStatus('signedOut');
@@ -102,17 +120,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         try {
+          setAuthToken(session.token);
+          if (!cancelled) {
+            setUser(storedUserToAuthUser(session.user));
+            setStatus('signedIn');
+            finishBoot();
+          }
+
+          await wakeApi();
           const me = await getMe();
           if (cancelled) return;
           setUser(me.user);
-          setStatus('signedIn');
         } catch (err) {
           if (cancelled) return;
-          logger.warn('auth getMe failed; signing out', { error: String(err) });
-          await storage.clearSession().catch(() => {});
-          setStatus('signedOut');
+          const isUnauthorized =
+            typeof err === 'object' &&
+            err !== null &&
+            'response' in err &&
+            (err as { response?: { status?: number } }).response?.status === 401;
+          if (isUnauthorized) {
+            finishBoot();
+            logger.warn('auth getMe failed; signing out', { error: String(err) });
+            setAuthToken(null);
+            await storage.clearSession().catch(() => {});
+            setUser(null);
+            setStatus('signedOut');
+            return;
+          }
+          logger.warn('auth getMe refresh failed; keeping cached session', { error: String(err) });
         }
       } catch (err) {
+        finishBoot();
         if (cancelled) return;
         logger.warn('auth boot failed unexpectedly; signing out', { error: String(err) });
         setStatus('signedOut');
@@ -121,7 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
-      clearTimeout(bootTimeout);
+      finishBoot();
     };
   }, []);
 
@@ -139,17 +177,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       expiresAtMs ?? 0,
     );
+    setAuthToken(res.token);
     setUser(res.user);
     setStatus('signedIn');
   }, []);
-
-  const login = useCallback(
-    async (phone: string, password: string) => {
-      const res = await apiLogin(phone, password);
-      await saveSession(res);
-    },
-    [saveSession],
-  );
 
   const verifyOtp = useCallback(
     async (input: VerifyOtpInput) => {
@@ -158,6 +189,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     [saveSession],
   );
+
+  const loginWithPassword = useCallback(
+    async (email: string, password: string) => {
+      const res = await apiLoginWithPassword(email, password);
+      await saveSession(res);
+    },
+    [saveSession],
+  );
+
+  const deleteAccount = useCallback(async () => {
+    await apiDeleteAccount();
+    await signOut();
+  }, [signOut]);
 
   const refresh = useCallback(async () => {
     try {
@@ -169,8 +213,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [signOut]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ status, user, login, verifyOtp, signOut, refresh }),
-    [status, user, login, verifyOtp, signOut, refresh],
+    () => ({ status, user, verifyOtp, loginWithPassword, deleteAccount, signOut, refresh }),
+    [status, user, verifyOtp, loginWithPassword, deleteAccount, signOut, refresh],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,8 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { GlassSurface } from '@/components/GlassSurface';
 import { useAuth } from '@/auth/AuthContext';
-import { colors, radius, typography } from '@/theme';
-
+import { colors, typography } from '@/theme';
 import { formatUserInitials } from '@/lib/format';
 
 export function AccountButton() {
@@ -18,25 +18,28 @@ export function AccountButton() {
       hitSlop={8}
       style={({ pressed }) => [styles.button, pressed && styles.pressed]}
     >
-      <View style={styles.avatar}>
-        <Text style={styles.initials}>{label}</Text>
-      </View>
+      <GlassSurface variant="circle" style={styles.glass}>
+        <View style={styles.avatar}>
+          <Text style={styles.initials}>{label}</Text>
+        </View>
+      </GlassSurface>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    padding: 2,
+    width: 42,
+    height: 42,
   },
-  pressed: { opacity: 0.7 },
+  pressed: { opacity: 0.88, transform: [{ scale: 0.97 }] },
+  glass: {
+    width: 42,
+    height: 42,
+  },
   avatar: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.pill,
-    backgroundColor: colors.brandSoft,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
+    width: 42,
+    height: 42,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -30,32 +30,32 @@ fades **orange → near‑black** at the bottom.
 ```ts
 export const colors = {
   // Brand — orange→amber
-  brand: '#F47A1F',          // primary orange
-  brandStrong: '#E8650C',    // pressed / emphasis
+  brand: '#F47A1F', // primary orange
+  brandStrong: '#E8650C', // pressed / emphasis
   brandSoft: 'rgba(244,122,31,0.12)',
-  amber: '#F9B233',          // FAB / secondary accent
+  amber: '#F9B233', // FAB / secondary accent
   amberLight: '#FCC55A',
 
   // Hero gradient (top → bottom on the home card)
   heroFrom: '#FFA033',
   heroMid: '#F2790E',
-  heroTo: '#140D06',         // fades to near-black
+  heroTo: '#140D06', // fades to near-black
 
   // Neutrals (light theme)
-  bg: '#ECECEC',             // app background
-  surface: '#FFFFFF',        // cards / nav
+  bg: '#ECECEC', // app background
+  surface: '#FFFFFF', // cards / nav
   surfaceGlass: 'rgba(255,255,255,0.65)', // translucent pills
   border: 'rgba(0,0,0,0.06)',
 
   textPrimary: '#141414',
   textSecondary: '#5C5C5C',
   textMuted: '#9B9B9B',
-  onBrand: '#FFFFFF',        // text/icons on orange
+  onBrand: '#FFFFFF', // text/icons on orange
 
   // Semantic (trend pills)
-  success: '#1E8E5A',        // ▲ positive
+  success: '#1E8E5A', // ▲ positive
   successSoft: 'rgba(30,142,90,0.15)',
-  danger: '#C23B2E',         // ▼ negative
+  danger: '#C23B2E', // ▼ negative
   dangerSoft: 'rgba(194,59,46,0.15)',
   warning: '#E0A24A',
   info: '#3B82F6',
@@ -71,14 +71,14 @@ export const colors = {
 
 System font stack (San Francisco / Roboto). Tight, bold headings; large numerals for stats.
 
-| Token | Size / weight | Use |
-|---|---|---|
-| `display` | 34 / 700 | Big stat numbers (e.g. `8.5h`) |
-| `title` | 26 / 700 | Greeting ("Good Morning") |
-| `heading` | 17 / 600 | Card titles |
-| `body` | 15 / 400 | Default text |
-| `caption` | 13 / 400 | "Last updated…", labels |
-| `micro` | 11 / 600, +1.2 tracking, UPPERCASE | Tab labels, scale ticks |
+| Token     | Size / weight                      | Use                            |
+| --------- | ---------------------------------- | ------------------------------ |
+| `display` | 34 / 700                           | Big stat numbers (e.g. `8.5h`) |
+| `title`   | 26 / 700                           | Greeting ("Good Morning")      |
+| `heading` | 17 / 600                           | Card titles                    |
+| `body`    | 15 / 400                           | Default text                   |
+| `caption` | 13 / 400                           | "Last updated…", labels        |
+| `micro`   | 11 / 600, +1.2 tracking, UPPERCASE | Tab labels, scale ticks        |
 
 > Exact type scale/weights **TBD**; above mirrors current scale and matches the screenshots.
 
@@ -86,19 +86,20 @@ System font stack (San Francisco / Roboto). Tight, bold headings; large numerals
 
 ## 4. Radius, spacing, elevation
 
-| Token | Value | Notes |
-|---|---|---|
-| `radius.card` | 28 | Hero + stat cards |
-| `radius.pill` | 999 | Nav bar, day chips, FAB |
-| `radius.md` | 16 | Inner controls |
-| `spacing` | 4 / 8 / 12 / 16 / 24 / 32 | 4‑pt scale |
-| Elevation | soft, low‑opacity, large‑blur shadows | glass look; FAB has a stronger drop shadow |
+| Token         | Value                                 | Notes                                      |
+| ------------- | ------------------------------------- | ------------------------------------------ |
+| `radius.card` | 28                                    | Hero + stat cards                          |
+| `radius.pill` | 999                                   | Nav bar, day chips, FAB                    |
+| `radius.md`   | 16                                    | Inner controls                             |
+| `spacing`     | 4 / 8 / 12 / 16 / 24 / 32             | 4‑pt scale                                 |
+| Elevation     | soft, low‑opacity, large‑blur shadows | glass look; FAB has a stronger drop shadow |
 
 ---
 
 ## 5. Components (from screenshots)
 
 ### 5.1 Bottom navigation (primary)
+
 Floating **pill** bar, translucent white, 5 slots: `Home · Activity · ◉ · History · Sharing`.
 Center slot is a raised **circular orange FAB** with a white play glyph = **start a session**.
 Active label is bold near‑black; inactive is muted gray. (See `nav-primary.png`.)
@@ -106,24 +107,42 @@ Active label is bold near‑black; inactive is muted gray. (See `nav-primary.png
 > Alternate variant (`nav-alt.png`): pill with active item showing a filled label
 > ("● Home"), trailing icons, and a **separate amber `＋` FAB** outside the pill. Final IA is **TBD**.
 
+#### FloatingTabBar (`src/components/ui/FloatingTabBar.tsx`)
+
+Reusable **floating glassmorphism** bottom tab bar — Instagram-style neutral dock.
+
+| Aspect            | Guidance                                                                                                                      |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **Use case**      | Project workspace tabs via `ProjectTabBar`; app-level tabs via `AppTabBar`                                                    |
+| **Pattern**       | Capsule-shaped translucent bar, icon-only; active tab gets a wider soft white/gray pill (no brand fill)                       |
+| **Safe area**     | Uses `useSafeAreaInsets` for bottom padding; pair screens with `useChromeInsets().projectTabBarReserve` or `appTabBarReserve` |
+| **Accessibility** | `accessibilityRole="tab"`, `accessibilityLabel`, `accessibilityState.selected`; minimum 44×44 pt touch target                 |
+| **Glass**         | `expo-blur` `BlurView` with `systemChromeMaterialLight` on iOS; border, specular edge, and drop shadow                        |
+| **Metrics**       | Height ~77px, width ~86% of screen (max 430px), active pill ~72px wide (`floatingTabBarMetrics.ts`)                           |
+
 ### 5.2 Hero / Home card
+
 Full‑bleed rounded card with the orange→black gradient containing: header row
 (avatar, "Last updated…", greeting, gear), the **weekly streak row**, the **intensity gauge**,
 and the **stat cards**.
 
 ### 5.3 Weekly streak chips
+
 Row of 7 vertical pills (`Mo–Su`). States: **done** (filled orange + white check),
 **today** (white dot, red ring), **future** (empty translucent).
 
 ### 5.4 Intensity gauge
+
 Horizontal ticked scale `1.0 → 15.0` with `Low / Medium / High` zone labels and a centered
 marker (~`7.4–8.4`). What it controls is **TBD** (see backend `PRODUCT.md`).
 
 ### 5.5 Stat card
+
 Translucent rounded card: title + icon, large value (`1.5/2.5`, `8.5h`), and a **trend pill**
 (`▲14.5%` green / `▼0.5%` red).
 
 ### 5.6 FAB
+
 Circular, amber/orange, soft glow shadow; center play (`◉`) or `＋` depending on nav variant.
 
 ---
@@ -144,3 +163,30 @@ Circular, amber/orange, soft glow shadow; center play (`◉`) or `＋` depending
   the new palette; product `name`/`slug`/`bundleIdentifier` are **TBD**.
 - Gradients: use `expo-linear-gradient` (add dependency) for the hero card and FAB.
 - Glass pills: translucent background + 1px hairline border + soft shadow.
+
+---
+
+## 8. Auth screens — white-glassy film studio style
+
+Sign In and Sign Up use a dedicated **auth palette** (`src/theme/tokens.ts` → `auth`, mapped via
+`authPalette.ts`) distinct from the main orange app chrome:
+
+| Token / pattern | Direction                                                             |
+| --------------- | --------------------------------------------------------------------- |
+| Background      | Warm white / ivory (`#FBFAF7`) with soft radial champagne glow        |
+| Accent          | Champagne / gold (`#E5AA22` range) — not heavy orange                 |
+| Typography      | Charcoal primary (`#111111`), warm gray secondary                     |
+| Form cards      | Translucent white glass (`rgba(255,255,255,0.72)`), soft shadow       |
+| Inputs          | Rounded glass fields, gold focus border, mail/lock icons              |
+| Motifs          | Very subtle film line-art (strip, camera, clapperboard) as watermarks |
+| Segment control | Pill track with raised white glass selected segment                   |
+
+**Auth UX constraints (v1):**
+
+- **No social login** — no Google, Apple, or “continue with” buttons.
+- **Sign In:** email + password only; forgot-password link preserved.
+- **Sign Up:** email verification OTP flow; phone is **optional** profile/contact info
+  (“Used for crew invites — optional contact number.”).
+- Reusable pieces: `AuthBackground`, `AuthHeader`, `AuthSegmentControl`, `AuthFormCard`.
+
+Do **not** use dark cinematic photo backgrounds or heavy movie-poster imagery on auth screens.

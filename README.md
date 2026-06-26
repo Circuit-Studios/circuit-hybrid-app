@@ -2,10 +2,10 @@
 
 Monorepo for **Circuit** — film production planning (Expo mobile + Node.js API).
 
-| Package | Path | Stack |
-|---------|------|-------|
-| **Mobile** | [`apps/mobile`](./apps/mobile) | Expo SDK 56 · React Native · expo-router · React Query |
-| **API** | [`apps/api`](./apps/api) | Express · Prisma · PostgreSQL · Redis · Socket.IO · OpenAI |
+| Package    | Path                           | Stack                                                      |
+| ---------- | ------------------------------ | ---------------------------------------------------------- |
+| **Mobile** | [`apps/mobile`](./apps/mobile) | Expo SDK 56 · React Native · expo-router · React Query     |
+| **API**    | [`apps/api`](./apps/api)       | Express · Prisma · PostgreSQL · Redis · Socket.IO · OpenAI |
 
 ---
 
@@ -17,7 +17,9 @@ Monorepo for **Circuit** — film production planning (Expo mobile + Node.js API
 git clone git@github.com:Circuit-Studios/circuit-hybrid-app.git
 cd circuit-hybrid-app
 npm install
-npm run setup:env
+npm run setup:env          # creates mobile + api env files if missing
+# npm run setup:env:api    # only when running the API locally (Workflow B)
+# npm run setup:env:mobile # mobile only (same as setup:env for mobile file)
 ```
 
 ### 2. Pick a workflow
@@ -40,13 +42,17 @@ Full guide: **[docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md)** · All docs: **[doc
 ```bash
 cd apps/api
 docker compose up -d
-npm run dev:db
+npm run db:prepare:dev
 npm run dev          # http://localhost:3009
 ```
 
 From repo root: `npm run api:dev`
 
-**Dev OTP:** `OTP_PROVIDER=MOCK` → code **`111111`**
+**Dev OTP:** `EMAIL_OTP_PROVIDER=MOCK` + `PHONE_OTP_PROVIDER=MOCK` → code **`111111`**
+
+**Runtime config:** mobile fetches `GET /app/config` on launch — switch `SIGNUP_VERIFICATION_CHANNEL` or feature flags in Render/DB without rebuilding the app.
+
+**Secrets:** never commit API keys, JWT/OTP secrets, or database URLs. Use `apps/api/.env.development` (local), Render dashboard (deployed API), and EAS env (cloud mobile builds) only.
 
 ### 4. Mobile
 
@@ -60,15 +66,19 @@ First-time iOS native setup: [`apps/mobile/README.md`](./apps/mobile/README.md)
 
 ## Monorepo scripts (repo root)
 
-| Command | Purpose |
-|---------|---------|
-| `npm install` | Install all workspace dependencies |
-| `npm run setup:env` | Create `apps/api/.env.development` + `apps/mobile/.env` from examples |
-| `npm run api:dev` | Start API with hot reload |
-| `npm run mobile` | Start Expo Metro (alias: `npm run dev:mobile`) |
-| `npm run typecheck` | Typecheck mobile + API |
-| `npm run lint` | Lint both packages |
-| `npm run test` | Run mobile Jest + API Vitest |
+| Command                    | Purpose                                                                                            |
+| -------------------------- | -------------------------------------------------------------------------------------------------- |
+| `npm install`              | Install all workspace dependencies                                                                 |
+| `npm run setup:env`        | Create `apps/api/.env.development` + `apps/mobile/.env` if missing (skips with message if present) |
+| `npm run setup:env:api`    | API env file only                                                                                  |
+| `npm run setup:env:mobile` | Mobile env file only                                                                               |
+| `npm run format`           | Prettier write (ts, tsx, js, json, md, yml, yaml)                                                  |
+| `npm run format:check`     | Prettier check (CI)                                                                                |
+| `npm run api:dev`          | Start API with hot reload                                                                          |
+| `npm run mobile`           | Start Expo Metro (alias: `npm run dev:mobile`)                                                     |
+| `npm run typecheck`        | Typecheck mobile + API                                                                             |
+| `npm run lint`             | Lint both packages                                                                                 |
+| `npm run test`             | Run mobile Jest + API Vitest                                                                       |
 
 ---
 
@@ -76,20 +86,20 @@ First-time iOS native setup: [`apps/mobile/README.md`](./apps/mobile/README.md)
 
 Config is split by surface — see **[docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md)** for workflows A/B/C.
 
-| File | Purpose |
-|------|---------|
-| `apps/mobile/.env` | Local Expo only |
+| File                        | Purpose                            |
+| --------------------------- | ---------------------------------- |
+| `apps/mobile/.env`          | Local Expo only                    |
 | `apps/api/.env.development` | Local API only (`npm run api:dev`) |
-| Render dashboard | Deployed API |
-| EAS env | Cloud mobile builds |
+| Render dashboard            | Deployed API                       |
+| EAS env                     | Cloud mobile builds                |
 
 ## Environment matrix
 
-| Environment | Mobile (`EXPO_PUBLIC_*`) | Backend | Database | OTP |
-|-------------|--------------------------|---------|----------|-----|
-| **Local** | `http://localhost:3009` | `npm run api:dev` | Docker Postgres | `MOCK` |
-| **Dev / Preview** | Render URL | Render Free | Supabase dev | `MOCK` |
-| **Production** | Custom API domain | Render paid | Supabase prod | MSG91 / Twilio |
+| Environment       | Mobile (`EXPO_PUBLIC_*`) | Backend           | Database        | OTP                            |
+| ----------------- | ------------------------ | ----------------- | --------------- | ------------------------------ |
+| **Local**         | `http://localhost:3009`  | `npm run api:dev` | Docker Postgres | `MOCK`                         |
+| **Dev / Preview** | Render URL               | Render Free       | Supabase dev    | `MOCK`                         |
+| **Production**    | Custom API domain        | Render paid       | Supabase prod   | MSG91 (phone) / Resend (email) |
 
 Details: [`apps/api/docs/DEPLOYMENT.md`](./apps/api/docs/DEPLOYMENT.md)
 
@@ -97,12 +107,23 @@ Details: [`apps/api/docs/DEPLOYMENT.md`](./apps/api/docs/DEPLOYMENT.md)
 
 ## Deploy API (Render)
 
-1. Push to GitHub.
-2. Render → **New** → **Blueprint** → connect this repo.
-3. Set `OPENAI_API_KEY` in the dashboard (sync: false).
-4. Migrations run during build (`build:deploy` script).
+Configure in the **Render dashboard** (manual web service).
 
-Blueprint: [`render.yaml`](./render.yaml)
+1. Push to GitHub.
+2. Render → **New** → **Web Service** → connect this repo.
+3. Set **Root directory** to the monorepo root.
+4. **Build:** `npm ci --include=dev && npm run prisma:generate -w circuit-backend && npm run build -w circuit-backend`
+5. **Start:** `npm start -w circuit-backend`
+6. **Pre-Deploy:** leave empty.
+7. Set secrets in Render → **Environment** — never commit them.
+8. Run migrations separately: `cd apps/api && npm run prisma:deploy` (not in Render build/start by default).
+
+Full guide: [`apps/api/docs/DEPLOYMENT.md`](./apps/api/docs/DEPLOYMENT.md)
+
+**Auth:** signup/login uses `POST /auth/request-otp` + `POST /auth/verify-otp`.
+Post-account email verification uses `POST /email/request-otp` + `POST /email/verify-otp`.
+`POST /auth/register` is
+local-dev only (`APP_ENV=local` + `ALLOW_DIRECT_REGISTER=true`).
 
 ---
 
@@ -110,16 +131,16 @@ Blueprint: [`render.yaml`](./render.yaml)
 
 **Start here:** **[docs/README.md](./docs/README.md)** — master index (architecture, database, env, deploy).
 
-| Doc | Contents |
-|-----|----------|
-| [docs/README.md](./docs/README.md) | **Documentation hub** — all architecture & DB docs |
-| [docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md) | Env workflows — mobile / local API / Render / EAS |
-| [apps/mobile/docs/ARCHITECTURE.md](./apps/mobile/docs/ARCHITECTURE.md) | Mobile navigation, module structure |
-| [apps/mobile/docs/CODING_STANDARDS.md](./apps/mobile/docs/CODING_STANDARDS.md) | Mobile production conventions |
-| [apps/mobile/docs/DESIGN-SYSTEM.md](./apps/mobile/docs/DESIGN-SYSTEM.md) | Visual language (v1 restyle) |
-| [apps/api/docs/ARCHITECTURE.md](./apps/api/docs/ARCHITECTURE.md) | Backend modules, realtime, AI pipeline |
-| [apps/api/docs/DATABASE.md](./apps/api/docs/DATABASE.md) | **Database mapping** — ER diagram, tables, enums |
-| [apps/api/docs/DEPLOYMENT.md](./apps/api/docs/DEPLOYMENT.md) | Local dev + Render deploy |
+| Doc                                                                            | Contents                                           |
+| ------------------------------------------------------------------------------ | -------------------------------------------------- |
+| [docs/README.md](./docs/README.md)                                             | **Documentation hub** — all architecture & DB docs |
+| [docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md)                                   | Env workflows — mobile / local API / Render / EAS  |
+| [apps/mobile/docs/ARCHITECTURE.md](./apps/mobile/docs/ARCHITECTURE.md)         | Mobile navigation, module structure                |
+| [apps/mobile/docs/CODING_STANDARDS.md](./apps/mobile/docs/CODING_STANDARDS.md) | Mobile production conventions                      |
+| [apps/mobile/docs/DESIGN-SYSTEM.md](./apps/mobile/docs/DESIGN-SYSTEM.md)       | Visual language (v1 restyle)                       |
+| [apps/api/docs/ARCHITECTURE.md](./apps/api/docs/ARCHITECTURE.md)               | Backend modules, realtime, AI pipeline             |
+| [apps/api/docs/DATABASE.md](./apps/api/docs/DATABASE.md)                       | **Database mapping** — ER diagram, tables, enums   |
+| [apps/api/docs/DEPLOYMENT.md](./apps/api/docs/DEPLOYMENT.md)                   | Local dev + Render deploy                          |
 
 ---
 
@@ -134,7 +155,6 @@ circuit-hybrid-app/
 │   ├── README.md        # Master documentation index
 │   └── ENVIRONMENT.md
 ├── .github/workflows/   # CI (mobile + API)
-├── render.yaml          # Render Blueprint
 ├── package.json         # npm workspaces root
 └── LICENSE
 ```
@@ -145,8 +165,9 @@ circuit-hybrid-app/
 
 GitHub Actions runs on push/PR to `main` and `develop`:
 
-- **Mobile** — typecheck, lint, Jest
-- **API** — Prisma validate/migrate, lint, typecheck, build, Vitest (Postgres service)
+- **Format** — `npm run format:check`
+- **Mobile** — `mobile:typecheck`, `mobile:lint`, `mobile:test`
+- **API** — Prisma validate/migrate, `api:lint`, `api:typecheck`, `api:build`, `api:test` (Postgres service)
 
 ---
 

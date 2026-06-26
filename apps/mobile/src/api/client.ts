@@ -4,7 +4,14 @@ import { logger, logApiRequest, logApiResponse } from '@/lib/logger';
 import { readResponseRequestId, withRequestId } from '@/lib/requestId';
 import { storage } from '@/lib/storage';
 
-const PUBLIC_AUTH_PATHS = ['/auth/login', '/auth/request-otp', '/auth/verify-otp'];
+const PUBLIC_AUTH_PATHS = [
+  '/auth/login',
+  '/auth/request-otp',
+  '/auth/verify-otp',
+  '/email/request-otp',
+  '/email/verify-otp',
+  '/app/config',
+];
 
 interface RequestMetadata {
   startTime: number;
@@ -45,6 +52,7 @@ export const api: AxiosInstance = axios.create({
 
 /** Best-effort ping so Render free tier is awake before a user-facing auth call. */
 export async function wakeApi(): Promise<void> {
+  if (!API_BASE_URL.includes('onrender.com')) return;
   try {
     await api.get('/health', { timeout: API_TIMEOUT_MS });
   } catch {
@@ -52,17 +60,23 @@ export async function wakeApi(): Promise<void> {
   }
 }
 
-api.interceptors.request.use(async config => {
+let authToken: string | null = null;
+
+export function setAuthToken(token: string | null): void {
+  authToken = token;
+}
+
+api.interceptors.request.use(async (config) => {
   config.headers = config.headers ?? {};
   const { requestId, headers: idHeaders } = withRequestId();
   for (const [key, value] of Object.entries(idHeaders)) {
     config.headers[key] = value;
   }
 
-  const token = await storage.getToken();
+  const token = authToken ?? (await storage.getToken());
   if (token) {
+    authToken = token;
     config.headers.Authorization = `Bearer ${token}`;
-    void storage.touchActivity();
   }
 
   const method = (config.method ?? 'get').toUpperCase();
@@ -79,7 +93,7 @@ api.interceptors.request.use(async config => {
 
 function isPublicAuthRequest(config: InternalAxiosRequestConfig | undefined): boolean {
   const url = config?.url ?? '';
-  return PUBLIC_AUTH_PATHS.some(path => url.includes(path));
+  return PUBLIC_AUTH_PATHS.some((path) => url.includes(path));
 }
 
 function requestHadAuthHeader(config: InternalAxiosRequestConfig | undefined): boolean {
@@ -104,7 +118,7 @@ function logTrackedResponse(
 }
 
 api.interceptors.response.use(
-  res => {
+  (res) => {
     if (res.config.circuitMeta) {
       logTrackedResponse(
         res.config.circuitMeta,

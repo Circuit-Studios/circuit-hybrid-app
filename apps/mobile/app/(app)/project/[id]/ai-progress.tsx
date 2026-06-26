@@ -21,17 +21,45 @@ interface PipelinePhase {
 }
 
 const PIPELINE: PipelinePhase[] = [
-  { status: 'EXTRACTING_TEXT', label: 'Reading your PDF', detail: 'Extracting clean text from the script.' },
-  { status: 'ANALYZING_CHARACTERS', label: 'Mapping characters', detail: 'Leads, supports, day-roles, screen time.' },
-  { status: 'ANALYZING_SCENES', label: 'Breaking down scenes', detail: 'INT/EXT · day/night · who appears where.' },
-  { status: 'ANALYZING_COMBINATIONS', label: 'Finding combination scenes', detail: 'Scenes to shoot together for fewer days.' },
-  { status: 'SUGGESTING_DEPARTMENTS', label: 'Suggesting departments', detail: 'Only the departments your story needs.' },
-  { status: 'ESTIMATING_SHOOT_DAYS', label: 'Estimating shoot days', detail: 'Per-actor day estimates and optimisation hints.' },
-  { status: 'DRAFTING_BUDGET', label: 'Drafting your budget', detail: 'Line items by department in ₹ INR.' },
+  {
+    status: 'EXTRACTING_TEXT',
+    label: 'Reading your PDF',
+    detail: 'Extracting clean text from the script.',
+  },
+  {
+    status: 'ANALYZING_CHARACTERS',
+    label: 'Mapping characters',
+    detail: 'Leads, supports, day-roles, screen time.',
+  },
+  {
+    status: 'ANALYZING_SCENES',
+    label: 'Breaking down scenes',
+    detail: 'INT/EXT · day/night · who appears where.',
+  },
+  {
+    status: 'ANALYZING_COMBINATIONS',
+    label: 'Finding combination scenes',
+    detail: 'Scenes to shoot together for fewer days.',
+  },
+  {
+    status: 'SUGGESTING_DEPARTMENTS',
+    label: 'Suggesting departments',
+    detail: 'Only the departments your story needs.',
+  },
+  {
+    status: 'ESTIMATING_SHOOT_DAYS',
+    label: 'Estimating shoot days',
+    detail: 'Per-actor day estimates and optimisation hints.',
+  },
+  {
+    status: 'DRAFTING_BUDGET',
+    label: 'Drafting your budget',
+    detail: 'Line items by department in ₹ INR.',
+  },
 ];
 
 function phaseIndex(status: ScriptAnalysisStatus): number {
-  const idx = PIPELINE.findIndex(p => p.status === status);
+  const idx = PIPELINE.findIndex((p) => p.status === status);
   if (idx >= 0) return idx;
   if (status === 'PENDING') return -1;
   if (status === 'COMPLETED') return PIPELINE.length;
@@ -48,7 +76,7 @@ export default function AIProgressScreen() {
     enabled: !!scriptId,
     // Poll until we hit a terminal state. 2.5s strikes a balance between
     // perceived liveness and not hammering the backend.
-    refetchInterval: q => {
+    refetchInterval: (q) => {
       const status = q.state.data?.script.analysisStatus;
       if (!status) return 2500;
       if (status === 'COMPLETED' || status === 'FAILED') return false;
@@ -106,10 +134,7 @@ export default function AIProgressScreen() {
           return (
             <View
               key={phase.status}
-              style={[
-                styles.row,
-                idx !== PIPELINE.length - 1 && styles.rowDivider,
-              ]}
+              style={[styles.row, idx !== PIPELINE.length - 1 && styles.rowDivider]}
             >
               <View style={styles.iconCol}>
                 {done ? (
@@ -125,7 +150,9 @@ export default function AIProgressScreen() {
                 )}
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.rowLabel, active && styles.rowLabelActive]}>{phase.label}</Text>
+                <Text style={[styles.rowLabel, active && styles.rowLabelActive]}>
+                  {phase.label}
+                </Text>
                 <Text style={styles.rowDetail}>{phase.detail}</Text>
               </View>
             </View>
@@ -170,7 +197,14 @@ const styles = StyleSheet.create({
   rowLabel: { ...typography.bodyStrong, color: colors.textSecondary },
   rowLabelActive: { color: colors.textPrimary },
   rowDetail: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
-  failedCard: { gap: spacing.md, marginTop: spacing.md, borderColor: colors.danger, borderWidth: 1, padding: spacing.lg, borderRadius: radius.lg },
+  failedCard: {
+    gap: spacing.md,
+    marginTop: spacing.md,
+    borderColor: colors.danger,
+    borderWidth: 1,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+  },
   failedText: { ...typography.body, color: colors.textPrimary },
   errorText: { ...typography.caption, color: colors.danger, marginTop: spacing.md },
   actions: { marginTop: spacing.xl },

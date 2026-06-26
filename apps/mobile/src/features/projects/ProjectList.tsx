@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { AppHeaderActions } from '@/components/AppHeaderActions';
@@ -10,15 +11,13 @@ import { Card } from '@/components/Card';
 import { StatusBadge } from '@/components/StatusBadge';
 import { readApiError } from '@/api/client';
 import { useAuth } from '@/auth/AuthContext';
-import { colors, spacing, typography } from '@/theme';
+import { leaveProjectsScreen } from '@/lib/appNavigation';
+import { useFloatingTabBarReserve } from '@/hooks/useFloatingTabBarReserve';
+import { colors, radius, spacing, typography } from '@/theme';
 import { formatRole } from '@/lib/format';
 import type { ProjectInvite } from '@/api/types';
 import { ProjectCard } from './ProjectCard';
-import {
-  useAcceptInviteMutation,
-  useMyInvitesQuery,
-  useProjectsQuery,
-} from './hooks';
+import { useAcceptInviteMutation, useMyInvitesQuery, useProjectsQuery } from './hooks';
 
 export default function ProjectList() {
   const router = useRouter();
@@ -32,18 +31,32 @@ export default function ProjectList() {
   const projects = data ?? [];
   const invites = invitesQ.data ?? [];
   const inSpiderMode = projects.length >= 2;
+  const tabBarReserve = useFloatingTabBarReserve('app');
 
   return (
-    <ScreenContainer topAligned edges={['top', 'left', 'right']}>
+    <ScreenContainer
+      topAligned
+      edges={['top', 'left', 'right']}
+      contentStyle={styles.screenContent}
+      reserveFloatingTabBar={false}
+    >
+      <View style={styles.topBar}>
+        <Pressable
+          onPress={() => leaveProjectsScreen(router)}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />
+        </Pressable>
+        <View style={styles.topBarSpacer} />
+        <AppHeaderActions />
+      </View>
+
       <ScreenHeader
         eyebrow={`Hi ${user?.firstName?.trim() || 'there'}`}
-        title={
-          inSpiderMode ? 'Your projects' : projects.length === 1 ? 'Your project' : 'Welcome'
-        }
-        subtitle={
-          inSpiderMode ? 'Spider mode — tap a project to open its workspace.' : undefined
-        }
-        trailing={<AppHeaderActions />}
+        title={inSpiderMode ? 'Your projects' : projects.length === 1 ? 'Your project' : 'Projects'}
+        subtitle={inSpiderMode ? 'Spider mode — tap a project to open its workspace.' : undefined}
       />
 
       {isLoading ? (
@@ -64,51 +77,58 @@ export default function ProjectList() {
           }
           action={
             canStartProject ? (
-              <Button title="Start a film project" onPress={() => router.push('/(app)/create-project')} />
+              <Button
+                title="Start a film project"
+                onPress={() => router.push('/(app)/create-project')}
+              />
             ) : null
           }
         />
       ) : (
-        <FlatList
-          contentContainerStyle={styles.list}
-          data={projects}
-          keyExtractor={p => p.id}
-          renderItem={({ item }) => <ProjectCard project={item} />}
-          onRefresh={() => {
-            void refetch();
-            void invitesQ.refetch();
-          }}
-          refreshing={isRefetching}
-          ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
-          ListHeaderComponent={
-            invites.length > 0 ? (
-              <View style={styles.inviteBlock}>
-                <Text style={styles.inviteHeader}>
-                  Pending invite{invites.length === 1 ? '' : 's'} ({invites.length})
-                </Text>
-                {invites.map(inv => (
-                  <InviteCard
-                    key={inv.id}
-                    invite={inv}
-                    accepting={acceptMutation.isPending}
-                    onAccept={() => acceptMutation.mutate(inv.id)}
+        <View style={styles.listFlex}>
+          <FlatList
+            style={styles.listFlex}
+            contentContainerStyle={[styles.list, { paddingBottom: tabBarReserve + spacing.lg }]}
+            data={projects}
+            keyExtractor={(p) => p.id}
+            renderItem={({ item }) => <ProjectCard project={item} />}
+            onRefresh={() => {
+              void refetch();
+              void invitesQ.refetch();
+            }}
+            refreshing={isRefetching}
+            showsVerticalScrollIndicator={false}
+            ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
+            ListHeaderComponent={
+              invites.length > 0 ? (
+                <View style={styles.inviteBlock}>
+                  <Text style={styles.inviteHeader}>
+                    Pending invite{invites.length === 1 ? '' : 's'} ({invites.length})
+                  </Text>
+                  {invites.map((inv) => (
+                    <InviteCard
+                      key={inv.id}
+                      invite={inv}
+                      accepting={acceptMutation.isPending}
+                      onAccept={() => acceptMutation.mutate(inv.id)}
+                    />
+                  ))}
+                </View>
+              ) : null
+            }
+            ListFooterComponent={
+              canStartProject ? (
+                <View style={styles.listFooter}>
+                  <Button
+                    title="Start a new project"
+                    variant="primary"
+                    onPress={() => router.push('/(app)/create-project')}
                   />
-                ))}
-              </View>
-            ) : null
-          }
-          ListFooterComponent={
-            canStartProject ? (
-              <View style={{ marginTop: spacing.xl }}>
-                <Button
-                  title="Start a new project"
-                  variant="secondary"
-                  onPress={() => router.push('/(app)/create-project')}
-                />
-              </View>
-            ) : null
-          }
-        />
+                </View>
+              ) : null
+            }
+          />
+        </View>
       )}
     </ScreenContainer>
   );
@@ -125,40 +145,92 @@ function InviteCard({
 }) {
   return (
     <Card variant="hero" style={styles.inviteCard}>
-      <View style={styles.inviteHead}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.projectName}>{invite.project.name}</Text>
-          <Text style={styles.projectMeta}>
-            Invited as {formatRole(invite.role)}
-            {invite.projectDepartment ? ` · ${invite.projectDepartment.displayName}` : ''}
-          </Text>
+      <View style={styles.inviteAccent} />
+      <View style={styles.inviteContent}>
+        <View style={styles.inviteHead}>
+          <View style={styles.inviteIcon}>
+            <Ionicons name="mail-unread-outline" size={22} color={colors.warning} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.inviteEyebrow}>Action required</Text>
+            <Text style={styles.inviteProjectName}>{invite.project.name}</Text>
+            <Text style={styles.projectMeta}>
+              Invited as {formatRole(invite.role)}
+              {invite.projectDepartment ? ` · ${invite.projectDepartment.displayName}` : ''}
+            </Text>
+          </View>
+          <StatusBadge label="Pending" tone="warning" />
         </View>
-        <StatusBadge label="Invite" tone="warning" />
-      </View>
-      <View style={styles.inviteActions}>
-        <Button title="Accept" onPress={onAccept} loading={accepting} />
+        <View style={styles.inviteActions}>
+          <Button title="Accept invite" onPress={onAccept} loading={accepting} />
+        </View>
       </View>
     </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  list: { paddingBottom: spacing.xl },
-  inviteBlock: { marginBottom: spacing.lg },
+  screenContent: { flex: 1, paddingBottom: 0 },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  topBarSpacer: { flex: 1 },
+  listFlex: { flex: 1 },
+  list: { flexGrow: 1 },
+  listFooter: { marginTop: spacing.xl },
+  inviteBlock: {
+    marginBottom: spacing.lg,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.warning + '14',
+    borderWidth: 1,
+    borderColor: colors.warning + '44',
+  },
   inviteHeader: {
     ...typography.micro,
     color: colors.warning,
     textTransform: 'uppercase',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
+    fontWeight: '700',
   },
-  inviteCard: { gap: spacing.md, marginBottom: spacing.sm },
+  inviteCard: {
+    overflow: 'hidden',
+    marginBottom: spacing.sm,
+    padding: 0,
+  },
+  inviteAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    backgroundColor: colors.warning,
+  },
+  inviteContent: { padding: spacing.lg, paddingLeft: spacing.lg + 4, gap: spacing.md },
   inviteHead: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
-  inviteActions: { marginTop: spacing.sm },
-  projectName: {
+  inviteIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inviteEyebrow: {
+    ...typography.micro,
+    color: colors.warning,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
+  inviteProjectName: {
     ...typography.title,
     fontSize: 20,
     color: colors.textPrimary,
     marginBottom: 4,
   },
+  inviteActions: { marginTop: spacing.xs },
   projectMeta: { ...typography.caption, color: colors.textSecondary },
 });

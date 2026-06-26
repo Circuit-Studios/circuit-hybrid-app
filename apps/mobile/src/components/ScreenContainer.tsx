@@ -10,6 +10,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CinematicBackdrop } from '@/components/CinematicBackdrop';
 import { useContentFrame } from '@/hooks/useContentFrame';
+import {
+  useFloatingTabBarReserve,
+  type FloatingTabBarReserveMode,
+} from '@/hooks/useFloatingTabBarReserve';
 import { type ContentConstraint } from '@/theme/layout';
 import { colors, spacing } from '@/theme';
 
@@ -30,6 +34,16 @@ interface ScreenContainerProps {
   constrained?: ContentConstraint;
   /** Vertically and horizontally center children (e.g. welcome / empty states). */
   centerContent?: boolean;
+  /**
+   * Extra bottom padding when content scrolls behind a floating tab bar.
+   * When `reserveFloatingTabBar` is true/`auto`, this is added automatically.
+   */
+  bottomInsetForFloatingTab?: number;
+  /**
+   * Reserve space for the global floating tab bar. Default `auto` on app screens.
+   * Set `false` for full-bleed overlays (e.g. modals).
+   */
+  reserveFloatingTabBar?: FloatingTabBarReserveMode;
 }
 
 export function ScreenContainer({
@@ -40,22 +54,30 @@ export function ScreenContainer({
   topAligned = false,
   constrained = 'auto',
   centerContent = false,
+  bottomInsetForFloatingTab = 0,
+  reserveFloatingTabBar = 'auto',
 }: ScreenContainerProps) {
   const { horizontalPadding, maxWidth } = useContentFrame(constrained);
+  const tabBarReserve = useFloatingTabBarReserve(reserveFloatingTabBar);
+  const bottomPad = bottomInsetForFloatingTab + tabBarReserve;
+
+  const fillHeight = !scroll && !centerContent;
 
   const Content = (
     <View
       style={[
         styles.content,
         { paddingHorizontal: horizontalPadding },
-        !scroll && styles.contentFlex,
-        topAligned && styles.topAligned,
+        fillHeight && styles.contentFlex,
+        topAligned && scroll && styles.topAligned,
+        bottomPad > 0 && { paddingBottom: bottomPad },
         contentStyle,
       ]}
     >
       <View
         style={[
           styles.inner,
+          fillHeight && styles.innerFlex,
           !scroll && centerContent && styles.innerCenter,
           scroll && centerContent && styles.innerScrollCenter,
           maxWidth != null && styles.constrained,
@@ -78,7 +100,7 @@ export function ScreenContainer({
           <ScrollView
             style={styles.flex}
             contentContainerStyle={[
-              styles.scrollContent,
+              topAligned ? styles.scrollContentTopAligned : styles.scrollContent,
               centerContent && styles.scrollContentCenter,
             ]}
             keyboardShouldPersistTaps="handled"
@@ -103,10 +125,12 @@ const styles = StyleSheet.create({
   },
   contentFlex: { flex: 1 },
   inner: { width: '100%' },
+  innerFlex: { flex: 1, minHeight: 0 },
   innerCenter: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   innerScrollCenter: { width: '100%', alignItems: 'center' },
   constrained: { alignSelf: 'center' },
-  topAligned: { flex: 0 },
+  topAligned: { flexGrow: 0 },
   scrollContent: { flexGrow: 1 },
+  scrollContentTopAligned: { flexGrow: 0 },
   scrollContentCenter: { justifyContent: 'center', alignItems: 'center' },
 });

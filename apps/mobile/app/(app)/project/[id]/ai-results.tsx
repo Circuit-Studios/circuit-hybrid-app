@@ -23,12 +23,7 @@ import {
   SceneEditSheet,
 } from '@/components/EditSheets';
 import { getAnalysis } from '@/api/scripts';
-import {
-  listBudgetLines,
-  listCharacters,
-  listDepartments,
-  listScenes,
-} from '@/api/edits';
+import { listBudgetLines, listCharacters, listDepartments, listScenes } from '@/api/edits';
 import { readApiError } from '@/api/client';
 import { qk } from '@/api/queryKeys';
 import { useAuth } from '@/auth/AuthContext';
@@ -148,9 +143,7 @@ export default function AIResultsScreen() {
     return (
       <ScreenContainer>
         <EmptyState
-          title={
-            script.analysisStatus === 'FAILED' ? 'Analysis failed' : 'Analysis not ready'
-          }
+          title={script.analysisStatus === 'FAILED' ? 'Analysis failed' : 'Analysis not ready'}
           body={
             script.analysisError ??
             'Head back to the progress screen — we may still be working on it.'
@@ -170,7 +163,7 @@ export default function AIResultsScreen() {
 
   const totalScenes = summary.scenes.scenes.length;
   const totalChars = summary.characters.characters.length;
-  const leadCount = summary.characters.characters.filter(c => c.importance === 'LEAD').length;
+  const leadCount = summary.characters.characters.filter((c) => c.importance === 'LEAD').length;
   const totalShootDays = summary.shootDays.totalShootDaysEstimate;
   const savings = summary.combinations.totalEstimatedSavingsDays;
   const budgetTotal = summary.budget.totalINR;
@@ -194,6 +187,15 @@ export default function AIResultsScreen() {
         <StatTile big={String(Math.round(totalShootDays))} label="Shoot days" />
       </View>
 
+      <View style={styles.reviewCta}>
+        <PrimaryButton
+          title="Review shooting plan & tasks"
+          onPress={() =>
+            router.push(`/(app)/project/${projectId}/director-review?scriptId=${scriptId ?? ''}`)
+          }
+        />
+      </View>
+
       {savings > 0 ? (
         <Card style={styles.savingsCard}>
           <Text style={styles.savingsEyebrow}>Combination scenes</Text>
@@ -213,7 +215,7 @@ export default function AIResultsScreen() {
         trailing={canEdit ? <Text style={styles.editHint}>Tap to edit</Text> : null}
       />
       <Card>
-        {summary.characters.characters.slice(0, 8).map(c => {
+        {summary.characters.characters.slice(0, 8).map((c) => {
           const record = characterByName.get(c.name);
           return (
             <CharacterRow
@@ -225,9 +227,7 @@ export default function AIResultsScreen() {
           );
         })}
         {summary.characters.characters.length > 8 ? (
-          <Text style={styles.moreLink}>
-            +{summary.characters.characters.length - 8} more
-          </Text>
+          <Text style={styles.moreLink}>+{summary.characters.characters.length - 8} more</Text>
         ) : null}
       </Card>
 
@@ -240,7 +240,7 @@ export default function AIResultsScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View>
             <SceneHeader />
-            {summary.scenes.scenes.slice(0, 10).map(scene => {
+            {summary.scenes.scenes.slice(0, 10).map((scene) => {
               const record = sceneByNumber.get(scene.sceneNumber);
               return (
                 <SceneRow
@@ -257,11 +257,8 @@ export default function AIResultsScreen() {
 
       {summary.combinations.groups.length > 0 ? (
         <>
-          <SectionHeader
-            title="Combination scenes"
-            sub="Bundle these to shave shoot days"
-          />
-          {summary.combinations.groups.slice(0, 5).map(group => (
+          <SectionHeader title="Combination scenes" sub="Bundle these to shave shoot days" />
+          {summary.combinations.groups.slice(0, 5).map((group) => (
             <CombinationCard key={group.groupLabel} group={group} />
           ))}
         </>
@@ -273,7 +270,7 @@ export default function AIResultsScreen() {
         trailing={canEdit ? <Text style={styles.editHint}>Tap to edit</Text> : null}
       />
       <View style={styles.deptGrid}>
-        {summary.departments.departments.map(dept => {
+        {summary.departments.departments.map((dept) => {
           const record = departmentByKind.get(dept.kind);
           return (
             <DepartmentCard
@@ -289,7 +286,7 @@ export default function AIResultsScreen() {
 
       <SectionHeader title="Shoot days per actor" />
       <Card>
-        {summary.shootDays.perActor.slice(0, 8).map(item => (
+        {summary.shootDays.perActor.slice(0, 8).map((item) => (
           <View key={item.character} style={styles.actorRow}>
             <Text style={styles.actorName}>{item.character}</Text>
             <View style={styles.actorMeta}>
@@ -300,8 +297,10 @@ export default function AIResultsScreen() {
         ))}
         {summary.shootDays.optimizationHints.length > 0 ? (
           <View style={styles.hintsBox}>
-            {summary.shootDays.optimizationHints.slice(0, 4).map(hint => (
-              <Text key={hint} style={styles.hint}>· {hint}</Text>
+            {summary.shootDays.optimizationHints.slice(0, 4).map((hint) => (
+              <Text key={hint} style={styles.hint}>
+                · {hint}
+              </Text>
             ))}
           </View>
         ) : null}
@@ -316,7 +315,7 @@ export default function AIResultsScreen() {
         <Text style={styles.budgetTotal}>{formatCurrencyINR(budgetTotal)}</Text>
         <Text style={styles.budgetCaption}>Total across all departments</Text>
         <View style={styles.budgetList}>
-          {summary.budget.lines.slice(0, 10).map(line => {
+          {summary.budget.lines.slice(0, 10).map((line) => {
             const record = budgetByLabel.get(`${line.department}::${line.label}`);
             return (
               <BudgetRow
@@ -331,8 +330,10 @@ export default function AIResultsScreen() {
         {summary.budget.caveats.length > 0 ? (
           <View style={styles.caveatsBox}>
             <Text style={styles.caveatsTitle}>Caveats</Text>
-            {summary.budget.caveats.map(c => (
-              <Text key={c} style={styles.caveat}>· {c}</Text>
+            {summary.budget.caveats.map((c) => (
+              <Text key={c} style={styles.caveat}>
+                · {c}
+              </Text>
             ))}
           </View>
         ) : null}
@@ -345,19 +346,13 @@ export default function AIResultsScreen() {
         />
       </View>
 
-      <CharacterEditSheet
-        character={editingCharacter}
-        onClose={() => setEditingCharacter(null)}
-      />
+      <CharacterEditSheet character={editingCharacter} onClose={() => setEditingCharacter(null)} />
       <SceneEditSheet scene={editingScene} onClose={() => setEditingScene(null)} />
       <DepartmentEditSheet
         department={editingDepartment}
         onClose={() => setEditingDepartment(null)}
       />
-      <BudgetLineEditSheet
-        line={editingBudgetLine}
-        onClose={() => setEditingBudgetLine(null)}
-      />
+      <BudgetLineEditSheet line={editingBudgetLine} onClose={() => setEditingBudgetLine(null)} />
     </ScreenContainer>
   );
 }
@@ -385,8 +380,8 @@ function CharacterRow({
     character.importance === 'LEAD'
       ? 'accent'
       : character.importance === 'SUPPORT'
-      ? 'info'
-      : 'neutral';
+        ? 'info'
+        : 'neutral';
   const content = (
     <View style={styles.charRow}>
       <View style={{ flex: 1 }}>
@@ -403,9 +398,7 @@ function CharacterRow({
       <View style={styles.charRight}>
         <StatusBadge label={character.importance.replace('_', ' ')} tone={tone} />
         {character.estimatedScreenTimeMinutes != null ? (
-          <Text style={styles.charScreenTime}>
-            ~{character.estimatedScreenTimeMinutes}m
-          </Text>
+          <Text style={styles.charScreenTime}>~{character.estimatedScreenTimeMinutes}m</Text>
         ) : null}
       </View>
     </View>
@@ -476,9 +469,7 @@ function CombinationCard({ group }: { group: AICombinationGroup }) {
   return (
     <Card style={styles.comboCard}>
       <Text style={styles.comboLabel}>{group.groupLabel}</Text>
-      <Text style={styles.comboMeta}>
-        {group.characters.join(' · ')}
-      </Text>
+      <Text style={styles.comboMeta}>{group.characters.join(' · ')}</Text>
       <View style={styles.comboRow}>
         <View>
           <Text style={styles.comboStatBig}>
@@ -499,9 +490,7 @@ function CombinationCard({ group }: { group: AICombinationGroup }) {
           <Text style={styles.comboStatLabel}>Saved</Text>
         </View>
       </View>
-      <Text style={styles.comboScenes}>
-        Scenes: {group.sceneNumbers.join(', ')}
-      </Text>
+      <Text style={styles.comboScenes}>Scenes: {group.sceneNumbers.join(', ')}</Text>
     </Card>
   );
 }
@@ -528,13 +517,19 @@ function DepartmentCard({
       ) : (
         <StatusBadge label="Optional" tone="neutral" />
       )}
-      <Text style={styles.deptReason} numberOfLines={3}>{dept.reasoning}</Text>
+      <Text style={styles.deptReason} numberOfLines={3}>
+        {dept.reasoning}
+      </Text>
     </View>
   );
   // Outer wrapper always carries the 48% grid sizing so we don't break the
   // two-column layout whether or not the card is tappable.
   return onPress ? (
-    <Pressable onPress={onPress} accessibilityRole="button" style={[styles.deptCardWrap, wrapStyle]}>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={[styles.deptCardWrap, wrapStyle]}
+    >
       {inner}
     </Pressable>
   ) : (
@@ -585,6 +580,7 @@ const styles = StyleSheet.create({
   body: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
   bodyStrong: { color: colors.textPrimary, fontWeight: '600' },
   statsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+  reviewCta: { marginTop: spacing.md, marginBottom: spacing.md },
   statTile: {
     flex: 1,
     backgroundColor: colors.surface,
@@ -595,7 +591,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statBig: { ...typography.display, color: colors.accent },
-  statLabel: { ...typography.caption, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.6 },
+  statLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
   statSub: { ...typography.caption, color: colors.textMuted },
   savingsCard: {
     marginTop: spacing.xl,
@@ -623,7 +624,12 @@ const styles = StyleSheet.create({
   sceneRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
   sceneRowBody: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   sceneCell: { ...typography.body, color: colors.textPrimary, paddingHorizontal: spacing.xs },
-  sceneCellHead: { ...typography.micro, color: colors.textSecondary, textTransform: 'uppercase', paddingHorizontal: spacing.xs },
+  sceneCellHead: {
+    ...typography.micro,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    paddingHorizontal: spacing.xs,
+  },
   sceneCellFlags: { flexDirection: 'row', gap: 4, flexWrap: 'wrap' },
   comboCard: { marginTop: spacing.md, gap: spacing.xs },
   comboLabel: { ...typography.heading, color: colors.textPrimary },
@@ -644,7 +650,13 @@ const styles = StyleSheet.create({
   },
   deptName: { ...typography.heading, color: colors.textPrimary },
   deptReason: { ...typography.caption, color: colors.textSecondary },
-  actorRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  actorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
   actorName: { ...typography.bodyStrong, color: colors.textPrimary, flex: 1 },
   actorMeta: { flexDirection: 'row', gap: spacing.lg, alignItems: 'center' },
   actorScenes: { ...typography.caption, color: colors.textMuted },

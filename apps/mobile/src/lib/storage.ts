@@ -11,6 +11,9 @@ const USER_KEY = 'circuit.auth_user';
 const EXPIRES_KEY = 'circuit.auth_expires_at';
 const ACTIVITY_KEY = 'circuit.auth_last_activity';
 
+const TOUCH_DEBOUNCE_MS = 30_000;
+let lastTouchWriteMs = 0;
+
 const memory = new Map<string, string>();
 
 async function setItem(key: string, value: string): Promise<void> {
@@ -78,12 +81,9 @@ function normalizeStoredUser(raw: StoredUser & { name?: string }): StoredUser {
 }
 
 export const storage = {
-  async saveSession(
-    token: string,
-    user: StoredUser,
-    expiresAtMs: number,
-  ): Promise<void> {
+  async saveSession(token: string, user: StoredUser, expiresAtMs: number): Promise<void> {
     const now = String(Date.now());
+    lastTouchWriteMs = Date.now();
     await Promise.all([
       setItem(TOKEN_KEY, token),
       setItem(USER_KEY, JSON.stringify(user)),
@@ -110,6 +110,7 @@ export const storage = {
     }
   },
   async clearSession(): Promise<void> {
+    lastTouchWriteMs = 0;
     await Promise.all([
       removeItem(TOKEN_KEY),
       removeItem(USER_KEY),
@@ -117,7 +118,10 @@ export const storage = {
       removeItem(ACTIVITY_KEY),
     ]);
   },
+  /** Persists last user interaction time — not called from API/network code. */
   async touchActivity(atMs = Date.now()): Promise<void> {
+    if (atMs - lastTouchWriteMs < TOUCH_DEBOUNCE_MS) return;
+    lastTouchWriteMs = atMs;
     await setItem(ACTIVITY_KEY, String(atMs));
   },
   async getLastActivityAtMs(): Promise<number | null> {

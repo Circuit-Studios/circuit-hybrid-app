@@ -11,7 +11,7 @@ export function loadEnvFiles(): void {
   const path = resolve(ROOT, `.env.${nodeEnv}`);
   if (!existsSync(path)) {
     if (nodeEnv !== 'test') {
-      console.warn(`[env] Missing ${path} — run: npm run setup:env`);
+      console.warn(`[env] Missing ${path} — run: npm run setup:env:api`);
     }
     return;
   }

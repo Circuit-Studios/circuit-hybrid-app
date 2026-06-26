@@ -1,7 +1,7 @@
 import { ScriptAnalysisStatus, type Prisma, type ProjectLanguage } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { logger } from '../../lib/logger.js';
-import { chatJson } from '../openai.client.js';
+import { chatJson } from '../llm/index.js';
 import { extractPdfText } from '../pdf.js';
 import { emitToProject } from '../../realtime/socket.js';
 import { dispatchNotification } from '../../notifications/notifications.service.js';
@@ -51,33 +51,45 @@ export async function analyzeScript(scriptId: string): Promise<void> {
     // 1) Characters
     await updateStatus(scriptId, 'ANALYZING_CHARACTERS');
     const characters = await chatJson({
+      role: 'fast',
+      stage: 'characters',
       schema: aiCharactersResponseSchema,
       schemaName: 'CircuitCharacters',
       systemPrompt: CIRCUIT_SYSTEM_PROMPT,
       userPrompt: buildCharactersPrompt(rawText, project.genre),
+      projectId: project.id,
+      scriptId,
     });
     log.info({ count: characters.characters.length }, 'Characters extracted');
 
     // 2) Scenes
     await updateStatus(scriptId, 'ANALYZING_SCENES');
     const scenes = await chatJson({
+      role: 'planner',
+      stage: 'scenes',
       schema: aiScenesResponseSchema,
       schemaName: 'CircuitScenes',
       systemPrompt: CIRCUIT_SYSTEM_PROMPT,
       userPrompt: buildScenesPrompt(
         rawText,
-        characters.characters.map(c => c.name),
+        characters.characters.map((c) => c.name),
       ),
+      projectId: project.id,
+      scriptId,
     });
     log.info({ count: scenes.scenes.length }, 'Scenes mapped');
 
     // 3) Combinations
     await updateStatus(scriptId, 'ANALYZING_COMBINATIONS');
     const combinations = await chatJson({
+      role: 'planner',
+      stage: 'combinations',
       schema: aiCombinationsResponseSchema,
       schemaName: 'CircuitCombinations',
       systemPrompt: CIRCUIT_SYSTEM_PROMPT,
       userPrompt: buildCombinationsPrompt(characters.characters, scenes.scenes, project.genre),
+      projectId: project.id,
+      scriptId,
     });
     log.info(
       { groups: combinations.groups.length, savingsDays: combinations.totalEstimatedSavingsDays },
@@ -87,6 +99,8 @@ export async function analyzeScript(scriptId: string): Promise<void> {
     // 4) Departments
     await updateStatus(scriptId, 'SUGGESTING_DEPARTMENTS');
     const departments = await chatJson({
+      role: 'planner',
+      stage: 'departments',
       schema: aiDepartmentsResponseSchema,
       schemaName: 'CircuitDepartments',
       systemPrompt: CIRCUIT_SYSTEM_PROMPT,
@@ -95,12 +109,16 @@ export async function analyzeScript(scriptId: string): Promise<void> {
         project.genre,
         formatProjectLanguages(project.languages, project.language),
       ),
+      projectId: project.id,
+      scriptId,
     });
     log.info({ count: departments.departments.length }, 'Departments suggested');
 
     // 5) Shoot days
     await updateStatus(scriptId, 'ESTIMATING_SHOOT_DAYS');
     const shootDays = await chatJson({
+      role: 'planner',
+      stage: 'shoot_days',
       schema: aiShootDaysResponseSchema,
       schemaName: 'CircuitShootDays',
       systemPrompt: CIRCUIT_SYSTEM_PROMPT,
@@ -110,12 +128,16 @@ export async function analyzeScript(scriptId: string): Promise<void> {
         combinations.groups,
         project.genre,
       ),
+      projectId: project.id,
+      scriptId,
     });
     log.info({ totalDays: shootDays.totalShootDaysEstimate }, 'Shoot days estimated');
 
     // 6) Budget
     await updateStatus(scriptId, 'DRAFTING_BUDGET');
     const budget = await chatJson({
+      role: 'planner',
+      stage: 'budget',
       schema: aiBudgetResponseSchema,
       schemaName: 'CircuitBudget',
       systemPrompt: CIRCUIT_SYSTEM_PROMPT,
@@ -128,6 +150,8 @@ export async function analyzeScript(scriptId: string): Promise<void> {
         shootDays,
         combinations: combinations.groups,
       }),
+      projectId: project.id,
+      scriptId,
     });
     log.info({ totalINR: budget.totalINR, lines: budget.lines.length }, 'Budget draft generated');
 
@@ -200,7 +224,7 @@ async function persistSummary(
   projectId: string,
   summary: AIScriptSummary,
 ): Promise<void> {
-  await prisma.$transaction(async tx => {
+  await prisma.$transaction(async (tx) => {
     await tx.sceneAppearance.deleteMany({ where: { projectId } });
     await tx.scene.deleteMany({ where: { projectId } });
     await tx.character.deleteMany({ where: { projectId } });
@@ -208,7 +232,7 @@ async function persistSummary(
 
     // Characters
     const characterRecords = await Promise.all(
-      summary.characters.characters.map(c =>
+      summary.characters.characters.map((c) =>
         tx.character.create({
           data: {
             projectId,
@@ -220,7 +244,7 @@ async function persistSummary(
         }),
       ),
     );
-    const charByName = new Map(characterRecords.map(c => [c.name, c.id]));
+    const charByName = new Map(characterRecords.map((c) => [c.name, c.id]));
 
     // Scenes + scene appearances
     for (const [index, scene] of summary.scenes.scenes.entries()) {
@@ -241,9 +265,9 @@ async function persistSummary(
         },
       });
       const appearanceData: Prisma.SceneAppearanceCreateManyInput[] = scene.charactersPresent
-        .map(name => charByName.get(name))
+        .map((name) => charByName.get(name))
         .filter((id): id is string => Boolean(id))
-        .map(characterId => ({ projectId, sceneId: sceneRecord.id, characterId }));
+        .map((characterId) => ({ projectId, sceneId: sceneRecord.id, characterId }));
       if (appearanceData.length > 0) {
         await tx.sceneAppearance.createMany({ data: appearanceData });
       }
@@ -276,7 +300,7 @@ async function persistSummary(
     // Budget lines
     if (summary.budget.lines.length > 0) {
       await tx.budgetLine.createMany({
-        data: summary.budget.lines.map(line => ({
+        data: summary.budget.lines.map((line) => ({
           projectId,
           department: line.department,
           label: line.label,
@@ -299,12 +323,7 @@ async function persistSummary(
   });
 }
 
-function formatProjectLanguages(
-  languages: ProjectLanguage[],
-  fallback: ProjectLanguage,
-): string {
+function formatProjectLanguages(languages: ProjectLanguage[], fallback: ProjectLanguage): string {
   const list = languages.length > 0 ? languages : [fallback];
-  return list
-    .map(l => l.charAt(0) + l.slice(1).toLowerCase())
-    .join(', ');
+  return list.map((l) => l.charAt(0) + l.slice(1).toLowerCase()).join(', ');
 }

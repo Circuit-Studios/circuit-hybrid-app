@@ -28,8 +28,7 @@ export function useProjectHealth(projectId: string) {
 export function useProjectTasks(projectId: string, departmentId?: string | null) {
   return useQuery({
     queryKey: qk.tasks(projectId, departmentId ?? 'all'),
-    queryFn: () =>
-      listTasks(projectId, departmentId ? { departmentId } : undefined),
+    queryFn: () => listTasks(projectId, departmentId ? { departmentId } : undefined),
     enabled: Boolean(projectId),
   });
 }

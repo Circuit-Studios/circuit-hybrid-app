@@ -5,7 +5,7 @@ import { ScreenContainer } from '@/components/ScreenContainer';
 import { AccountButton } from '@/components/AccountButton';
 import { useProjectRoom } from '@/realtime/useProjectRoom';
 import { colors, radius, spacing, typography } from '@/theme';
-import { ProjectTabBar, type ProjectTab } from './ProjectTabBar';
+import type { ProjectTab } from './ProjectTabBar';
 
 export interface ProjectScreenScaffoldProps {
   projectId: string;
@@ -58,8 +58,6 @@ export function ProjectScreenScaffold({
 
         {children}
       </ScreenContainer>
-
-      <ProjectTabBar projectId={projectId} active={activeTab} />
       {footer}
     </View>
   );

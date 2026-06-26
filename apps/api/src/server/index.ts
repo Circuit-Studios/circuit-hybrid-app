@@ -12,16 +12,20 @@ import { env, corsOrigins } from '../config/env.js';
 import { logger } from '../lib/logger.js';
 import { errorHandler } from '../middleware/error.js';
 import { authPublicRouter, authProtectedRouter } from '../modules/auth/auth.routes.js';
+import { emailPublicRouter } from '../modules/email/email.routes.js';
 import projectsRoutes from '../modules/projects/projects.routes.js';
 import scriptsRoutes from '../modules/scripts/scripts.routes.js';
 import membersRoutes from '../modules/members/members.routes.js';
 import workspaceRoutes from '../modules/workspace/workspace.routes.js';
+import taskSuggestionsRoutes from '../modules/task-suggestions/task-suggestions.routes.js';
 import tasksRoutes from '../modules/tasks/tasks.routes.js';
 import shootDaysRoutes from '../modules/shoot-days/shoot-days.routes.js';
 import charactersRoutes from '../modules/characters/characters.routes.js';
 import scenesRoutes from '../modules/scenes/scenes.routes.js';
 import departmentsRoutes from '../modules/departments/departments.routes.js';
 import notificationsRoutes from '../notifications/notifications.routes.js';
+import homeRoutes from '../modules/home/home.routes.js';
+import appConfigRoutes from '../modules/app/app-config.routes.js';
 import { prisma } from '../lib/prisma.js';
 import { initSocket } from '../realtime/socket.js';
 import { startConflictWorker, stopConflictWorker } from '../queues/conflicts.queue.js';
@@ -30,7 +34,10 @@ import { disconnectRedis } from '../queues/redis.js';
 function resolveRequestId(incoming: string | string[] | undefined): string {
   const raw = Array.isArray(incoming) ? incoming[0] : incoming;
   if (typeof raw === 'string') {
-    const sanitized = raw.trim().replace(/[\r\n\t]/g, '').slice(0, 128);
+    const sanitized = raw
+      .trim()
+      .replace(/[\r\n\t]/g, '')
+      .slice(0, 128);
     if (sanitized.length > 0) return sanitized;
   }
   return randomUUID();
@@ -124,8 +131,11 @@ app.get('/health', async (_req, res) => {
   }
 });
 
+app.use(appConfigRoutes);
+
 app.use('/auth', authLimiter, authPublicRouter);
 app.use('/auth', authProtectedRouter);
+app.use('/email', authLimiter, emailPublicRouter);
 
 app.use('/projects', projectsRoutes);
 
@@ -135,12 +145,14 @@ app.use('/projects', projectsRoutes);
 app.use('/', scriptsRoutes);
 app.use('/', membersRoutes);
 app.use('/', workspaceRoutes);
+app.use('/', taskSuggestionsRoutes);
 app.use('/', tasksRoutes);
 app.use('/', shootDaysRoutes);
 app.use('/', charactersRoutes);
 app.use('/', scenesRoutes);
 app.use('/', departmentsRoutes);
 app.use('/', notificationsRoutes);
+app.use('/', homeRoutes);
 
 app.use((req, res, next) => {
   if (res.headersSent) return next();
@@ -170,7 +182,7 @@ const shutdown = async (signal: string) => {
   logger.info({ signal }, 'Shutting down');
   await stopConflictWorker();
   await disconnectRedis();
-  await new Promise<void>(resolve => httpServer.close(() => resolve()));
+  await new Promise<void>((resolve) => httpServer.close(() => resolve()));
   await prisma.$disconnect();
   process.exit(0);
 };

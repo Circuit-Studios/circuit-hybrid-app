@@ -1,8 +1,8 @@
 # Circuit — Deployment (Render)
 
-Production runs on **[Render](https://render.com)**. Local dev uses Docker Postgres and `apps/api/.env.development`.
+Production runs on **[Render](https://render.com)**. Configure everything in the **Render dashboard**.
 
-> **Config surfaces:** local mobile → `apps/mobile/.env`; local API → `apps/api/.env.development`; deployed API → Render dashboard. See [`../../docs/ENVIRONMENT.md`](../../docs/ENVIRONMENT.md).
+> **Config surfaces:** local mobile → `apps/mobile/.env`; local API → `apps/api/.env.development`; deployed API → **Render → Environment**. See [`../../docs/ENVIRONMENT.md`](../../docs/ENVIRONMENT.md).
 
 ---
 
@@ -11,167 +11,209 @@ Production runs on **[Render](https://render.com)**. Local dev uses Docker Postg
 ```text
 Mobile app  ──HTTPS──►  Render Web Service (circuit-api)
                               │
-                    ┌─────────┴─────────┐
-                    ▼                   ▼
-              Render Postgres     Render Redis (optional)
-              (DATABASE_URL)      (REDIS_URL)
+                              ▼
+                    Supabase Postgres (pooler)
+                    DATABASE_URL on Render
 ```
 
-Script PDFs are stored on the service disk (`uploads/`). On Render, use a **persistent disk** mounted at `/app/uploads` if you need uploads to survive redeploys.
+Script PDFs are stored on the service disk (`uploads/`). Mount a **persistent disk** at `/app/uploads` if uploads must survive redeploys.
+
+**Database:** use a **Supabase** project (recommended) and set `DATABASE_URL` to the **connection pooler** URL (Session or Transaction mode per your Prisma setup). Render Postgres is optional but not the default documented path.
+
+**Redis:** omit `REDIS_URL` entirely unless you operate a real Redis instance. Do not set a blank or placeholder value — the API treats invalid URLs as fatal at boot.
 
 ---
 
-## Recommended environment matrix
+## Render web service (manual setup — recommended)
 
-Use this as the mental model across mobile, backend, database, and OTP:
+1. Push this repo to GitHub.
+2. Render Dashboard → **New** → **Web Service** → connect the repo.
+3. Set **Root directory** to the **monorepo root** (not `apps/api`).
+4. Add environment variables in Render → **Environment** (never commit secrets).
+5. Apply database migrations **outside** build/start (see [Migrations](#migrations)).
 
-| Environment | Mobile API URL | Backend | Database | OTP |
-|-------------|----------------|---------|----------|-----|
-| **Local** | `http://localhost:3009` | Mac backend (`npm run dev`) | Local Postgres or Supabase dev | `MOCK` |
-| **Dev / Preview** | `https://circuit-api-dev.onrender.com` | Render Free | Supabase dev/prod *(shared OK while testing)* | `MOCK` |
-| **Production** | Custom API domain *(later)* | Render paid or stable host | Supabase prod | MSG91 / Twilio |
+### Render commands
 
-**While testing:** dev and preview mobile builds can share the same Render backend and Supabase project.
+| Setting                | Value                                                                                                    |
+| ---------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Root directory**     | Repository root                                                                                          |
+| **Runtime**            | Node 22                                                                                                  |
+| **Pre-Deploy Command** | _(leave empty — not available on Render Free)_                                                           |
+| **Build Command**      | `npm ci --include=dev && npm run prisma:generate -w circuit-backend && npm run build -w circuit-backend` |
+| **Start Command**      | `npm start -w circuit-backend`                                                                           |
+| **Health check path**  | `/health`                                                                                                |
 
-**Before App Store / public users:** split databases so test and real users never mix:
+**Important:**
 
-- Supabase **dev** project → local, dev client, TestFlight preview
-- Supabase **production** project → App Store / Play Store builds only
+- Do **not** run `prisma migrate deploy` in the Render build or start command. Migrations are manual/controlled (see below).
+- **Render Free** does not support a Pre-Deploy Command — leave it empty and run migrations from your machine or CI when schema changes land.
+- `prisma generate` in the build command is required so the compiled API has a Prisma client; it does **not** apply schema changes.
 
-Mobile env mapping: see [`../mobile/README.md`](../mobile/README.md) (`.env` locally, EAS environments for cloud builds).
+### Supabase `DATABASE_URL`
+
+In Supabase → **Project Settings** → **Database** → **Connection string**, copy the **pooler** URI (not the direct DB host if you're serverless/constrained). Example shape:
+
+```text
+postgresql://postgres.[project-ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres?pgbouncer=true
+```
+
+Paste into Render → **Environment** as `DATABASE_URL`. Never commit this value.
 
 ---
 
-## Local development
+## Migrations
 
-**Only needed when running the API locally** — skip if mobile uses the Render backend.
-
-From monorepo root:
-
-```bash
-npm run setup:env
-# Edit apps/api/.env.development — JWT_SECRET (≥32 chars), OPENAI_API_KEY, DATABASE_URL
-# Use local Postgres or Supabase dev — not production. Omit REDIS_URL unless Redis is running.
-```
+Run when schema changes land — locally, in CI, or from an operator workstation — **not** on every Render deploy:
 
 ```bash
 cd apps/api
-docker compose up -d          # Postgres :5432, Redis :6379 (Redis optional)
-npm run dev:db                # apply migrations
-npm run dev                   # http://localhost:3009
-curl http://localhost:3009/health
+npm run prisma:deploy
 ```
 
-Or from repo root: `npm run api:dev`
+Local dev (Docker Postgres or Supabase dev):
 
-**Dev OTP:** `OTP_PROVIDER=MOCK` → code is always **`111111`**.
-
-See [`../../docs/ENVIRONMENT.md`](../../docs/ENVIRONMENT.md) for Workflow A (mobile → Render) vs Workflow B (full local).
-
----
-
-## Deploy to Render
-
-### Option A — Blueprint (recommended)
-
-1. Push this repo to GitHub.
-2. Render Dashboard → **New** → **Blueprint** → connect repo.
-3. Render reads `render.yaml` and creates:
-   - **Web service** `circuit-api`
-   - **Postgres** `circuit-db`
-4. In the Render dashboard, set **sync: false** env vars:
-   - `OPENAI_API_KEY` (required)
-   - `REDIS_URL` (optional — add a Render Redis instance)
-   - `CORS_ORIGINS` (optional)
-5. Deploy. Migrations run during **build** (`prisma migrate deploy`), not at server start.
-
-### Option B — Manual web service
-
-| Setting | Value |
-|---------|--------|
-| **Root directory** | Repo root (monorepo — see `render.yaml`) |
-| **Runtime** | Node 20 |
-| **Build command** | `npm ci && npm run build:deploy -w circuit-backend` |
-| **Start command** | `npm run start -w circuit-backend` |
-| **Health check** | `/health` |
-
-Create a **Render Postgres** database and link `DATABASE_URL` in the web service environment.
+```bash
+cd apps/api
+docker compose up -d
+npm run db:prepare:dev
+npm run dev
+```
 
 ---
 
 ## Environment variables (production)
 
-Set in Render → **Environment** (not in git). Example production set:
+Set in Render → **Environment**. Example production set:
 
 ```bash
 NODE_ENV=production
+APP_ENV=prod
 PORT=10000
 LOG_LEVEL=info
 
 DATABASE_URL=your_supabase_pooler_url
 
-JWT_SECRET=your_long_secret
+JWT_SECRET=your_long_secret_min_32_chars
 JWT_ISSUER=circuit-api
 JWT_AUDIENCE=circuit-mobile
 JWT_EXPIRES_IN=7d
+OTP_SECRET=your_otp_hmac_secret_min_32_chars
 
-OTP_PROVIDER=MOCK
+SIGNUP_VERIFICATION_CHANNEL=EMAIL
+LOGIN_IDENTIFIER=EMAIL
+EMAIL_OTP_PROVIDER=RESEND
+PHONE_OTP_PROVIDER=MSG91
+ALLOW_MOCK_OTP_IN_PROD=false
+
+RESEND_API_KEY=re_...
+RESEND_OTP_TEMPLATE_ID=circuit-email-otp
+RESEND_OTP_EXPIRES_MINUTES=5
 
 OPENAI_API_KEY=your_openai_key
 OPENAI_MODEL=gpt-4o
 OPENAI_MODEL_FAST=gpt-4o-mini
-OPENAI_MAX_RETRIES=3
 
-LANGSMITH_TRACING=false
-
-EXPO_PUSH_PROVIDER=MOCK
+EXPO_PUSH_PROVIDER=EXPO
 
 CORS_ORIGINS=
 ```
 
-**Do not set `REDIS_URL`** unless you have a real Redis URL. The backend treats it as optional; if the variable exists but is blank or invalid, boot will fail.
+| Variable                     | Notes                                                          |
+| ---------------------------- | -------------------------------------------------------------- |
+| `NODE_ENV`                   | `production` on Render (set by `npm start`)                    |
+| `APP_ENV`                    | `dev` (shared dev API) or `prod` (production)                  |
+| `DATABASE_URL`               | Supabase pooler URL (recommended)                              |
+| `EMAIL_OTP_PROVIDER`         | `RESEND` for real email OTP (hosted template)                  |
+| `RESEND_API_KEY`             | Resend API key (Render Environment only)                       |
+| `RESEND_OTP_TEMPLATE_ID`     | Published template id/alias in Resend dashboard                |
+| `RESEND_OTP_EXPIRES_MINUTES` | Passed to template as `EXPIRES_MINUTES` variable (default `5`) |
+| `PHONE_OTP_PROVIDER`         | `MSG91` for real SMS                                           |
+| `OTP_SECRET`                 | HMAC key for OTP hashes (≥ 32 chars)                           |
+| `REDIS_URL`                  | **Omit** unless using Redis — never set empty                  |
+| `OTP_PROVIDER`               | Legacy alias; prefer split providers above                     |
 
-**Optional MSG91 fields** (`MSG91_AUTH_KEY`, `MSG91_SENDER_ID`, `MSG91_TEMPLATE_ID`): leave unset when using `OTP_PROVIDER=MOCK`. Blank dashboard fields are treated as unset.
+Dev/preview can use `EMAIL_OTP_PROVIDER=MOCK` and `PHONE_OTP_PROVIDER=MOCK` (code `111111`).
 
-| Variable | Notes |
-|----------|--------|
-| `NODE_ENV` | `production` |
-| `DATABASE_URL` | From Render Postgres or Supabase pooler |
-| `JWT_SECRET` | ≥ 32 chars (`render.yaml` can auto-generate) |
-| `OPENAI_API_KEY` | Required at boot |
-| `PORT` | Render sets this (usually `10000`) |
-| `OTP_PROVIDER` | `MOCK` for testing; `MSG91` for real SMS |
-| `EXPO_PUSH_PROVIDER` | `MOCK` or `EXPO` |
-| `LOG_LEVEL` | `info` |
-| `REDIS_URL` | Optional — omit unless using Render Redis / Upstash |
-| `CORS_ORIGINS` | Empty OK for mobile-only |
+---
+
+## Resend email OTP template
+
+Signup and login use **`POST /auth/request-otp`** and **`POST /auth/verify-otp`**.
+
+Post-account email verification uses **`POST /email/request-otp`** and **`POST /email/verify-otp`**.
+
+When `EMAIL_OTP_PROVIDER=RESEND`:
+
+1. Create a **hosted template** in the [Resend dashboard](https://resend.com/templates).
+2. Set **From** and **Subject** on the template (not in API env vars).
+3. Add template variables used by the backend:
+   - `CODE` — 6-digit OTP
+   - `EXPIRES_MINUTES` — string minutes until expiry
+   - `APP_NAME` — e.g. `Circuit`
+4. Publish the template and set on Render:
+   - `RESEND_API_KEY` — API key (Environment only)
+   - `RESEND_OTP_TEMPLATE_ID` — template id or alias (e.g. `circuit-email-otp`)
+
+The backend sends only `to`, `template.id`, and `template.variables` — no `from` or `subject` in code.
+
+---
+
+## Local development
+
+From monorepo root:
+
+```bash
+npm run setup:env        # api + mobile env files if missing
+# or individually:
+npm run setup:env:api
+npm run setup:env:mobile
+```
+
+Edit `apps/api/.env.development` — `JWT_SECRET`, `OTP_SECRET`, `OPENAI_API_KEY`, `DATABASE_URL`.
+
+```bash
+cd apps/api
+docker compose up -d
+npm run db:prepare:dev
+npm run dev
+```
+
+Or from repo root: `npm run api:dev`
+
+**Dev OTP:** `EMAIL_OTP_PROVIDER=MOCK` + `PHONE_OTP_PROVIDER=MOCK` → code **`111111`**.
+
+See [`../../docs/ENVIRONMENT.md`](../../docs/ENVIRONMENT.md) for Workflow A (mobile → Render) vs Workflow B (full local).
 
 ---
 
 ## Mobile app
 
-Point the Expo app at your Render URL:
+Point Expo at your Render URL:
 
 ```bash
-EXPO_PUBLIC_API_BASE_URL=https://circuit-api.onrender.com
+EXPO_PUBLIC_API_BASE_URL=https://circuit-api-dev.onrender.com
 ```
 
-Set in EAS env or `app.config` for production builds.
+Set in `apps/mobile/.env` locally or EAS environment variables for cloud builds.
+
+Mobile reads public runtime config from `GET /app/config` (signup channel, feature flags).
 
 ---
 
 ## CI
 
-GitHub Actions runs tests on push/PR (`.github/workflows/ci.yml`). Render deploys from its own Git integration — no AWS deploy workflows.
+GitHub Actions runs `npm ci` from the repo root, then workspace scripts (`mobile:*`, `api:*`, `format:check`). Render deploys from its own Git integration.
 
 ---
 
 ## Checklist before go-live
 
-- [ ] `OPENAI_API_KEY` set on Render
-- [ ] `JWT_SECRET` is unique (not the dev value)
-- [ ] `OTP_PROVIDER=MSG91` + MSG91 keys (not MOCK)
-- [ ] `DATABASE_URL` linked to Render Postgres
-- [ ] Migrations applied (runs in Render **build** command, not `npm start`)
+- [ ] `OPENAI_API_KEY`, `JWT_SECRET`, `OTP_SECRET` set on Render
+- [ ] `DATABASE_URL` = Supabase pooler (or chosen Postgres)
+- [ ] `EMAIL_OTP_PROVIDER=RESEND` + `RESEND_API_KEY` + `RESEND_OTP_TEMPLATE_ID`
+- [ ] `PHONE_OTP_PROVIDER=MSG91` + MSG91 keys (if phone signup enabled)
+- [ ] `APP_ENV=prod` and `ALLOW_MOCK_OTP_IN_PROD=false`
+- [ ] Migrations applied via `npm run prisma:deploy` (not in Render build/start)
+- [ ] `REDIS_URL` omitted unless Redis is in use
 - [ ] Health check returns `{ "status": "ok" }`
-- [ ] Mobile app uses HTTPS Render URL
+- [ ] Mobile uses HTTPS Render URL

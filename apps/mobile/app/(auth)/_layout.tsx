@@ -1,6 +1,6 @@
 import { Redirect, Stack } from 'expo-router';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { SignupSessionProvider } from '@/auth/SignupSessionContext';
+import { OtpSessionProvider } from '@/auth/OtpSessionContext';
 import { useAuth } from '@/auth/AuthContext';
 import { colors } from '@/theme';
 
@@ -16,11 +16,11 @@ export default function AuthLayout() {
   }
 
   if (status === 'signedIn') {
-    return <Redirect href="/(app)/projects" />;
+    return <Redirect href="/(app)/(tabs)/home" />;
   }
 
   return (
-    <SignupSessionProvider>
+    <OtpSessionProvider>
       <Stack
         screenOptions={{
           headerShown: false,
@@ -28,7 +28,7 @@ export default function AuthLayout() {
           animation: 'slide_from_right',
         }}
       />
-    </SignupSessionProvider>
+    </OtpSessionProvider>
   );
 }
 
