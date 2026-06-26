@@ -152,13 +152,6 @@ export default function HomeScreen() {
               </Pressable>
             </Card>
           ))}
-
-          {canStartProject ? (
-            <Pressable style={styles.addCard} onPress={() => router.push('/(app)/create-project')}>
-              <Ionicons name="add" size={22} color={colors.textMuted} />
-              <Text style={styles.addCardText}>Start new film</Text>
-            </Pressable>
-          ) : null}
         </>
       ) : (
         <EmptyState
