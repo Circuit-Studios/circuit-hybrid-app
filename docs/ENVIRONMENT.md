@@ -97,42 +97,47 @@ Build/start commands: [apps/api/docs/DEPLOYMENT.md](../apps/api/docs/DEPLOYMENT.
 ## LLM providers (required)
 
 API-only — never in mobile `.env`. Two providers ship: **NVIDIA** (default) and **Gemini**.
-`LLM_PROVIDER` sets the default for every role; optional per-role overrides let you A/B them
-without code changes.
 
-| Variable                 | Values / example                | Notes                              |
-| ------------------------ | ------------------------------- | ---------------------------------- |
-| `LLM_PROVIDER`           | `NVIDIA` \| `GEMINI`            | Default provider for all roles     |
-| `LLM_PROVIDER_EXTRACTOR` | `NVIDIA` \| `GEMINI`            | Optional override (scene extract)  |
-| `LLM_PROVIDER_PLANNER`   | `NVIDIA` \| `GEMINI`            | Optional override (plan / tasks)   |
-| `LLM_PROVIDER_FAST`      | `NVIDIA` \| `GEMINI`            | Optional override (JSON repair)    |
-| `LLM_REQUEST_TIMEOUT_MS` | `180000`                        | Raise for long scripts on Render   |
+**One switch controls everything:**
 
-Only the provider(s) actually used must be configured (validated at boot).
+| `LLM_PROVIDER` | What runs |
+| --- | --- |
+| `NVIDIA` | All stages use `NVIDIA_MODEL_*` |
+| `GEMINI` | All stages use `GEMINI_MODEL_*` |
+
+| Variable | Notes |
+| --- | --- |
+| `LLM_PROVIDER` | `NVIDIA` or `GEMINI` |
+| `LLM_REQUEST_TIMEOUT_MS` | `180000` for long scripts on Render |
+
+Only the selected provider's keys/models must be set (validated at boot).
 
 **NVIDIA** (`nvapi-...` from [build.nvidia.com](https://build.nvidia.com)):
 
-| Variable                 | MVP value                          |
-| ------------------------ | ---------------------------------- |
-| `NVIDIA_API_KEY`         | `nvapi-...`                        |
-| `NVIDIA_MODEL_EXTRACTOR` | `nvidia/nemotron-3-nano-30b-a3b`   |
-| `NVIDIA_MODEL_PLANNER`   | `nvidia/nemotron-3-super-120b-a12b`|
-| `NVIDIA_MODEL_FAST`      | `nvidia/nemotron-3-nano-30b-a3b`   |
+| Variable | MVP value |
+| --- | --- |
+| `NVIDIA_API_KEY` | `nvapi-...` |
+| `NVIDIA_MODEL_EXTRACTOR` | `nvidia/nemotron-3-nano-30b-a3b` |
+| `NVIDIA_MODEL_PLANNER` | `nvidia/nemotron-3-super-120b-a12b` |
+| `NVIDIA_MODEL_FAST` | `nvidia/nemotron-3-nano-30b-a3b` |
 
-**Gemini** (`AIza...` from [aistudio.google.com](https://aistudio.google.com), native JSON output):
+**Gemini** (`AIza...` from [aistudio.google.com](https://aistudio.google.com)):
 
-| Variable                 | Example              |
-| ------------------------ | -------------------- |
-| `GEMINI_API_KEY`         | `AIza...`            |
-| `GEMINI_MODEL_EXTRACTOR` | `gemini-2.5-flash`   |
-| `GEMINI_MODEL_PLANNER`   | `gemini-2.5-pro`     |
-| `GEMINI_MODEL_FAST`      | `gemini-2.5-flash`   |
+| Variable | Example |
+| --- | --- |
+| `GEMINI_API_KEY` | `AIza...` |
+| `GEMINI_MODEL_EXTRACTOR` | `gemini-2.5-flash` |
+| `GEMINI_MODEL_PLANNER` | `gemini-2.5-pro` |
+| `GEMINI_MODEL_FAST` | `gemini-2.5-flash` |
 
 Optional: `LLM_MAX_SCRIPT_CHARS` (default `250000`), `LLM_MAX_CHUNK_CHARS` (default `18000`).
 
-Provider selection is **env-only** — `LLM_PROVIDER` (+ `LLM_PROVIDER_*`) is the single switch;
-there are no `llm.*` feature flags. `scripts.shootingPlan` and `scripts.taskSuggestions` must
-still be enabled to run the pipeline.
+**Advanced — mix providers per stage** (rarely needed): set `LLM_PROVIDER_EXTRACTOR`,
+`LLM_PROVIDER_PLANNER`, or `LLM_PROVIDER_FAST` to override that stage only. Both providers'
+keys must be configured. Example: `LLM_PROVIDER=NVIDIA` + `LLM_PROVIDER_EXTRACTOR=GEMINI`
+extracts scenes with Gemini, plans with NVIDIA.
+
+`scripts.shootingPlan` and `scripts.taskSuggestions` feature flags must be enabled to run the pipeline.
 
 ---
 
