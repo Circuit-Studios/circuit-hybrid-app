@@ -109,9 +109,12 @@ RESEND_API_KEY=re_...
 RESEND_OTP_TEMPLATE_ID=circuit-email-otp
 RESEND_OTP_EXPIRES_MINUTES=5
 
-OPENAI_API_KEY=your_openai_key
-OPENAI_MODEL=gpt-4o
-OPENAI_MODEL_FAST=gpt-4o-mini
+LLM_PROVIDER=NVIDIA
+NVIDIA_API_KEY=nvapi_xxxxx
+NVIDIA_MODEL_EXTRACTOR=nvidia/nemotron-3-nano-30b-a3b
+NVIDIA_MODEL_PLANNER=nvidia/nemotron-3-super-120b-a12b
+NVIDIA_MODEL_FAST=nvidia/nemotron-3-nano-30b-a3b
+LLM_REQUEST_TIMEOUT_MS=180000
 
 EXPO_PUSH_PROVIDER=EXPO
 
@@ -129,6 +132,12 @@ CORS_ORIGINS=
 | `RESEND_OTP_EXPIRES_MINUTES` | Passed to template as `EXPIRES_MINUTES` variable (default `5`) |
 | `PHONE_OTP_PROVIDER`         | `MSG91` for real SMS                                           |
 | `OTP_SECRET`                 | HMAC key for OTP hashes (≥ 32 chars)                           |
+| `LLM_PROVIDER`               | Must be `NVIDIA`                                               |
+| `NVIDIA_API_KEY`             | From [build.nvidia.com](https://build.nvidia.com)              |
+| `NVIDIA_MODEL_PLANNER`       | Required — MVP: `nvidia/nemotron-3-super-120b-a12b`            |
+| `NVIDIA_MODEL_EXTRACTOR`     | MVP: `nvidia/nemotron-3-nano-30b-a3b`                          |
+| `NVIDIA_MODEL_FAST`          | MVP: `nvidia/nemotron-3-nano-30b-a3b`                           |
+| `LLM_REQUEST_TIMEOUT_MS`     | `180000` recommended for 175-page scripts on Render            |
 | `REDIS_URL`                  | **Omit** unless using Redis — never set empty                  |
 | `OTP_PROVIDER`               | Legacy alias; prefer split providers above                     |
 
@@ -169,7 +178,7 @@ npm run setup:env:api
 npm run setup:env:mobile
 ```
 
-Edit `apps/api/.env.development` — `JWT_SECRET`, `OTP_SECRET`, `OPENAI_API_KEY`, `DATABASE_URL`.
+Edit `apps/api/.env.development` — `JWT_SECRET`, `OTP_SECRET`, `NVIDIA_API_KEY`, `DATABASE_URL`.
 
 ```bash
 cd apps/api
@@ -208,7 +217,8 @@ GitHub Actions runs `npm ci` from the repo root, then workspace scripts (`mobile
 
 ## Checklist before go-live
 
-- [ ] `OPENAI_API_KEY`, `JWT_SECRET`, `OTP_SECRET` set on Render
+- [ ] `NVIDIA_API_KEY`, `NVIDIA_MODEL_PLANNER`, `JWT_SECRET`, `OTP_SECRET` set on Render
+- [ ] Remove legacy `OPENAI_*` env vars if present
 - [ ] `DATABASE_URL` = Supabase pooler (or chosen Postgres)
 - [ ] `EMAIL_OTP_PROVIDER=RESEND` + `RESEND_API_KEY` + `RESEND_OTP_TEMPLATE_ID`
 - [ ] `PHONE_OTP_PROVIDER=MSG91` + MSG91 keys (if phone signup enabled)

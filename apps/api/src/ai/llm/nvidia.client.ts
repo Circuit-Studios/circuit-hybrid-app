@@ -71,8 +71,9 @@ export class NvidiaLlmProvider implements LlmChatProvider {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         const isRepair = attempt > 0;
+        const repairModel = env.NVIDIA_MODEL_FAST!;
         const { data, usage } = isRepair
-          ? await this.repairOnce(opts, model, lastErr)
+          ? await this.repairOnce(opts, repairModel, lastErr)
           : await this.requestOnce(opts, model);
 
         const durationMs = Date.now() - started;
