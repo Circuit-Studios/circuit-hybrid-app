@@ -1,43 +1,23 @@
-# Environment configuration
+# Environment
 
-Circuit uses **four separate config surfaces**. Do not mix them.
+Config surfaces — do not mix them.
 
-> **All documentation:** [docs/README.md](./README.md) — architecture, database, env, deploy.
+| Surface      | Location                    | When                    |
+| ------------ | --------------------------- | ----------------------- |
+| Local mobile | `apps/mobile/.env`          | Expo on your machine    |
+| Local API    | `apps/api/.env.development` | `npm run api:dev`       |
+| Deployed API | Render → Environment        | Production / shared dev |
+| Cloud builds | EAS Environment Variables   | `eas build`             |
 
-| Surface                 | File / location             | Used when                       |
-| ----------------------- | --------------------------- | ------------------------------- |
-| **Local mobile**        | `apps/mobile/.env`          | Expo Metro on your machine      |
-| **Local API**           | `apps/api/.env.development` | `npm run api:dev` only          |
-| **Deployed API**        | Render → Environment        | Production / shared dev backend |
-| **Cloud mobile builds** | EAS Environment Variables   | `eas build` profiles            |
-
-Git tracks **`.env.example` only** — never commit real secrets.
-
----
-
-## Quick setup
-
-From the monorepo root:
+Git tracks `.env.example` only — never commit secrets.
 
 ```bash
-npm run setup:env
-# or individually:
-npm run setup:env:api
-npm run setup:env:mobile
+npm run setup:env # creates both env files from examples
 ```
-
-This creates (or skips with a message if already present):
-
-- `apps/api/.env.development` from `apps/api/.env.example`
-- `apps/mobile/.env` from `apps/mobile/.env.example`
-
-Then edit the files below for your workflow.
 
 ---
 
-## Workflow A — Mobile against Render (default daily work)
-
-Easiest setup. **No local API env required.**
+## Workflow A — Mobile → Render (default)
 
 **`apps/mobile/.env`**
 
@@ -46,74 +26,36 @@ EXPO_PUBLIC_APP_ENV=development
 EXPO_PUBLIC_API_BASE_URL=https://circuit-api-dev.onrender.com
 ```
 
-**Start mobile:**
-
 ```bash
 npm run mobile
-# alias: npm run dev:mobile
 ```
 
-Do **not** copy Render dashboard secrets into local files.
+No local API env needed.
 
 ---
 
-## Workflow B — Full stack local (backend feature work)
+## Workflow B — Full local stack
 
-Use when changing API routes, Prisma, or AI pipeline.
-
-**1. Create `apps/api/.env.development`**
-
-Use local Postgres (Docker) or a **Supabase dev** project — never production Supabase for experiments.
+**`apps/api/.env.development`** — copy from `apps/api/.env.example`, then edit:
 
 ```bash
 NODE_ENV=development
 APP_ENV=local
 PORT=3009
-LOG_LEVEL=debug
-
 DATABASE_URL=postgresql://circuit:circuit@localhost:5432/circuit_dev?schema=public
-
 JWT_SECRET=replace_with_local_long_secret_min_32_chars
-JWT_ISSUER=circuit-api
-JWT_AUDIENCE=circuit-mobile
-JWT_EXPIRES_IN=7d
-
-# Verification — mobile reads GET /app/config (no rebuild needed to switch)
-# Sign up: OTP via SIGNUP_VERIFICATION_CHANNEL (EMAIL or PHONE)
-# Sign in (mobile): email + password via POST /auth/login — not OTP
+OTP_SECRET=replace_with_local_otp_secret_min_32_chars
 SIGNUP_VERIFICATION_CHANNEL=EMAIL
 LOGIN_IDENTIFIER=EMAIL
 EMAIL_OTP_PROVIDER=MOCK
 PHONE_OTP_PROVIDER=MOCK
-OTP_SECRET=replace_with_local_otp_secret_min_32_chars
-
-# NVIDIA NIM — see "LLM provider (NVIDIA NIM)" section below
 LLM_PROVIDER=NVIDIA
 NVIDIA_API_KEY=nvapi_xxxxx
 NVIDIA_MODEL_EXTRACTOR=nvidia/nemotron-3-nano-30b-a3b
 NVIDIA_MODEL_PLANNER=nvidia/nemotron-3-super-120b-a12b
 NVIDIA_MODEL_FAST=nvidia/nemotron-3-nano-30b-a3b
-
-LANGSMITH_TRACING=false
-
-EXPO_PUSH_PROVIDER=MOCK
-
 CORS_ORIGINS=http://localhost:8081,http://localhost:19006
-
-# Optional — omit entirely unless Redis is running (conflict scans run inline without it).
-# REDIS_URL=redis://localhost:6379
 ```
-
-**Notes:**
-
-- `APP_ENV` on the API (`local` | `dev` | `prod`) is separate from mobile `EXPO_PUBLIC_APP_ENV`. The API exposes `appEnv` via `GET /app/config`.
-- Omit `REDIS_URL` completely if you are not using Redis. Blank values are treated as unset, but omitting is clearer.
-- Dev OTP code is **`111111`** when `EMAIL_OTP_PROVIDER=MOCK` or `PHONE_OTP_PROVIDER=MOCK` (and `APP_ENV` is not `prod`, unless `ALLOW_MOCK_OTP_IN_PROD=true`).
-- Toggle signup channel with `SIGNUP_VERIFICATION_CHANNEL=EMAIL|PHONE` — backend enforces; mobile follows `/app/config`.
-- **Sign in (mobile)** uses **email + password** (`POST /auth/login`). `LOGIN_IDENTIFIER` only affects legacy OTP login (`purpose=login` on `/auth/request-otp`), not the mobile Sign In tab.
-- Runtime module toggles use the `feature_flags` table (see below) — no mobile rebuild required.
-
-**2. Point mobile at localhost**
 
 **`apps/mobile/.env`**
 
@@ -122,219 +64,76 @@ EXPO_PUBLIC_APP_ENV=local
 EXPO_PUBLIC_API_BASE_URL=http://localhost:3009
 ```
 
-On a physical device, use your laptop's LAN IP instead of `localhost`.
-
-**3. Start backend, then mobile**
-
 ```bash
-cd apps/api && docker compose up -d && npm run dev:db
-npm run api:dev # from repo root
-
-npm run mobile # second terminal
+cd apps/api && docker compose up -d && npm run db:prepare:dev
+npm run api:dev # terminal 1
+npm run mobile  # terminal 2
 ```
 
----
+Dev OTP: **`111111`** when OTP providers are `MOCK`.
 
-## Deployed API (Render)
-
-Set in Render → **Environment** (never commit):
-
-| Variable   | Render value    | Purpose                                                                         |
-| ---------- | --------------- | ------------------------------------------------------------------------------- |
-| `NODE_ENV` | `production`    | Node/Express production mode (Render always uses this at runtime)               |
-| `APP_ENV`  | `dev` or `prod` | Circuit environment — controls mock OTP guards, logging tone, `GET /app/config` |
-
-- **`APP_ENV=dev`** — shared dev/preview API (can use `MOCK` OTP providers).
-- **`APP_ENV=prod`** — production API (`EMAIL_OTP_PROVIDER=RESEND`, `PHONE_OTP_PROVIDER=MSG91`, etc.).
-
-`NODE_ENV` and `APP_ENV` are independent: local API uses `NODE_ENV=development` + `APP_ENV=local`; Render uses `NODE_ENV=production` + `APP_ENV=dev|prod`.
+Omit `REDIS_URL` unless Redis is running (conflict scans run inline without it).
 
 ---
 
-## Workflow C — Production
+## Render (deployed API)
 
-| Layer    | Config                                                                                             |
-| -------- | -------------------------------------------------------------------------------------------------- |
-| Mobile   | EAS env: `EXPO_PUBLIC_APP_ENV=production`, production API URL                                      |
-| API      | Render dashboard: unique `JWT_SECRET`, `OTP_PROVIDER=MSG91` or `RESEND_EMAIL`, real `DATABASE_URL` |
-| Database | Supabase **production** project (separate from dev/test)                                           |
+| Variable                                    | Notes                        |
+| ------------------------------------------- | ---------------------------- |
+| `NODE_ENV`                                  | `production`                 |
+| `APP_ENV`                                   | `dev` or `prod`              |
+| `DATABASE_URL`                              | Supabase pooler URL          |
+| `JWT_SECRET` / `OTP_SECRET`                 | ≥ 32 chars each              |
+| `EMAIL_OTP_PROVIDER`                        | `RESEND` in prod             |
+| `RESEND_API_KEY` / `RESEND_OTP_TEMPLATE_ID` | Required when Resend enabled |
+| `PHONE_OTP_PROVIDER`                        | `MSG91` or `MOCK`            |
+| `ALLOW_MOCK_OTP_IN_PROD`                    | `false`                      |
+| `ALLOW_DIRECT_REGISTER`                     | `false` (required in prod)   |
 
-See [`apps/api/docs/DEPLOYMENT.md`](../apps/api/docs/DEPLOYMENT.md) for Render deploy.
-
----
-
-## Environment matrix
-
-| Mode                 | Mobile API URL          | Backend           | Database                       | OTP                                                     |
-| -------------------- | ----------------------- | ----------------- | ------------------------------ | ------------------------------------------------------- |
-| **Local full stack** | `http://localhost:3009` | `npm run api:dev` | Docker Postgres / Supabase dev | `EMAIL_OTP_PROVIDER=MOCK`, `PHONE_OTP_PROVIDER=MOCK`    |
-| **Mobile → Render**  | Render URL              | Render (remote)   | Supabase (dev project)         | Render env (see dev example below)                      |
-| **Production**       | Custom domain           | Render paid       | Supabase prod                  | `EMAIL_OTP_PROVIDER=RESEND`, `PHONE_OTP_PROVIDER=MSG91` |
+Build/start commands: [apps/api/docs/DEPLOYMENT.md](../apps/api/docs/DEPLOYMENT.md)
 
 ---
 
-## Resend email OTP
+## NVIDIA LLM (required)
 
-Use when `EMAIL_OTP_PROVIDER=RESEND`. The **From address and Subject** live in your **Resend dashboard template** — the API only needs the template id/alias and variables (`CODE`, `EXPIRES_MINUTES`, `APP_NAME`).
+API-only — never in mobile `.env`.
 
-**Render dashboard** (deployed API — do not commit secrets):
+| Variable                 | MVP value                                                     |
+| ------------------------ | ------------------------------------------------------------- |
+| `LLM_PROVIDER`           | `NVIDIA`                                                      |
+| `NVIDIA_API_KEY`         | `nvapi-...` from [build.nvidia.com](https://build.nvidia.com) |
+| `NVIDIA_MODEL_EXTRACTOR` | `nvidia/nemotron-3-nano-30b-a3b`                              |
+| `NVIDIA_MODEL_PLANNER`   | `nvidia/nemotron-3-super-120b-a12b`                           |
+| `NVIDIA_MODEL_FAST`      | `nvidia/nemotron-3-nano-30b-a3b`                              |
+| `LLM_REQUEST_TIMEOUT_MS` | `180000` for long scripts on Render                           |
 
-| Variable                     | Required | Notes                                                     |
-| ---------------------------- | -------- | --------------------------------------------------------- |
-| `EMAIL_OTP_PROVIDER`         | Yes      | Set to `RESEND`                                           |
-| `RESEND_API_KEY`             | Yes      | From [resend.com](https://resend.com) → API Keys          |
-| `RESEND_OTP_TEMPLATE_ID`     | Yes      | Published template id or alias (e.g. `circuit-email-otp`) |
-| `RESEND_OTP_EXPIRES_MINUTES` | No       | Default `5` — passed to template as `EXPIRES_MINUTES`     |
-| `OTP_SECRET`                 | Yes      | Min 32 chars — HMAC key for OTP hashes                    |
+Optional: `LLM_MAX_SCRIPT_CHARS` (default `250000`), `LLM_MAX_CHUNK_CHARS` (default `18000`).
 
-**Local default:** `EMAIL_OTP_PROVIDER=MOCK` (code `111111`).
+Remove legacy `OPENAI_*` vars — the API no longer reads them.
 
-**Real local Resend testing (opt-in):**
+**Feature flags** (DB, seeded by migration): `llm.nvidia`, `scripts.shootingPlan`, `scripts.taskSuggestions` must be enabled.
+
+---
+
+## Mobile (EAS)
 
 ```bash
-EMAIL_OTP_PROVIDER=RESEND
-RESEND_API_KEY=re_xxxxx
-RESEND_OTP_TEMPLATE_ID=circuit-email-otp
+EXPO_PUBLIC_APP_ENV=production
+EXPO_PUBLIC_API_BASE_URL=https://your-api.onrender.com
 ```
 
-**Render dev example** (shared dev API — set `NODE_ENV=production` on Render, `APP_ENV=dev`):
+Set in EAS dashboard — not in `eas.json`. Never put secrets in `EXPO_PUBLIC_*`.
 
-```bash
-NODE_ENV=production
-APP_ENV=dev
-SIGNUP_VERIFICATION_CHANNEL=EMAIL
-LOGIN_IDENTIFIER=EMAIL
-EMAIL_OTP_PROVIDER=RESEND
-RESEND_API_KEY=re_...
-RESEND_OTP_TEMPLATE_ID=circuit-email-otp
-PHONE_OTP_PROVIDER=MOCK
-```
-
-**Production guard:** if `APP_ENV=prod` and any active OTP provider is `MOCK`, the API refuses to start unless `ALLOW_MOCK_OTP_IN_PROD=true`.
-
-**Important:** Resend delivers **email only**. Phone/SMS uses `PHONE_OTP_PROVIDER` (`MSG91` / `TWILIO` / `MOCK`).
-
-**Local testing:** `EMAIL_OTP_PROVIDER=MOCK` and `PHONE_OTP_PROVIDER=MOCK` — code is `111111`.
-
-**Public runtime config (no secrets):**
-
-```bash
-GET /app/config
-```
-
-Returns `appEnv`, `signupVerificationChannel`, `loginIdentifier`, and `features` map.
+Runtime config (no secrets): `GET /app/config`
 
 ---
 
-## Feature flags (`feature_flags` table)
+## Feature flags
 
-Toggle modules without a mobile rebuild. Backend enforces via `requireFeature()`; mobile hides UI from `GET /app/config`.
-
-| Key                    | Default | Routes affected              |
-| ---------------------- | ------- | ---------------------------- |
-| `scripts.upload`       | on      | `POST /projects/:id/scripts` |
-| `scripts.shootingPlan` | on      | `POST /scripts/:id/analyze`  |
-| `scripts.taskSuggestions` | on   | Task suggestion review APIs  |
-| `llm.nvidia`           | on      | NVIDIA LLM pipeline          |
-| `team.invites`         | on      | `POST /projects/:id/members` |
-| `auth.emailOtp`        | on      | Email OTP send/verify        |
-| `auth.phoneOtp`        | on      | Phone OTP send/verify        |
-| `notifications.push`   | on      | Mobile push registration     |
-
-Example — disable script upload in dev:
+Toggle in DB without mobile rebuild:
 
 ```sql
 UPDATE feature_flags SET enabled = false WHERE key = 'scripts.upload';
 ```
 
-Flags are cached server-side for 30 seconds.
-
----
-
-## LLM provider (NVIDIA NIM only)
-
-Circuit uses **NVIDIA NIM** for all AI pipeline stages. Configuration is **API-only** — never put `NVIDIA_API_KEY` or model IDs in mobile `.env` or `/app/config`.
-
-Get a free API key: [build.nvidia.com](https://build.nvidia.com) → API catalog → generate key (`nvapi-...`). Free credits apply to MVP; monitor usage in the NVIDIA dashboard.
-
-### Required variables
-
-| Variable               | Purpose                                              |
-| ---------------------- | ---------------------------------------------------- |
-| `LLM_PROVIDER`         | Must be `NVIDIA`                                     |
-| `NVIDIA_API_KEY`       | `nvapi-...` from NVIDIA Build                        |
-| `NVIDIA_MODEL_PLANNER` | Task suggestions + shooting plan (**required**)      |
-| `NVIDIA_MODEL_EXTRACTOR` | Scene extraction (defaults to planner if unset)    |
-| `NVIDIA_MODEL_FAST`    | JSON repair / helper (defaults to extractor)         |
-
-### Optional tuning
-
-| Variable                  | Default   | Notes                                           |
-| ------------------------- | --------- | ----------------------------------------------- |
-| `NVIDIA_BASE_URL`         | NVIDIA v1 | `https://integrate.api.nvidia.com/v1`           |
-| `NVIDIA_MODEL_FALLBACK`   | planner   | Repair fallback model                           |
-| `LLM_MAX_SCRIPT_CHARS`    | `250000`  | Enough for ~175-page scripts                    |
-| `LLM_MAX_CHUNK_CHARS`     | `18000`   | Scenes per extractor batch                      |
-| `LLM_PLANNER_TEMPERATURE` | `0.2`     | Planner creativity                              |
-| `LLM_EXTRACTOR_TEMPERATURE` | `0.1`   | Extraction — keep low                           |
-| `LLM_FAST_TEMPERATURE`    | `0`       | Repair calls                                    |
-| `LLM_JSON_REPAIR_RETRIES` | `1`       | Retries after invalid JSON                      |
-| `LLM_REQUEST_TIMEOUT_MS`  | `120000`  | Use `180000`+ on Render for long scripts        |
-
-### Recommended model tiers
-
-**MVP (free credits — start here)**
-
-| Role      | Model                              | Why                                      |
-| --------- | ---------------------------------- | ---------------------------------------- |
-| Extractor | `nvidia/nemotron-3-nano-30b-a3b`   | Fast, cheap, batched scene extraction    |
-| Planner   | `nvidia/nemotron-3-super-120b-a12b` | Plans on merged scene facts — good quality |
-| Fast      | `nvidia/nemotron-3-nano-30b-a3b`   | JSON repair                              |
-
-**Upgrade (when credits run low on quality, not speed)**
-
-| Role      | Model                               |
-| --------- | ----------------------------------- |
-| Extractor | `nvidia/nemotron-3-super-120b-a12b` |
-| Planner   | `nvidia/nemotron-3-ultra-550b-a55b` |
-
-**Render MVP copy-paste**
-
-```bash
-LLM_PROVIDER=NVIDIA
-NVIDIA_API_KEY=nvapi_xxxxx
-NVIDIA_MODEL_EXTRACTOR=nvidia/nemotron-3-nano-30b-a3b
-NVIDIA_MODEL_PLANNER=nvidia/nemotron-3-super-120b-a12b
-NVIDIA_MODEL_FAST=nvidia/nemotron-3-nano-30b-a3b
-LLM_REQUEST_TIMEOUT_MS=180000
-```
-
-Remove any legacy `OPENAI_*` variables from Render — the API no longer reads them.
-
-### Pipeline (after PDF upload + analyze)
-
-1. Extract PDF text
-2. Split into scenes (deterministic)
-3. Extract scene facts per batch (extractor model)
-4. Generate task suggestions (planner model)
-5. Generate shooting plan (planner model)
-
-Director approves suggestions → `Task` rows. **Apply to schedule** (mobile) or API creates `ShootDay` rows from the plan.
-
-**Feature flags:** `llm.nvidia`, `scripts.shootingPlan`, `scripts.taskSuggestions` must be enabled (seeded by migration).
-
-**Usage tracking:** every LLM call writes an `LlmRun` row. Raw script text and prompts are never stored.
-
----
-
-## `.gitignore` rules
-
-These paths are never committed:
-
-```text
-apps/mobile/.env
-apps/api/.env.development
-apps/api/.env.production
-```
-
-Examples **are** committed: `apps/mobile/.env.example`, `apps/api/.env.example`.
+Keys: `scripts.upload`, `scripts.shootingPlan`, `scripts.taskSuggestions`, `llm.nvidia`, `team.invites`, `auth.emailOtp`, `auth.phoneOtp`, `notifications.push`
