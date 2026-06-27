@@ -5,8 +5,6 @@ export const FEATURE_FLAG_KEYS = [
   'scripts.upload',
   'scripts.shootingPlan',
   'scripts.taskSuggestions',
-  'llm.nvidia',
-  'llm.gemini',
   'team.invites',
   'auth.emailOtp',
   'auth.phoneOtp',
@@ -19,8 +17,6 @@ const SENSITIVE_PROD_FLAGS: FeatureFlagKey[] = [
   'scripts.upload',
   'scripts.shootingPlan',
   'scripts.taskSuggestions',
-  'llm.nvidia',
-  'llm.gemini',
   'team.invites',
 ];
 
@@ -29,8 +25,6 @@ export const DEFAULT_FEATURE_FLAGS: Record<FeatureFlagKey, boolean> = {
   'scripts.upload': true,
   'scripts.shootingPlan': true,
   'scripts.taskSuggestions': true,
-  'llm.nvidia': true,
-  'llm.gemini': false,
   'team.invites': true,
   'auth.emailOtp': true,
   'auth.phoneOtp': true,

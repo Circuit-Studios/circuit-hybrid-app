@@ -1,5 +1,4 @@
 import { env, llmRoleProviders } from '../../config/env.js';
-import { isFeatureEnabled } from '../../config/features.js';
 import { GeminiLlmProvider } from './gemini.client.js';
 import { NvidiaLlmProvider } from './nvidia.client.js';
 import type {
@@ -22,18 +21,16 @@ export type {
 export { LlmError } from './errors.js';
 export { logLlmRun } from './logLlmRun.js';
 
-const FEATURE_FLAG_FOR_PROVIDER: Record<LlmProvider, string> = {
-  NVIDIA: 'llm.nvidia',
-  GEMINI: 'llm.gemini',
-};
-
 const providerCache = new Map<LlmProvider, LlmChatProvider>();
 
 export function resetLlmProviderForTests(): void {
   providerCache.clear();
 }
 
-/** Resolve which provider serves a given pipeline role (env-driven). */
+/**
+ * Resolve which provider serves a given pipeline role.
+ * Single source of truth: LLM_PROVIDER (+ optional per-role LLM_PROVIDER_* overrides).
+ */
 function providerForRole(role: LlmRole): LlmProvider {
   const roles = llmRoleProviders(env);
   switch (role) {
@@ -48,35 +45,23 @@ function providerForRole(role: LlmRole): LlmProvider {
   }
 }
 
-function instantiateProvider(name: LlmProvider): LlmChatProvider {
-  return name === 'GEMINI' ? new GeminiLlmProvider() : new NvidiaLlmProvider();
-}
-
-async function getProvider(name: LlmProvider): Promise<LlmChatProvider> {
-  const flag = FEATURE_FLAG_FOR_PROVIDER[name];
-  if (!(await isFeatureEnabled(flag))) {
-    throw new Error(
-      `${name} LLM is disabled (feature flag ${flag}). Enable it in feature_flags or switch LLM_PROVIDER.`,
-    );
-  }
-
+function getProvider(name: LlmProvider): LlmChatProvider {
   let provider = providerCache.get(name);
   if (!provider) {
-    provider = instantiateProvider(name);
+    provider = name === 'GEMINI' ? new GeminiLlmProvider() : new NvidiaLlmProvider();
     providerCache.set(name, provider);
   }
   return provider;
 }
 
 /** Default provider (planner role) — kept for backward compatibility. */
-export async function getLlmProvider(): Promise<LlmChatProvider> {
+export function getLlmProvider(): LlmChatProvider {
   return getProvider(providerForRole('planner'));
 }
 
 /** Provider-agnostic JSON chat entry point used by all AI pipelines. */
 export async function chatJson<T>(opts: ChatJsonOptions<T>): Promise<ChatJsonResult<T>> {
-  const provider = await getProvider(providerForRole(opts.role));
-  return provider.chatJson(opts);
+  return getProvider(providerForRole(opts.role)).chatJson(opts);
 }
 
 /** Returns parsed data only (convenience wrapper). */

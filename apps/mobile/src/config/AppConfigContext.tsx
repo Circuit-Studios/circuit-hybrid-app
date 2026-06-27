@@ -18,7 +18,6 @@ const DEFAULT_CONFIG: PublicAppConfig = {
     'scripts.upload': true,
     'scripts.shootingPlan': true,
     'scripts.taskSuggestions': true,
-    'llm.nvidia': true,
     'team.invites': true,
     'auth.emailOtp': true,
     'auth.phoneOtp': true,

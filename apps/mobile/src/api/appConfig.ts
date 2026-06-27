@@ -8,7 +8,6 @@ export type FeatureFlagKey =
   | 'scripts.upload'
   | 'scripts.shootingPlan'
   | 'scripts.taskSuggestions'
-  | 'llm.nvidia'
   | 'team.invites'
   | 'auth.emailOtp'
   | 'auth.phoneOtp'

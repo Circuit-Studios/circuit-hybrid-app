@@ -5,14 +5,10 @@ describe('getLlmProvider', () => {
     vi.resetModules();
   });
 
-  it('returns the NVIDIA provider when the feature flag is enabled', async () => {
-    vi.doMock('../../src/config/features.js', () => ({
-      isFeatureEnabled: vi.fn().mockResolvedValue(true),
-    }));
-
+  it('returns the NVIDIA provider by default (LLM_PROVIDER=NVIDIA)', async () => {
     const { getLlmProvider, resetLlmProviderForTests } = await import('../../src/ai/llm/index.js');
     resetLlmProviderForTests();
-    const provider = await getLlmProvider();
+    const provider = getLlmProvider();
     expect(provider.name).toBe('NVIDIA');
   });
 });

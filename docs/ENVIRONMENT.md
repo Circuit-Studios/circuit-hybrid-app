@@ -130,8 +130,9 @@ Only the provider(s) actually used must be configured (validated at boot).
 
 Optional: `LLM_MAX_SCRIPT_CHARS` (default `250000`), `LLM_MAX_CHUNK_CHARS` (default `18000`).
 
-**Feature flags** (DB, seeded by migration): the selected provider's flag (`llm.nvidia` /
-`llm.gemini`) plus `scripts.shootingPlan`, `scripts.taskSuggestions` must be enabled.
+Provider selection is **env-only** — `LLM_PROVIDER` (+ `LLM_PROVIDER_*`) is the single switch;
+there are no `llm.*` feature flags. `scripts.shootingPlan` and `scripts.taskSuggestions` must
+still be enabled to run the pipeline.
 
 ---
 
@@ -156,4 +157,4 @@ Toggle in DB without mobile rebuild:
 UPDATE feature_flags SET enabled = false WHERE key = 'scripts.upload';
 ```
 
-Keys: `scripts.upload`, `scripts.shootingPlan`, `scripts.taskSuggestions`, `llm.nvidia`, `llm.gemini`, `team.invites`, `auth.emailOtp`, `auth.phoneOtp`, `notifications.push`
+Keys: `scripts.upload`, `scripts.shootingPlan`, `scripts.taskSuggestions`, `team.invites`, `auth.emailOtp`, `auth.phoneOtp`, `notifications.push`
