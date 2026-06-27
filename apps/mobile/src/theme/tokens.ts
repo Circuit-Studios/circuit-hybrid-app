@@ -110,8 +110,6 @@ export const auth = {
 export const tabBar = {
   height: 84,
   activeCircleSize: 44,
-  activePillWidth: 44,
-  activePillHeight: 44,
   itemTouchMin: 56,
   blurIntensity: 70,
   iconInactive: '#9CA3AF',

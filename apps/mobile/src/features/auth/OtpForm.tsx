@@ -12,7 +12,11 @@ import { requestOtp } from '@/api/auth';
 import { readApiError } from '@/api/client';
 import { useContentFrame } from '@/hooks/useContentFrame';
 import { formatRemainingSession } from '@/lib/session';
-import { validateOtpSession, otpSessionErrorMessage, buildVerifySignupPayload } from '@/lib/otp-session';
+import {
+  validateOtpSession,
+  otpSessionErrorMessage,
+  buildVerifySignupPayload,
+} from '@/lib/otp-session';
 import { maskEmail, maskPhone } from '@/lib/mask';
 import { colors, radius, spacing, typography } from '@/theme';
 

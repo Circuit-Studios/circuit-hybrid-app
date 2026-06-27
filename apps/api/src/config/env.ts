@@ -1,6 +1,10 @@
 import './load-env.js';
 import { z } from 'zod';
-import { assertProductionOtpProviders, assertResendEmailOtpConfig } from './env-guards.js';
+import {
+  assertProductionDirectRegisterDisabled,
+  assertProductionOtpProviders,
+  assertResendEmailOtpConfig,
+} from './env-guards.js';
 
 const emptyToUndefined = (value: unknown) => (value === '' ? undefined : value);
 
@@ -46,7 +50,7 @@ const schema = z.object({
 
   REDIS_URL: optionalUrl,
 
-  LLM_PROVIDER: z.enum(['OPENAI', 'NVIDIA']).default('OPENAI'),
+  LLM_PROVIDER: z.literal('NVIDIA').default('NVIDIA'),
   NVIDIA_API_KEY: optionalString,
   NVIDIA_BASE_URL: z.preprocess(
     emptyToUndefined,
@@ -63,11 +67,6 @@ const schema = z.object({
   LLM_FAST_TEMPERATURE: z.coerce.number().min(0).max(2).default(0),
   LLM_JSON_REPAIR_RETRIES: z.coerce.number().int().min(0).max(3).default(1),
   LLM_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
-
-  OPENAI_API_KEY: optionalString,
-  OPENAI_MODEL: z.string().default('gpt-4o'),
-  OPENAI_MODEL_FAST: z.string().default('gpt-4o-mini'),
-  OPENAI_MAX_RETRIES: z.coerce.number().int().min(0).max(10).default(3),
 
   LANGSMITH_TRACING: z.coerce.boolean().default(false),
   LANGSMITH_API_KEY: z.string().optional(),
@@ -97,7 +96,6 @@ function applyLegacyOtpProvider(data: Env): Env {
 }
 
 function resolveNvidiaModels(data: Env): Env {
-  if (data.LLM_PROVIDER !== 'NVIDIA') return data;
   const planner = data.NVIDIA_MODEL_PLANNER!;
   const extractor = data.NVIDIA_MODEL_EXTRACTOR ?? planner;
   const fast = data.NVIDIA_MODEL_FAST ?? extractor;
@@ -110,23 +108,14 @@ function resolveNvidiaModels(data: Env): Env {
 }
 
 function assertLlmProviderConfig(data: Env): void {
-  if (data.LLM_PROVIDER === 'OPENAI') {
-    if (!data.OPENAI_API_KEY) {
-      console.error('Invalid environment configuration:');
-      console.error('  - OPENAI_API_KEY: required when LLM_PROVIDER=OPENAI');
-      process.exit(1);
-    }
-    return;
-  }
-
   if (!data.NVIDIA_API_KEY) {
     console.error('Invalid environment configuration:');
-    console.error('  - NVIDIA_API_KEY: required when LLM_PROVIDER=NVIDIA');
+    console.error('  - NVIDIA_API_KEY: required');
     process.exit(1);
   }
   if (!data.NVIDIA_MODEL_PLANNER) {
     console.error('Invalid environment configuration:');
-    console.error('  - NVIDIA_MODEL_PLANNER: required when LLM_PROVIDER=NVIDIA');
+    console.error('  - NVIDIA_MODEL_PLANNER: required');
     process.exit(1);
   }
 }
@@ -146,6 +135,7 @@ function loadEnv(): Env {
   assertLlmProviderConfig(resolved);
   assertResendEmailOtpConfig(resolved);
   assertProductionOtpProviders(resolved);
+  assertProductionDirectRegisterDisabled(resolved);
   return resolved;
 }
 

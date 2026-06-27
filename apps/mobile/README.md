@@ -250,8 +250,8 @@ launches: just hit Run again — Metro stays up across rebuilds.
 ### Option B — All-in-one via the Expo CLI
 
 ```bash
-npx expo run:ios       # iOS simulator — builds native app + starts Metro
-npx expo run:android   # Android emulator
+npx expo run:ios     # iOS simulator — builds native app + starts Metro
+npx expo run:android # Android emulator
 # or: npm run android
 ```
 

@@ -1,36 +1,44 @@
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
-const mockCreate = vi.fn();
+const mockFetch = vi.fn();
 
-vi.mock('openai', () => ({
-  default: class MockOpenAI {
-    chat = { completions: { create: mockCreate } };
-    constructor(_cfg: unknown) {}
-  },
+vi.mock('../../src/config/features.js', () => ({
+  isFeatureEnabled: vi.fn().mockResolvedValue(true),
 }));
 
-const { chatJson } = await import('../../src/ai/openai.client.js');
-const { resetLlmProviderForTests } = await import('../../src/ai/llm/index.js');
+const { chatJson, resetLlmProviderForTests } = await import('../../src/ai/llm/index.js');
 
 const schema = z.object({
   characters: z.array(z.object({ name: z.string(), importance: z.enum(['LEAD', 'SUPPORT']) })),
 });
 
-function respond(payload: unknown) {
-  (mockCreate as Mock).mockResolvedValueOnce({
-    choices: [{ message: { content: JSON.stringify(payload) } }],
-  });
+function nvidiaResponse(content: string) {
+  return {
+    ok: true,
+    json: async () => ({
+      choices: [{ message: { content } }],
+      usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+    }),
+  };
 }
 
 describe('chatJson', () => {
   beforeEach(() => {
-    mockCreate.mockReset();
+    mockFetch.mockReset();
+    vi.stubGlobal('fetch', mockFetch);
     resetLlmProviderForTests();
   });
 
-  it('parses and validates a well-formed response', async () => {
-    respond({ characters: [{ name: 'Rajesh', importance: 'LEAD' }] });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('parses and validates a well-formed NVIDIA response', async () => {
+    mockFetch.mockResolvedValueOnce(
+      nvidiaResponse(JSON.stringify({ characters: [{ name: 'Rajesh', importance: 'LEAD' }] })),
+    );
+
     const out = await chatJson({
       role: 'planner',
       stage: 'json_repair',
@@ -39,15 +47,50 @@ describe('chatJson', () => {
       systemPrompt: 'system',
       userPrompt: 'user',
     });
+
     expect(out.data.characters[0]!.name).toBe('Rajesh');
+    expect(out.provider).toBe('NVIDIA');
   });
 
   it('throws when the model returns invalid JSON after repair', async () => {
-    (mockCreate as Mock)
-      .mockResolvedValueOnce({ choices: [{ message: { content: '{not json' } }] })
-      .mockResolvedValueOnce({ choices: [{ message: { content: '{still bad' } }] });
+    mockFetch
+      .mockResolvedValueOnce(nvidiaResponse('{not json'))
+      .mockResolvedValueOnce(nvidiaResponse('{still bad'));
+
     await expect(
-      chatJson({ role: 'planner', stage: 'json_repair', schema, schemaName: 'Test', systemPrompt: 's', userPrompt: 'u' }),
+      chatJson({
+        role: 'planner',
+        stage: 'json_repair',
+        schema,
+        schemaName: 'Test',
+        systemPrompt: 's',
+        userPrompt: 'u',
+      }),
     ).rejects.toThrow(/JSON/);
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('passes raw invalid JSON to the repair prompt, not the generic error message', async () => {
+    const badJson = '{not json';
+    mockFetch
+      .mockResolvedValueOnce(nvidiaResponse(badJson))
+      .mockResolvedValueOnce(nvidiaResponse(JSON.stringify({ characters: [] })));
+
+    await chatJson({
+      role: 'planner',
+      stage: 'json_repair',
+      schema,
+      schemaName: 'Test',
+      systemPrompt: 's',
+      userPrompt: 'u',
+    });
+
+    const repairBody = JSON.parse(String(mockFetch.mock.calls[1]![1]!.body));
+    const userMessage = repairBody.messages.find(
+      (m: { role: string }) => m.role === 'user',
+    ).content;
+    expect(userMessage).toContain(badJson);
+    expect(userMessage).not.toContain('AI response was not valid JSON');
   });
 });

@@ -24,7 +24,7 @@ export default function UploadScriptScreen() {
   const router = useRouter();
   const { isFeatureEnabled } = useAppConfig();
   const uploadEnabled = isFeatureEnabled('scripts.upload');
-  const analysisEnabled = isFeatureEnabled('scripts.aiAnalysis');
+  const analysisEnabled = isFeatureEnabled('scripts.shootingPlan');
 
   const [picked, setPicked] = useState<PickedFile | null>(null);
   const [uploading, setUploading] = useState(false);

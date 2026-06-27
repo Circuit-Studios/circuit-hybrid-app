@@ -102,7 +102,7 @@ const SHOOTING_PLAN = {
 function asChatJsonResult<T>(data: T) {
   return {
     data,
-    provider: 'OPENAI' as const,
+    provider: 'NVIDIA' as const,
     model: 'gpt-4o',
     durationMs: 10,
   };

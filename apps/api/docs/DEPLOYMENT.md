@@ -163,7 +163,7 @@ The backend sends only `to`, `template.id`, and `template.variables` — no `fro
 From monorepo root:
 
 ```bash
-npm run setup:env        # api + mobile env files if missing
+npm run setup:env # api + mobile env files if missing
 # or individually:
 npm run setup:env:api
 npm run setup:env:mobile

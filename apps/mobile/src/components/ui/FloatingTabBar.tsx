@@ -78,10 +78,7 @@ export function FloatingTabBar({
                 accessibilityState={{ selected: active }}
                 accessibilityLabel={item.accessibilityLabel}
                 onPress={item.onPress}
-                style={({ pressed }) => [
-                  styles.slot,
-                  pressed && !active && styles.slotPressed,
-                ]}
+                style={({ pressed }) => [styles.slot, pressed && !active && styles.slotPressed]}
               >
                 <View style={styles.iconStack}>
                   {active ? <View style={styles.activeCircle} /> : null}

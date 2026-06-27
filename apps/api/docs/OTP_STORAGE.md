@@ -5,12 +5,12 @@
 All OTP lifecycle logic — issue, cooldown, attempts, expiry, verify, consume, cleanup —
 runs through **one Prisma model** and **one service**:
 
-| Layer | Location | Role |
-| ----- | -------- | ---- |
-| Schema | `AuthOtp` in `prisma/schema.prisma` | Single table for phone + email |
-| Store helpers | `src/modules/auth/auth-otp.store.ts` | Active/consumed query shapes |
-| Service | `src/modules/auth/otp.service.ts` | Issue + verify for every channel/purpose |
-| Delivery | `src/modules/auth/providers/*` | Send only (Resend, MSG91, MOCK) — **not** storage |
+| Layer         | Location                             | Role                                              |
+| ------------- | ------------------------------------ | ------------------------------------------------- |
+| Schema        | `AuthOtp` in `prisma/schema.prisma`  | Single table for phone + email                    |
+| Store helpers | `src/modules/auth/auth-otp.store.ts` | Active/consumed query shapes                      |
+| Service       | `src/modules/auth/otp.service.ts`    | Issue + verify for every channel/purpose          |
+| Delivery      | `src/modules/auth/providers/*`       | Send only (Resend, MSG91, MOCK) — **not** storage |
 
 `AuthOtp` rows are keyed by:
 
@@ -19,9 +19,11 @@ runs through **one Prisma model** and **one service**:
 - `purpose` — `SIGNUP` | `LOGIN` | `VERIFY_EMAIL` | `PASSWORD_RESET`
 - `codeHash`, `attempts`, `expiresAt`, `consumedAt`
 
+Active OTPs have `consumedAt IS NULL`. Verified or superseded rows set `consumedAt`.
+
 The legacy `EmailOtp` / `email_otps` table was **dropped** in migration
-`20260624120000_drop_email_otps`. Do not reintroduce a second OTP table or parallel
-service.
+`20260624120000_drop_email_otps`. Legacy `AuthOtp.phone` and `AuthOtp.consumed` columns were
+**dropped** in migration `20260624210000_auth_otp_drop_legacy_columns`.
 
 ## Do not add
 
@@ -32,20 +34,6 @@ service.
 
 Delivery providers (`ResendEmailOtpProvider`, future MSG91 adapter) send codes only;
 they must never persist OTP rows.
-
-## Legacy columns (cleanup TODO)
-
-`AuthOtp` still carries backward-compatible columns:
-
-- `phone` — mirror of `target` for old phone rows; stop writing in a future migration
-- `consumed` — boolean flag; prefer `consumedAt IS NOT NULL`
-
-**TODO (follow-up migration, not required for feature work):**
-
-1. Stop writing `phone` and `consumed`; use `target` + `consumedAt` only
-2. Drop `phone` and `consumed` columns after all readers are updated
-3. Route any remaining direct `prisma.authOtp` calls in `auth.routes.ts` through
-   `auth-otp.store.ts` helpers
 
 ## Adding OTP features
 

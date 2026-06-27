@@ -68,13 +68,19 @@ export class ResendEmailOtpProvider implements OtpDeliveryProvider {
 
     if (!response.ok) {
       const detail = body.message ?? 'Unknown error';
-      logger.error({ ...maskedFields, provider: 'RESEND', status: body.name }, 'auth.otp_failed');
-      throw new Error(`Resend email failed: ${detail}`);
+      logger.error(
+        {
+          ...maskedFields,
+          provider: 'RESEND',
+          status: response.status,
+          resendError: detail,
+          resendName: body.name,
+        },
+        'auth.otp_failed',
+      );
+      throw new Error('Could not send verification code');
     }
 
-    logger.info(
-      { ...maskedFields, provider: 'RESEND', messageId: body.id },
-      'auth.otp_dispatched',
-    );
+    logger.info({ ...maskedFields, provider: 'RESEND', messageId: body.id }, 'auth.otp_dispatched');
   }
 }

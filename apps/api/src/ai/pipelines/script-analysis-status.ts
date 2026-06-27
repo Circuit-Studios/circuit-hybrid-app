@@ -1,4 +1,4 @@
-import { ScriptAnalysisStatus } from '@prisma/client';
+import { ScriptAnalysisStatus, type Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
 import { emitToProject } from '../../realtime/socket.js';
 
@@ -51,7 +51,7 @@ export async function completeScriptPlanning(
       analysisStatus: ScriptAnalysisStatus.COMPLETED,
       analysisError: null,
       analysisEndedAt: new Date(),
-      aiSummary: planningSummary,
+      aiSummary: planningSummary as Prisma.InputJsonValue,
     },
   });
   emitToProject(projectId, 'script.analysis.updated', {

@@ -6,7 +6,9 @@ export type LoginIdentifier = 'PHONE' | 'EMAIL' | 'BOTH';
 
 export type FeatureFlagKey =
   | 'scripts.upload'
-  | 'scripts.aiAnalysis'
+  | 'scripts.shootingPlan'
+  | 'scripts.taskSuggestions'
+  | 'llm.nvidia'
   | 'team.invites'
   | 'auth.emailOtp'
   | 'auth.phoneOtp'

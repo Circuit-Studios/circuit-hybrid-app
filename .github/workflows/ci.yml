@@ -2,9 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches:
+      - main
+      - develop
   pull_request:
-    branches: [main, develop]
+    branches:
+      - main
+      - develop
 
 permissions:
   contents: read
@@ -12,6 +16,9 @@ permissions:
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
 
 jobs:
   format:
@@ -24,7 +31,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: package-lock.json
 
@@ -45,7 +52,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: package-lock.json
 
@@ -88,7 +95,11 @@ jobs:
       DATABASE_URL: postgresql://circuit:circuit@localhost:5432/circuit_test
       JWT_SECRET: ci_jwt_secret_at_least_32_characters_long_for_zod
       OTP_SECRET: ci_otp_secret_at_least_32_characters_long
-      OPENAI_API_KEY: dummy_for_ci_no_calls_are_made_in_unit_tests
+      LLM_PROVIDER: NVIDIA
+      NVIDIA_API_KEY: nvapi_ci_dummy_no_external_calls_in_unit_tests
+      NVIDIA_MODEL_PLANNER: nvidia/test-planner
+      NVIDIA_MODEL_EXTRACTOR: nvidia/test-extractor
+      NVIDIA_MODEL_FAST: nvidia/test-fast
       EMAIL_OTP_PROVIDER: MOCK
       PHONE_OTP_PROVIDER: MOCK
       OTP_PROVIDER: MOCK
@@ -99,7 +110,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
           cache-dependency-path: package-lock.json
 

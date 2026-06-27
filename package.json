@@ -21,18 +21,19 @@
     "typecheck": "npm run mobile:typecheck && npm run api:typecheck",
     "lint": "npm run mobile:lint && npm run api:lint",
     "test": "npm run mobile:test && npm run api:test",
-    "format": "prettier --write \"**/*.{ts,tsx,js,mjs,cjs,json,md,yml,yaml}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,cjs,json,md,yml,yaml}\"",
+    "format": "prettier --write \"**/*.{ts,tsx,js,mjs,cjs,json,md,yml,yaml}\" \"**/.env.example\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,cjs,json,md,yml,yaml}\" \"**/.env.example\"",
     "setup:env": "npm run setup:env:api && npm run setup:env:mobile",
     "setup:env:api": "npm run setup:env -w circuit-backend",
     "setup:env:mobile": "npm run setup:env -w circuit-mobile",
     "postinstall": "npm run prisma:generate -w circuit-backend"
   },
   "engines": {
-    "node": ">=20"
+    "node": "22.x"
   },
   "devDependencies": {
-    "prettier": "^3.5.3"
+    "prettier": "^3.5.3",
+    "prettier-plugin-sh": "^0.18.1"
   },
   "overrides": {
     "ioredis": "5.4.1",

@@ -126,9 +126,9 @@ On a physical device, use your laptop's LAN IP instead of `localhost`.
 
 ```bash
 cd apps/api && docker compose up -d && npm run dev:db
-npm run api:dev          # from repo root
+npm run api:dev # from repo root
 
-npm run mobile           # second terminal
+npm run mobile # second terminal
 ```
 
 ---
@@ -228,14 +228,14 @@ Returns `appEnv`, `signupVerificationChannel`, `loginIdentifier`, and `features`
 
 Toggle modules without a mobile rebuild. Backend enforces via `requireFeature()`; mobile hides UI from `GET /app/config`.
 
-| Key                  | Default | Routes affected              |
-| -------------------- | ------- | ---------------------------- |
-| `scripts.upload`     | on      | `POST /projects/:id/scripts` |
-| `scripts.aiAnalysis` | on      | `POST /scripts/:id/analyze`  |
-| `team.invites`       | on      | `POST /projects/:id/members` |
-| `auth.emailOtp`      | on      | Email OTP send/verify        |
-| `auth.phoneOtp`      | on      | Phone OTP send/verify        |
-| `notifications.push` | on      | Mobile push registration     |
+| Key                    | Default | Routes affected              |
+| ---------------------- | ------- | ---------------------------- |
+| `scripts.upload`       | on      | `POST /projects/:id/scripts` |
+| `scripts.shootingPlan` | on      | `POST /scripts/:id/analyze`  |
+| `team.invites`         | on      | `POST /projects/:id/members` |
+| `auth.emailOtp`        | on      | Email OTP send/verify        |
+| `auth.phoneOtp`        | on      | Phone OTP send/verify        |
+| `notifications.push`   | on      | Mobile push registration     |
 
 Example — disable script upload in dev:
 

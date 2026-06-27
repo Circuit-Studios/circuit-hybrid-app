@@ -1,6 +1,6 @@
 import type { ZodSchema } from 'zod';
 
-export type LlmProvider = 'OPENAI' | 'NVIDIA';
+export type LlmProvider = 'NVIDIA';
 
 export type LlmRole = 'extractor' | 'planner' | 'fast' | 'fallback';
 

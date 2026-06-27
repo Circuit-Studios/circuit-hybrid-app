@@ -9,7 +9,7 @@ export type Permission =
   | 'tasks.delete'
   | 'tasks.updateStatus'
   | 'scripts.upload'
-  | 'scripts.aiAnalysis'
+  | 'scripts.shootingPlan'
   | 'team.invites';
 
 const MANAGER_ROLES: UserRole[] = [
@@ -43,7 +43,7 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
     'tasks.delete',
     'tasks.updateStatus',
     'scripts.upload',
-    'scripts.aiAnalysis',
+    'scripts.shootingPlan',
     'team.invites',
   ],
   [UserRole.PRODUCER]: [
@@ -52,7 +52,7 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
     'tasks.delete',
     'tasks.updateStatus',
     'scripts.upload',
-    'scripts.aiAnalysis',
+    'scripts.shootingPlan',
     'team.invites',
   ],
   [UserRole.EXECUTIVE_PRODUCER]: [
@@ -61,7 +61,7 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
     'tasks.delete',
     'tasks.updateStatus',
     'scripts.upload',
-    'scripts.aiAnalysis',
+    'scripts.shootingPlan',
     'team.invites',
   ],
   [UserRole.LINE_PRODUCER]: [
@@ -70,7 +70,7 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
     'tasks.delete',
     'tasks.updateStatus',
     'scripts.upload',
-    'scripts.aiAnalysis',
+    'scripts.shootingPlan',
     'team.invites',
   ],
   [UserRole.AD]: ['tasks.create', 'tasks.update', 'tasks.delete', 'tasks.updateStatus'],

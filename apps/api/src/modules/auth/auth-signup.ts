@@ -73,8 +73,7 @@ export async function findOrCreateUserAfterOtp(input: VerifyOtpBody): Promise<Us
         throw badRequest('Password is required to create an account');
       }
       const signupPassword = signupPasswordSchema.parse(input.signup.password);
-      const phone =
-        input.signup && 'phone' in input.signup ? input.signup.phone : undefined;
+      const phone = input.signup && 'phone' in input.signup ? input.signup.phone : undefined;
       await assertOptionalSignupIdentifiersAvailable(undefined, phone);
       const existingEmail = await prisma.user.findUnique({ where: { email: input.email } });
       if (existingEmail) {
@@ -110,8 +109,7 @@ export async function findOrCreateUserAfterOtp(input: VerifyOtpBody): Promise<Us
       throw badRequest('Password is required to create an account');
     }
     const signupPassword = signupPasswordSchema.parse(input.signup.password);
-    const email =
-      input.signup && 'email' in input.signup ? input.signup.email : undefined;
+    const email = input.signup && 'email' in input.signup ? input.signup.email : undefined;
     await assertOptionalSignupIdentifiersAvailable(email, undefined);
     const existingPhone = await prisma.user.findUnique({ where: { phone: input.phone } });
     if (existingPhone) {

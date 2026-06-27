@@ -29,6 +29,6 @@ Do **not** rely on Render build/start hooks for migrations unless you have expli
 ## After changing `schema.prisma`
 
 ```bash
-npm run prisma:migrate   # create a new incremental migration (dev only)
-npm run prisma:deploy    # apply on shared/staging/prod
+npm run prisma:migrate # create a new incremental migration (dev only)
+npm run prisma:deploy  # apply on shared/staging/prod
 ```

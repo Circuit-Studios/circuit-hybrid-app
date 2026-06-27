@@ -83,15 +83,8 @@ export default function AIProgressScreen() {
 
   useEffect(() => {
     if (status !== 'COMPLETED' || !projectId || !scriptId) return;
-    const summary = data?.summary;
-    const isLegacy =
-      summary != null && typeof summary === 'object' && 'characters' in summary;
-    if (isLegacy) {
-      router.replace(`/(app)/project/${projectId}/ai-results?scriptId=${scriptId}`);
-    } else {
-      router.replace(`/(app)/project/${projectId}/director-review?scriptId=${scriptId}`);
-    }
-  }, [status, projectId, scriptId, router, data?.summary]);
+    router.replace(`/(app)/project/${projectId}/director-review?scriptId=${scriptId}`);
+  }, [status, projectId, scriptId, router]);
 
   async function handleRetry() {
     if (!scriptId) return;

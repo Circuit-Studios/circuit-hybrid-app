@@ -5,7 +5,7 @@ import {
   buildJsonRepairUserPrompt,
 } from '../prompts/json-repair.prompt.js';
 import { LlmError } from './errors.js';
-import { parseAndValidate } from './json-parse.js';
+import { parseAndValidate, repairSnippetFromError } from './json-parse.js';
 import { recordLlmRun } from './usage.js';
 import type { ChatJsonOptions, ChatJsonResult, LlmChatProvider, LlmTokenUsage } from './types.js';
 
@@ -188,13 +188,13 @@ export class NvidiaLlmProvider implements LlmChatProvider {
     model: string,
     firstErr: unknown,
   ): Promise<{ data: T; usage?: LlmTokenUsage }> {
-    const invalidHint = firstErr instanceof Error ? firstErr.message : 'invalid';
+    const invalidSnippet = repairSnippetFromError(firstErr);
     const body = {
       model,
       temperature: 0,
       messages: [
         { role: 'system', content: JSON_REPAIR_SYSTEM_PROMPT },
-        { role: 'user', content: buildJsonRepairUserPrompt(opts.schemaName, invalidHint) },
+        { role: 'user', content: buildJsonRepairUserPrompt(opts.schemaName, invalidSnippet) },
       ],
       response_format: { type: 'json_object' },
     };

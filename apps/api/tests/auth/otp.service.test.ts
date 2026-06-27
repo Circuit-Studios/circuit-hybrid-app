@@ -13,7 +13,9 @@ const prismaMock = {
 };
 
 vi.mock('../../src/lib/prisma.js', () => ({ prisma: prismaMock }));
-vi.mock('../../src/config/features.js', () => ({ isFeatureEnabled: vi.fn().mockResolvedValue(true) }));
+vi.mock('../../src/config/features.js', () => ({
+  isFeatureEnabled: vi.fn().mockResolvedValue(true),
+}));
 vi.mock('../../src/modules/auth/providers/otp-delivery.js', () => ({
   getOtpDeliveryProvider: () => ({ send: vi.fn().mockResolvedValue(undefined) }),
 }));
