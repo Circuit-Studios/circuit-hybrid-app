@@ -1,4 +1,4 @@
-import type { ZodSchema } from 'zod';
+import type { ZodType, ZodTypeDef } from 'zod';
 import { logger } from '../../lib/logger.js';
 import {
   buildJsonRepairUserPrompt,
@@ -17,7 +17,7 @@ export function parseAssistantJson(raw: string): unknown {
 }
 
 export function validateWithSchema<T>(
-  schema: ZodSchema<T>,
+  schema: ZodType<T, ZodTypeDef, any>,
   parsed: unknown,
   schemaName: string,
   rawOutput?: string | null,
@@ -40,7 +40,7 @@ export function validateWithSchema<T>(
 
 export async function parseAndValidate<T>(
   raw: string | null | undefined,
-  schema: ZodSchema<T>,
+  schema: ZodType<T, ZodTypeDef, any>,
   schemaName: string,
 ): Promise<T> {
   if (!raw?.trim()) {

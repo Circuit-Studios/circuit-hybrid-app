@@ -24,7 +24,7 @@ type ResendSendResponse = {
 /**
  * Email delivery only — sends OTP via Resend REST API (hosted template).
  * Does NOT persist OTP rows. Storage lifecycle: otp.service.ts → AuthOtp.
- * See docs/OTP_STORAGE.md.
+ * Canonical OTP storage: auth-otp.store.ts (target + consumedAt).
  */
 export class ResendEmailOtpProvider implements OtpDeliveryProvider {
   async send(input: OtpDeliverySendInput): Promise<void> {

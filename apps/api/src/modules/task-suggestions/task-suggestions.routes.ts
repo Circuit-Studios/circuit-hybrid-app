@@ -7,6 +7,7 @@ import { requireAuth } from '../../middleware/auth.js';
 import { requireFeature } from '../../middleware/require-feature.js';
 import { getActiveMembership } from '../../auth/permissions.js';
 import {
+  applyShootingPlanToSchedule,
   approveTaskSuggestion,
   bulkApproveTaskSuggestions,
   getLatestShootingPlan,
@@ -59,6 +60,22 @@ router.get(
     const plan = await getLatestShootingPlan(projectId, scriptId);
     if (!plan) throw notFound('No shooting plan found for this project');
     res.json({ plan });
+  }),
+);
+
+// POST /projects/:projectId/shooting-plan/apply
+//   Materialize the latest AI shooting plan into ShootDay rows on the schedule.
+router.post(
+  '/projects/:projectId/shooting-plan/apply',
+  requireAuth,
+  requireFeature('scripts.shootingPlan'),
+  asyncHandler(async (req, res) => {
+    const projectId = req.params.projectId!;
+    const userId = req.user!.sub;
+    const scriptId = typeof req.body?.scriptId === 'string' ? req.body.scriptId : undefined;
+
+    const result = await applyShootingPlanToSchedule(projectId, userId, scriptId);
+    res.status(201).json(result);
   }),
 );
 

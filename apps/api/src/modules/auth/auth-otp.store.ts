@@ -4,7 +4,7 @@ import { OtpChannel, OtpPurpose } from '@prisma/client';
  * Single entry point for AuthOtp row shapes (active / consumed).
  *
  * All OTP persistence goes through AuthOtp — never EmailOtp or channel-specific tables.
- * Issue/verify logic: otp.service.ts. Policy: docs/OTP_STORAGE.md
+ * Issue/verify logic: otp.service.ts.
  */
 export function activeAuthOtpWhere(
   channel: OtpChannel,

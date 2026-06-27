@@ -1,9 +1,9 @@
 import { LlmRunStatus } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
-import type { LlmTokenUsage } from './types.js';
+import type { LlmProvider, LlmTokenUsage } from './types.js';
 
 export interface LlmRunContext {
-  provider: 'NVIDIA';
+  provider: LlmProvider;
   model: string;
   stage: string;
   projectId?: string;

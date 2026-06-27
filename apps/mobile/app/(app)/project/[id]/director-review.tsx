@@ -1,12 +1,22 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { SectionHeader } from '@/components/SectionHeader';
 import { Card } from '@/components/Card';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { readApiError } from '@/api/client';
+import { qk } from '@/api/queryKeys';
 import {
+  applyShootingPlanToSchedule,
   approveTaskSuggestion,
   bulkApproveTaskSuggestions,
   getShootingPlan,
@@ -50,6 +60,30 @@ export default function DirectorReviewScreen() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['task-suggestions', projectId] }),
   });
 
+  const applyToSchedule = useMutation({
+    mutationFn: () => applyShootingPlanToSchedule(projectId!, scriptId),
+    onSuccess: (result) => {
+      void qc.invalidateQueries({ queryKey: qk.schedule(projectId!) });
+      void qc.invalidateQueries({ queryKey: qk.health(projectId!) });
+      Alert.alert(
+        'Added to schedule',
+        result.created > 0
+          ? `${result.created} shoot day${result.created === 1 ? '' : 's'} added${
+              result.skipped > 0 ? ` (${result.skipped} already scheduled)` : ''
+            }.`
+          : 'All shoot days from this plan were already on the schedule.',
+        [
+          {
+            text: 'View schedule',
+            onPress: () => router.replace(`/(app)/project/${projectId}/schedule`),
+          },
+          { text: 'OK' },
+        ],
+      );
+    },
+    onError: (err) => Alert.alert('Could not apply plan', readApiError(err)),
+  });
+
   if (planQ.isLoading || suggestionsQ.isLoading) {
     return (
       <ScreenContainer>
@@ -60,7 +94,7 @@ export default function DirectorReviewScreen() {
 
   const plan = planQ.data?.plan;
   const pending = suggestionsQ.data?.suggestions ?? [];
-  const days = plan?.plan?.days ?? [];
+  const days = plan?.plan?.shootDays ?? [];
 
   return (
     <ScreenContainer scroll>
@@ -89,10 +123,22 @@ export default function DirectorReviewScreen() {
               <Text style={styles.subheading}>Shoot days</Text>
               {days.slice(0, 8).map((day) => (
                 <Text key={day.dayNumber} style={styles.body}>
-                  Day {day.dayNumber}: {day.title} ({day.sceneNumbers.join(', ')})
+                  Day {day.dayNumber}
+                  {day.location ? ` — ${day.location}` : ''}
+                  {day.sceneNumbers.length ? ` (Scenes ${day.sceneNumbers.join(', ')})` : ''}
                 </Text>
               ))}
+              {days.length > 8 ? (
+                <Text style={styles.meta}>+ {days.length - 8} more days</Text>
+              ) : null}
             </View>
+          ) : null}
+          {days.length ? (
+            <PrimaryButton
+              title="Apply to schedule"
+              loading={applyToSchedule.isPending}
+              onPress={() => applyToSchedule.mutate()}
+            />
           ) : null}
         </Card>
       ) : (

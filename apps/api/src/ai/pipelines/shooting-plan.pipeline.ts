@@ -8,10 +8,11 @@ import {
   failScriptAnalysis,
   updateScriptAnalysisStatus,
 } from './script-analysis-status.js';
-import { chatJson } from '../llm/index.js';
+import { chatJson, LlmError } from '../llm/index.js';
 import { extractPdfText } from '../pdf.js';
 import {
-  sceneBreakdownResponseSchema,
+  parseSceneFact,
+  sceneBreakdownEnvelopeSchema,
   type ExtractedSceneFact,
 } from '../schemas/scene-breakdown.schema.js';
 import { taskSuggestionsResponseSchema } from '../schemas/task-suggestions.schema.js';
@@ -39,6 +40,8 @@ function mergeSceneFacts(batches: ExtractedSceneFact[][]): ExtractedSceneFact[] 
   const byKey = new Map<string, ExtractedSceneFact>();
   for (const batch of batches) {
     for (const scene of batch) {
+      // Skip junk objects where the model dropped both identifiers.
+      if (!scene.sceneNumber && !scene.slugline) continue;
       const key = `${scene.sceneNumber}::${scene.slugline}`;
       if (!byKey.has(key)) {
         byKey.set(key, scene);
@@ -113,22 +116,62 @@ export async function runShootingPlanPipeline(scriptId: string): Promise<{
     await updateScriptAnalysisStatus(scriptId, 'ANALYZING_SCENES');
 
     const extractedBatches: ExtractedSceneFact[][] = [];
-    for (const batch of batches) {
-      const { data: response } = await chatJson({
+    let droppedScenes = 0;
+    for (const [batchIndex, batch] of batches.entries()) {
+      const { data: envelope } = await chatJson({
         role: 'extractor',
         stage: 'scene_extraction',
-        schema: sceneBreakdownResponseSchema,
+        schema: sceneBreakdownEnvelopeSchema,
         schemaName: 'SceneBreakdown',
         systemPrompt: SCENE_BREAKDOWN_SYSTEM_PROMPT,
         userPrompt: buildSceneBreakdownPrompt(batch, project.genre),
         projectId: project.id,
         scriptId,
       });
-      extractedBatches.push(response.scenes);
+
+      // Parse each scene independently so one malformed scene is skipped,
+      // not the whole batch.
+      const parsed: ExtractedSceneFact[] = [];
+      for (const raw of envelope.scenes) {
+        const scene = parseSceneFact(raw);
+        if (scene) parsed.push(scene);
+        else droppedScenes += 1;
+      }
+
+      if (parsed.length < batch.length) {
+        log.warn(
+          {
+            batchIndex,
+            requested: batch.length,
+            returned: envelope.scenes.length,
+            kept: parsed.length,
+          },
+          'scene_batch_partial',
+        );
+      }
+      extractedBatches.push(parsed);
     }
 
     const scenes = mergeSceneFacts(extractedBatches);
-    log.info({ mergedScenes: scenes.length }, 'scene_facts_merged');
+    log.info({ mergedScenes: scenes.length, droppedScenes }, 'scene_facts_merged');
+
+    // Min-scene-count guard: zero usable scenes can't produce a plan — fail loudly.
+    if (scenes.length === 0) {
+      throw new LlmError('Scene extraction produced no usable scenes', {
+        provider: 'NVIDIA',
+        stage: 'scene_extraction',
+      });
+    }
+
+    // Soft warning when yield is well below the deterministic split — the plan
+    // will be thin and we want this visible without blocking the run.
+    const lowSceneYield = scenes.length < Math.ceil(split.length * 0.5);
+    if (lowSceneYield) {
+      log.warn(
+        { mergedScenes: scenes.length, splitScenes: split.length, droppedScenes },
+        'scene_yield_low',
+      );
+    }
 
     await updateScriptAnalysisStatus(scriptId, 'SUGGESTING_DEPARTMENTS');
 
@@ -145,17 +188,15 @@ export async function runShootingPlanPipeline(scriptId: string): Promise<{
 
     await updateScriptAnalysisStatus(scriptId, 'ESTIMATING_SHOOT_DAYS');
 
+    const validSuggestions = taskSuggestions.suggestions.filter((s) => s.title.trim().length > 0);
+
     const { data: shootingPlan } = await chatJson({
       role: 'planner',
       stage: 'shooting_plan',
       schema: shootingPlanResponseSchema,
       schemaName: 'ShootingPlan',
       systemPrompt: SHOOTING_PLAN_SYSTEM_PROMPT,
-      userPrompt: buildShootingPlanPrompt(
-        scenes,
-        project.genre,
-        taskSuggestions.suggestions.length,
-      ),
+      userPrompt: buildShootingPlanPrompt(scenes, project.genre, validSuggestions.length),
       projectId: project.id,
       scriptId,
     });
@@ -184,9 +225,9 @@ export async function runShootingPlanPipeline(scriptId: string): Promise<{
         },
       });
 
-      if (taskSuggestions.suggestions.length > 0) {
+      if (validSuggestions.length > 0) {
         await tx.taskSuggestion.createMany({
-          data: taskSuggestions.suggestions.map((s) => ({
+          data: validSuggestions.map((s) => ({
             projectId: project.id,
             scriptId,
             shootingPlanId: plan.id,
@@ -209,30 +250,31 @@ export async function runShootingPlanPipeline(scriptId: string): Promise<{
     await completeScriptPlanning(scriptId, project.id, {
       planningPipeline: true,
       sceneCount: scenes.length,
-      suggestionCount: taskSuggestions.suggestions.length,
+      suggestionCount: validSuggestions.length,
       shootDayCount: shootingPlan.shootDays.length,
       summary: shootingPlan.summary,
       shootingPlanId: stored.id,
+      lowSceneYield,
     });
 
     void dispatchNotification({
       userIds: [script.uploadedByUserId, project.ownerUserId],
       kind: 'AI_ANALYSIS_DONE',
       title: 'Your shooting plan is ready',
-      body: `${taskSuggestions.suggestions.length} task suggestions and a ${shootingPlan.shootDays.length}-day draft plan.`,
+      body: `${validSuggestions.length} task suggestions and a ${shootingPlan.shootDays.length}-day draft plan.`,
       projectId: project.id,
       deepLink: `/project/${project.id}/director-review`,
       context: { scriptId },
     });
 
     log.info(
-      { shootingPlanId: stored.id, suggestions: taskSuggestions.suggestions.length },
+      { shootingPlanId: stored.id, suggestions: validSuggestions.length },
       'shooting_plan_stored',
     );
 
     return {
       shootingPlanId: stored.id,
-      suggestionCount: taskSuggestions.suggestions.length,
+      suggestionCount: validSuggestions.length,
     };
   } catch (error) {
     log.error({ error }, 'shooting_plan_pipeline_failed');

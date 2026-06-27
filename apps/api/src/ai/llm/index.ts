@@ -1,6 +1,13 @@
-import { isFeatureEnabled } from '../../config/features.js';
+import { env, llmRoleProviders } from '../../config/env.js';
+import { GeminiLlmProvider } from './gemini.client.js';
 import { NvidiaLlmProvider } from './nvidia.client.js';
-import type { ChatJsonOptions, ChatJsonResult, LlmChatProvider } from './types.js';
+import type {
+  ChatJsonOptions,
+  ChatJsonResult,
+  LlmChatProvider,
+  LlmProvider,
+  LlmRole,
+} from './types.js';
 
 export type {
   ChatJsonInput,
@@ -14,30 +21,47 @@ export type {
 export { LlmError } from './errors.js';
 export { logLlmRun } from './logLlmRun.js';
 
-let cachedProvider: LlmChatProvider | null = null;
+const providerCache = new Map<LlmProvider, LlmChatProvider>();
 
 export function resetLlmProviderForTests(): void {
-  cachedProvider = null;
+  providerCache.clear();
 }
 
-export async function getLlmProvider(): Promise<LlmChatProvider> {
-  if (cachedProvider) return cachedProvider;
-
-  const nvidiaEnabled = await isFeatureEnabled('llm.nvidia');
-  if (!nvidiaEnabled) {
-    throw new Error(
-      'NVIDIA LLM is disabled (feature flag llm.nvidia). Enable it in feature_flags or run prisma migrate deploy.',
-    );
+/**
+ * Resolve which provider serves a given pipeline role.
+ * Single source of truth: LLM_PROVIDER (+ optional per-role LLM_PROVIDER_* overrides).
+ */
+function providerForRole(role: LlmRole): LlmProvider {
+  const roles = llmRoleProviders(env);
+  switch (role) {
+    case 'extractor':
+      return roles.extractor;
+    case 'fast':
+      return roles.fast;
+    case 'planner':
+    case 'fallback':
+    default:
+      return roles.planner;
   }
+}
 
-  cachedProvider = new NvidiaLlmProvider();
-  return cachedProvider;
+function getProvider(name: LlmProvider): LlmChatProvider {
+  let provider = providerCache.get(name);
+  if (!provider) {
+    provider = name === 'GEMINI' ? new GeminiLlmProvider() : new NvidiaLlmProvider();
+    providerCache.set(name, provider);
+  }
+  return provider;
+}
+
+/** Default provider (planner role) — kept for backward compatibility. */
+export function getLlmProvider(): LlmChatProvider {
+  return getProvider(providerForRole('planner'));
 }
 
 /** Provider-agnostic JSON chat entry point used by all AI pipelines. */
 export async function chatJson<T>(opts: ChatJsonOptions<T>): Promise<ChatJsonResult<T>> {
-  const provider = await getLlmProvider();
-  return provider.chatJson(opts);
+  return getProvider(providerForRole(opts.role)).chatJson(opts);
 }
 
 /** Returns parsed data only (convenience wrapper). */

@@ -1,6 +1,6 @@
-import type { ZodSchema } from 'zod';
+import type { ZodType, ZodTypeDef } from 'zod';
 
-export type LlmProvider = 'NVIDIA';
+export type LlmProvider = 'NVIDIA' | 'GEMINI';
 
 export type LlmRole = 'extractor' | 'planner' | 'fast' | 'fallback';
 
@@ -17,7 +17,9 @@ export interface ChatJsonOptions<T> {
   stage: LlmStage;
   systemPrompt: string;
   userPrompt: string;
-  schema: ZodSchema<T>;
+  // Input type is `any` so `T` always binds to the schema's OUTPUT type, even
+  // when the schema uses preprocess/transform (input ≠ output).
+  schema: ZodType<T, ZodTypeDef, any>;
   schemaName: string;
   temperature?: number;
   maxTokens?: number;

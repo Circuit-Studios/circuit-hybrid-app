@@ -12,14 +12,13 @@ import type { ChatJsonOptions, ChatJsonResult, LlmChatProvider, LlmTokenUsage } 
 function modelForRole(role: ChatJsonOptions<unknown>['role']): string {
   switch (role) {
     case 'extractor':
-      return env.NVIDIA_MODEL_EXTRACTOR!;
+      return env.GEMINI_MODEL_EXTRACTOR!;
     case 'fast':
-      return env.NVIDIA_MODEL_FAST!;
+      return env.GEMINI_MODEL_FAST!;
     case 'fallback':
-      return env.NVIDIA_MODEL_FALLBACK ?? env.NVIDIA_MODEL_PLANNER!;
     case 'planner':
     default:
-      return env.NVIDIA_MODEL_PLANNER!;
+      return env.GEMINI_MODEL_PLANNER ?? env.GEMINI_MODEL_EXTRACTOR!;
   }
 }
 
@@ -37,23 +36,36 @@ function temperatureForRole(role: ChatJsonOptions<unknown>['role'], override?: n
   }
 }
 
-interface NvidiaCompletionResponse {
-  choices?: Array<{ message?: { content?: string | null } }>;
-  usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
-  error?: { message?: string };
+interface GeminiGenerateResponse {
+  candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  usageMetadata?: {
+    promptTokenCount?: number;
+    candidatesTokenCount?: number;
+    totalTokenCount?: number;
+  };
+  error?: { message?: string; status?: string };
 }
 
-function parseUsage(payload: NvidiaCompletionResponse): LlmTokenUsage | undefined {
-  if (!payload.usage) return undefined;
+function parseUsage(payload: GeminiGenerateResponse): LlmTokenUsage | undefined {
+  if (!payload.usageMetadata) return undefined;
   return {
-    inputTokens: payload.usage.prompt_tokens,
-    outputTokens: payload.usage.completion_tokens,
-    totalTokens: payload.usage.total_tokens,
+    inputTokens: payload.usageMetadata.promptTokenCount,
+    outputTokens: payload.usageMetadata.candidatesTokenCount,
+    totalTokens: payload.usageMetadata.totalTokenCount,
   };
 }
 
-export class NvidiaLlmProvider implements LlmChatProvider {
-  readonly name = 'NVIDIA' as const;
+function extractText(payload: GeminiGenerateResponse): string | undefined {
+  const parts = payload.candidates?.[0]?.content?.parts;
+  if (!parts || parts.length === 0) return undefined;
+  return parts
+    .map((p) => p.text ?? '')
+    .join('')
+    .trim();
+}
+
+export class GeminiLlmProvider implements LlmChatProvider {
+  readonly name = 'GEMINI' as const;
 
   async chatJson<T>(opts: ChatJsonOptions<T>): Promise<ChatJsonResult<T>> {
     const model = modelForRole(opts.role);
@@ -61,7 +73,7 @@ export class NvidiaLlmProvider implements LlmChatProvider {
     const started = Date.now();
 
     logger.debug(
-      { provider: 'NVIDIA', model, stage, promptChars: opts.userPrompt.length },
+      { provider: 'GEMINI', model, stage, promptChars: opts.userPrompt.length },
       'llm.begin',
     );
 
@@ -71,7 +83,7 @@ export class NvidiaLlmProvider implements LlmChatProvider {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         const isRepair = attempt > 0;
-        const repairModel = env.NVIDIA_MODEL_FAST!;
+        const repairModel = env.GEMINI_MODEL_FAST ?? model;
         const { data, usage } = isRepair
           ? await this.repairOnce(opts, repairModel, lastErr)
           : await this.requestOnce(opts, model);
@@ -79,7 +91,7 @@ export class NvidiaLlmProvider implements LlmChatProvider {
         const durationMs = Date.now() - started;
         await recordLlmRun(
           {
-            provider: 'NVIDIA',
+            provider: 'GEMINI',
             model,
             stage: isRepair ? 'json_repair' : String(stage),
             projectId: opts.projectId,
@@ -89,7 +101,7 @@ export class NvidiaLlmProvider implements LlmChatProvider {
           durationMs,
           usage,
         );
-        return { data, provider: 'NVIDIA', model, usage, durationMs };
+        return { data, provider: 'GEMINI', model, usage, durationMs };
       } catch (err) {
         lastErr = err;
         if (attempt >= maxAttempts - 1) {
@@ -97,7 +109,7 @@ export class NvidiaLlmProvider implements LlmChatProvider {
           const durationMs = Date.now() - started;
           await recordLlmRun(
             {
-              provider: 'NVIDIA',
+              provider: 'GEMINI',
               model,
               stage: String(stage),
               projectId: opts.projectId,
@@ -110,7 +122,7 @@ export class NvidiaLlmProvider implements LlmChatProvider {
           );
           throw err instanceof LlmError
             ? err
-            : new LlmError(message, { provider: 'NVIDIA', stage: String(stage), cause: err });
+            : new LlmError(message, { provider: 'GEMINI', stage: String(stage), cause: err });
         }
       }
     }
@@ -118,28 +130,30 @@ export class NvidiaLlmProvider implements LlmChatProvider {
     throw lastErr;
   }
 
-  private async nvidiaFetch(
+  private async geminiFetch(
+    model: string,
     body: Record<string, unknown>,
     stage: string,
-  ): Promise<NvidiaCompletionResponse> {
+  ): Promise<GeminiGenerateResponse> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), env.LLM_REQUEST_TIMEOUT_MS);
 
     try {
-      const response = await fetch(`${env.NVIDIA_BASE_URL}/chat/completions`, {
+      const url = `${env.GEMINI_BASE_URL}/models/${encodeURIComponent(model)}:generateContent`;
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${env.NVIDIA_API_KEY}`,
+          'x-goog-api-key': env.GEMINI_API_KEY ?? '',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(body),
         signal: controller.signal,
       });
 
-      const payload = (await response.json()) as NvidiaCompletionResponse;
+      const payload = (await response.json()) as GeminiGenerateResponse;
       if (!response.ok) {
-        throw new LlmError(payload.error?.message ?? `NVIDIA request failed (${response.status})`, {
-          provider: 'NVIDIA',
+        throw new LlmError(payload.error?.message ?? `Gemini request failed (${response.status})`, {
+          provider: 'GEMINI',
           statusCode: response.status,
           stage,
         });
@@ -147,8 +161,8 @@ export class NvidiaLlmProvider implements LlmChatProvider {
       return payload;
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
-        throw new LlmError(`NVIDIA request timed out after ${env.LLM_REQUEST_TIMEOUT_MS}ms`, {
-          provider: 'NVIDIA',
+        throw new LlmError(`Gemini request timed out after ${env.LLM_REQUEST_TIMEOUT_MS}ms`, {
+          provider: 'GEMINI',
           stage,
           cause: err,
         });
@@ -165,22 +179,23 @@ export class NvidiaLlmProvider implements LlmChatProvider {
   ): Promise<{ data: T; usage?: LlmTokenUsage }> {
     const stage = String(opts.stage ?? opts.schemaName);
     const body = {
-      model,
-      temperature: temperatureForRole(opts.role, opts.temperature),
-      max_tokens: opts.maxTokens,
-      messages: [
-        {
-          role: 'system',
-          content: `${opts.systemPrompt}\n\nRespond with valid JSON only for schema "${opts.schemaName}".`,
-        },
-        { role: 'user', content: opts.userPrompt },
-      ],
-      response_format: { type: 'json_object' },
+      systemInstruction: {
+        parts: [
+          {
+            text: `${opts.systemPrompt}\n\nRespond with valid JSON only for schema "${opts.schemaName}".`,
+          },
+        ],
+      },
+      contents: [{ role: 'user', parts: [{ text: opts.userPrompt }] }],
+      generationConfig: {
+        temperature: temperatureForRole(opts.role, opts.temperature),
+        responseMimeType: 'application/json',
+        ...(opts.maxTokens ? { maxOutputTokens: opts.maxTokens } : {}),
+      },
     };
 
-    const payload = await this.nvidiaFetch(body, stage);
-    const raw = payload.choices?.[0]?.message?.content;
-    const data = await parseAndValidate(raw, opts.schema, opts.schemaName);
+    const payload = await this.geminiFetch(model, body, stage);
+    const data = await parseAndValidate(extractText(payload), opts.schema, opts.schemaName);
     return { data, usage: parseUsage(payload) };
   }
 
@@ -191,18 +206,21 @@ export class NvidiaLlmProvider implements LlmChatProvider {
   ): Promise<{ data: T; usage?: LlmTokenUsage }> {
     const invalidSnippet = repairSnippetFromError(firstErr);
     const body = {
-      model,
-      temperature: 0,
-      messages: [
-        { role: 'system', content: JSON_REPAIR_SYSTEM_PROMPT },
-        { role: 'user', content: buildJsonRepairUserPrompt(opts.schemaName, invalidSnippet) },
+      systemInstruction: { parts: [{ text: JSON_REPAIR_SYSTEM_PROMPT }] },
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: buildJsonRepairUserPrompt(opts.schemaName, invalidSnippet) }],
+        },
       ],
-      response_format: { type: 'json_object' },
+      generationConfig: {
+        temperature: 0,
+        responseMimeType: 'application/json',
+      },
     };
 
-    const payload = await this.nvidiaFetch(body, 'json_repair');
-    const raw = payload.choices?.[0]?.message?.content;
-    const data = await parseAndValidate(raw, opts.schema, opts.schemaName);
+    const payload = await this.geminiFetch(model, body, 'json_repair');
+    const data = await parseAndValidate(extractText(payload), opts.schema, opts.schemaName);
     return { data, usage: parseUsage(payload) };
   }
 }

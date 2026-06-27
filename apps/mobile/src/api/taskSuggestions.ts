@@ -27,17 +27,21 @@ export interface ShootingPlanRecord {
   risks: string[];
   plan: {
     summary?: string;
-    totalShootDays?: number;
-    risks?: string[];
-    days?: Array<{
+    assumptions?: string[];
+    riskSummary?: string;
+    recommendedNextSteps?: string[];
+    shootDays?: Array<{
       dayNumber: number;
-      title: string;
-      sceneNumbers: string[];
       location?: string | null;
-      notes?: string | null;
-      estimatedHours?: number | null;
+      timeOfDay?: string | null;
+      sceneNumbers: string[];
+      keyCast?: string[];
+      departmentsNeeded?: string[];
+      estimatedComplexity?: 'LOW' | 'MEDIUM' | 'HIGH';
+      directorNotes?: string | null;
+      risks?: string[];
+      prepTasks?: string[];
     }>;
-    optimizationNotes?: string[];
   };
 }
 
@@ -48,6 +52,17 @@ export async function getShootingPlan(
   const { data } = await api.get<{ plan: ShootingPlanRecord }>(
     `/projects/${projectId}/shooting-plan`,
     { params: scriptId ? { scriptId } : undefined },
+  );
+  return data;
+}
+
+export async function applyShootingPlanToSchedule(
+  projectId: string,
+  scriptId?: string,
+): Promise<{ created: number; skipped: number }> {
+  const { data } = await api.post<{ created: number; skipped: number }>(
+    `/projects/${projectId}/shooting-plan/apply`,
+    scriptId ? { scriptId } : {},
   );
   return data;
 }

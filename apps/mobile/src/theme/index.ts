@@ -5,6 +5,14 @@ export { colors, spacing, radius, typography, tabBar, auth } from './tokens';
 export { authTypography, authFieldLabelStyle } from './authTypography';
 export type { Colors, Spacing } from './tokens';
 export { shadows } from './shadows';
+export {
+  priorityMeta,
+  taskStatusMeta,
+  conflictSeverityMeta,
+  sceneStrip,
+  sceneStripColor,
+  type Tone,
+} from './semantics';
 export { fieldStyles } from './fields';
 export { authFormStyles } from './authForm';
 export { authLayout } from './authLayout';
