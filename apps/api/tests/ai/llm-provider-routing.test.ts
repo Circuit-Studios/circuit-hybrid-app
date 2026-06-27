@@ -1,14 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-describe('getLlmProvider routing', () => {
+describe('getLlmProvider', () => {
   afterEach(() => {
     vi.resetModules();
   });
 
-  it('selects NVIDIA provider when LLM_PROVIDER=NVIDIA', async () => {
-    vi.doMock('../../src/config/env.js', () => ({
-      env: { LLM_PROVIDER: 'NVIDIA' },
-    }));
+  it('returns the NVIDIA provider when the feature flag is enabled', async () => {
     vi.doMock('../../src/config/features.js', () => ({
       isFeatureEnabled: vi.fn().mockResolvedValue(true),
     }));

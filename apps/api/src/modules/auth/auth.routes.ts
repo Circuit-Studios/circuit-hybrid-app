@@ -22,8 +22,10 @@ import { hashPassword, verifyPassword } from './password.service.js';
 import { OTP_RESEND_COOLDOWN_SECONDS, OTP_TTL_SECONDS } from './auth.constants.js';
 import { assertLoginChannel, assertSignupChannel } from './verification-policy.js';
 import {
+  activeAuthOtpWhere,
   authOtpDeleteByEmailTargetWhere,
   authOtpDeleteByPhoneTargetWhere,
+  consumeAuthOtpData,
 } from './auth-otp.store.js';
 import { normalizeEmail } from './otp-crypto.js';
 import {
@@ -227,16 +229,11 @@ authPublicRouter.post(
     const passwordHash = await hashPassword(newPassword);
     await prisma.$transaction([
       prisma.user.update({ where: { id: user.id }, data: { passwordHash } }),
-      // Invalidate any other outstanding reset codes for this account.
-      // TODO: use auth-otp.store helpers — AuthOtp is the single OTP table (see docs/OTP_STORAGE.md).
       prisma.authOtp.updateMany({
         where: {
-          channel: OtpChannel.EMAIL,
-          target: normalizedEmail,
-          purpose: OtpPurpose.PASSWORD_RESET,
-          consumed: false,
+          ...activeAuthOtpWhere(OtpChannel.EMAIL, normalizedEmail, OtpPurpose.PASSWORD_RESET),
         },
-        data: { consumed: true, consumedAt: new Date() },
+        data: consumeAuthOtpData(new Date()),
       }),
     ]);
 

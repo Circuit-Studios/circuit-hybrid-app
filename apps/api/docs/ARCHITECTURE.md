@@ -223,14 +223,14 @@ sequenceDiagram
 5. `pino-http` — request log line, skips `/health`
    **Auth API (public):**
 
-| Route                    | Purpose                                                         |
-| ------------------------ | --------------------------------------------------------------- |
-| `POST /auth/request-otp` | Signup/login OTP (`purpose`: `signup` or `login`) |
-| `POST /auth/verify-otp`  | Verify signup/login OTP → session JWT              |
-| `POST /email/request-otp` | Post-account email verification (send code)       |
-| `POST /email/verify-otp`  | Confirm email verification → `emailVerified`      |
-| `POST /auth/login`       | Email + password sign-in                                        |
-| `POST /auth/register`    | Local dev only (`APP_ENV=local` + `ALLOW_DIRECT_REGISTER=true`) |
+| Route                     | Purpose                                                         |
+| ------------------------- | --------------------------------------------------------------- |
+| `POST /auth/request-otp`  | Signup/login OTP (`purpose`: `signup` or `login`)               |
+| `POST /auth/verify-otp`   | Verify signup/login OTP → session JWT                           |
+| `POST /email/request-otp` | Post-account email verification (send code)                     |
+| `POST /email/verify-otp`  | Confirm email verification → `emailVerified`                    |
+| `POST /auth/login`        | Email + password sign-in                                        |
+| `POST /auth/register`     | Local dev only (`APP_ENV=local` + `ALLOW_DIRECT_REGISTER=true`) |
 
 6. **Public routes:** `/health`, `/auth/*` (see table above), `/app/config`
    (rate-limited 10 req/min in prod)

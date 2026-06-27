@@ -3,8 +3,7 @@ import { defineConfig } from 'vitest/config';
 // Vitest config for backend.
 //
 // We set process.env defaults here so importing `src/config/env.ts` doesn't
-// blow up under test. Real secrets are never needed — the AI tests mock
-// `openai` and the few DB tests we have mock `@prisma/client`.
+// blow up under test. Real secrets are never needed — AI tests mock `fetch`.
 
 process.env.NODE_ENV ??= 'test';
 process.env.LOG_LEVEL ??= 'warn';
@@ -12,10 +11,11 @@ process.env.JWT_SECRET ??= 'test-secret-please-ignore-32-chars-min';
 process.env.JWT_ISSUER ??= 'circuit-test';
 process.env.JWT_AUDIENCE ??= 'circuit-test-mobile';
 process.env.DATABASE_URL ??= 'postgresql://test:test@localhost:5432/circuit_test';
-process.env.OPENAI_API_KEY ??= 'sk-test';
-process.env.OPENAI_MODEL ??= 'gpt-4o-test';
-process.env.OPENAI_MODEL_FAST ??= 'gpt-4o-mini-test';
-process.env.LLM_PROVIDER ??= 'OPENAI';
+process.env.LLM_PROVIDER ??= 'NVIDIA';
+process.env.NVIDIA_API_KEY ??= 'nvapi-test';
+process.env.NVIDIA_MODEL_PLANNER ??= 'nvidia/test-planner';
+process.env.NVIDIA_MODEL_EXTRACTOR ??= 'nvidia/test-extractor';
+process.env.NVIDIA_MODEL_FAST ??= 'nvidia/test-fast';
 process.env.APP_ENV ??= 'local';
 process.env.EMAIL_OTP_PROVIDER ??= 'MOCK';
 process.env.PHONE_OTP_PROVIDER ??= 'MOCK';

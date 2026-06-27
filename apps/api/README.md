@@ -2,7 +2,7 @@
 
 Node.js + Express + Prisma + Postgres backend for the Circuit MVP.
 
-Supports **OpenAI** or **NVIDIA NIM** for script analysis via `LLM_PROVIDER` (see [`../../docs/ENVIRONMENT.md`](../../docs/ENVIRONMENT.md#llm-provider-openai--nvidia-nim)).
+Uses **NVIDIA NIM** for script analysis (`LLM_PROVIDER=NVIDIA`). Email OTP uses Resend via raw `fetch` when configured. See [`../../docs/ENVIRONMENT.md`](../../docs/ENVIRONMENT.md).
 
 ## Quick start (local)
 
@@ -14,7 +14,7 @@ npm run setup:env
 
 docker compose up -d
 npm run db:prepare:dev
-npm run dev               # http://localhost:3009
+npm run dev # http://localhost:3009
 curl http://localhost:3009/health
 ```
 

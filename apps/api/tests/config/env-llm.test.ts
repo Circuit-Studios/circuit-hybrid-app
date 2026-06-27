@@ -8,11 +8,10 @@ describe('LLM env validation', () => {
     vi.resetModules();
   });
 
-  it('requires NVIDIA_API_KEY when LLM_PROVIDER=NVIDIA', async () => {
+  it('requires NVIDIA_API_KEY', async () => {
     process.env.LLM_PROVIDER = 'NVIDIA';
     process.env.NVIDIA_MODEL_PLANNER = 'nvidia/test';
     delete process.env.NVIDIA_API_KEY;
-    process.env.OPENAI_API_KEY = 'sk-test';
 
     const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
     const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
@@ -29,7 +28,6 @@ describe('LLM env validation', () => {
     process.env.NVIDIA_MODEL_PLANNER = 'nvidia/planner-model';
     process.env.NVIDIA_MODEL_EXTRACTOR = 'nvidia/extractor-model';
     delete process.env.NVIDIA_MODEL_FAST;
-    process.env.OPENAI_API_KEY = 'sk-test';
 
     const { env } = await import('../../src/config/env.js');
     expect(env.NVIDIA_MODEL_EXTRACTOR).toBe('nvidia/extractor-model');

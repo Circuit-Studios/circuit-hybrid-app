@@ -17,7 +17,7 @@ Monorepo for **Circuit** — film production planning (Expo mobile + Node.js API
 git clone git@github.com:Circuit-Studios/circuit-hybrid-app.git
 cd circuit-hybrid-app
 npm install
-npm run setup:env          # creates mobile + api env files if missing
+npm run setup:env # creates mobile + api env files if missing
 # npm run setup:env:api    # only when running the API locally (Workflow B)
 # npm run setup:env:mobile # mobile only (same as setup:env for mobile file)
 ```
@@ -43,7 +43,7 @@ Full guide: **[docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md)** · All docs: **[doc
 cd apps/api
 docker compose up -d
 npm run db:prepare:dev
-npm run dev          # http://localhost:3009
+npm run dev # http://localhost:3009
 ```
 
 From repo root: `npm run api:dev`
@@ -57,7 +57,7 @@ From repo root: `npm run api:dev`
 ### 4. Mobile
 
 ```bash
-npm run mobile       # or: npm run dev:mobile
+npm run mobile # or: npm run dev:mobile
 ```
 
 First-time iOS native setup: [`apps/mobile/README.md`](./apps/mobile/README.md)

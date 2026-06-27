@@ -16,7 +16,6 @@ const DEFAULT_CONFIG: PublicAppConfig = {
   loginIdentifier: 'EMAIL',
   features: {
     'scripts.upload': true,
-    'scripts.aiAnalysis': true,
     'scripts.shootingPlan': true,
     'scripts.taskSuggestions': true,
     'llm.nvidia': true,

@@ -45,9 +45,7 @@ export function validateOtpSession(session: OtpSession | null | undefined): OtpS
   return { ok: true, session };
 }
 
-export function buildVerifySignupPayload(
-  session: OtpSignupSession,
-): {
+export function buildVerifySignupPayload(session: OtpSignupSession): {
   firstName: string;
   lastName: string;
   role: UserRole;

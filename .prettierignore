@@ -5,3 +5,11 @@ coverage
 package-lock.json
 *.tsbuildinfo
 apps/api/prisma/migrations
+
+# Local secrets — never format (templates .env.example are formatted via Prettier)
+.env
+**/.env
+**/.env.development
+**/.env.local
+**/.env.production
+**/.env.test

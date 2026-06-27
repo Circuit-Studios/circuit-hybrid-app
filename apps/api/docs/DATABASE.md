@@ -114,31 +114,27 @@ The signed-up human. Phone-first; email + password are optional.
 
 Unified OTP storage for phone and email. Plain codes are never stored — only `codeHash`.
 
-| Column       | Type                      | Notes                                              |
-| ------------ | ------------------------- | -------------------------------------------------- |
-| `id`         | `String` `PK`             | UUID                                               |
-| `userId`     | `String?` `FK → User.id`  | null on first sign-in                              |
-| `channel`    | `OtpChannel`              | `PHONE` or `EMAIL`                                 |
-| `target`     | `String?`                 | E.164 phone or normalized email                    |
-| `phone`      | `String?`                 | legacy mirror for phone rows (kept for compat)     |
-| `purpose`    | `OtpPurpose`              | `SIGNUP`, `LOGIN`, or `VERIFY_EMAIL`               |
-| `codeHash`   | `String`                  | HMAC-SHA256 of the 6-digit code                    |
-| `attempts`   | `Int` default `0`         | failed verify count                                |
-| `expiresAt`  | `DateTime`                | now + 5 minutes                                    |
-| `consumed`   | `Boolean` default `false` | legacy flag — prefer `consumedAt`                  |
-| `consumedAt` | `DateTime?`               | set when verified or superseded by a newer request |
-| `createdAt`  | `DateTime`                |                                                    |
+| Column       | Type                     | Notes                                               |
+| ------------ | ------------------------ | --------------------------------------------------- |
+| `id`         | `String` `PK`            | UUID                                                |
+| `userId`     | `String?` `FK → User.id` | null on first sign-in                               |
+| `channel`    | `OtpChannel`             | `PHONE` or `EMAIL`                                  |
+| `target`     | `String`                 | E.164 phone or normalized email                     |
+| `purpose`    | `OtpPurpose`             | `SIGNUP`, `LOGIN`, `VERIFY_EMAIL`, `PASSWORD_RESET` |
+| `codeHash`   | `String`                 | HMAC-SHA256 of the 6-digit code                     |
+| `attempts`   | `Int` default `0`        | failed verify count                                 |
+| `expiresAt`  | `DateTime`               | now + 5 minutes                                     |
+| `consumedAt` | `DateTime?`              | set when verified or superseded by a newer request  |
+| `createdAt`  | `DateTime`               |                                                     |
 
 **Indexes:** `(channel, target, purpose, consumedAt)`, `(expiresAt)`.
-
-Legacy columns `phone` and `consumed` remain for backward compatibility but are not used by new code paths.
 
 **OTP notes**
 
 - **Single table:** all phone and email OTPs use `AuthOtp` (`channel`, `target`, `purpose`).
   The legacy `EmailOtp` / `email_otps` table was removed (`20260624120000_drop_email_otps`).
+  Legacy `phone` / `consumed` columns were dropped (`20260624210000_auth_otp_drop_legacy_columns`).
   **Do not** add a second OTP model or channel-specific storage — see [OTP_STORAGE.md](./OTP_STORAGE.md).
-- **TODO:** remove legacy `phone` / `consumed` columns once all readers use `target` + `consumedAt` only.
 - **Attempt counting:** email and phone share `otp.service.ts` — each failed code increments
   `attempts` until `OTP_MAX_ATTEMPTS` (5). Resend cooldown is rate-limit only.
 - **Logging:** use `targetMasked`, `emailMasked`, `phoneMasked` — never raw targets
@@ -502,10 +498,10 @@ sequenceDiagram
   participant DB
 
   App->>API: POST /auth/request-otp { phone }
-  API->>DB: insert AuthOtp { phone, codeHash, expiresAt }
+  API->>DB: insert AuthOtp { channel, target, codeHash, expiresAt }
   App->>API: POST /auth/verify-otp { phone, code, signup }
-  API->>DB: select AuthOtp where phone & not consumed
-  API->>DB: update AuthOtp set consumed = true
+  API->>DB: select AuthOtp where target & consumedAt is null
+  API->>DB: update AuthOtp set consumedAt = now()
   API->>DB: insert User { phone, name, defaultRole }
   API->>DB: update ProjectMember set userId = $1 where inviteePhone = $phone
   App->>API: POST /projects
@@ -642,7 +638,7 @@ WHERE "userId" = $1 AND "readAt" IS NULL;
 | Table               | Indexes                                                                         |
 | ------------------- | ------------------------------------------------------------------------------- |
 | `User`              | `phone` unique, `email` unique                                                  |
-| `AuthOtp`           | `(phone, consumed)`, `(expiresAt)`                                              |
+| `AuthOtp`           | `(channel, target, purpose, consumedAt)`, `(expiresAt)`                         |
 | `PushToken`         | `token` unique, `(userId)`, `(deviceId)`                                        |
 | `Project`           | `(ownerUserId)`                                                                 |
 | `ProjectMember`     | unique `(projectId, userId, role)`, `(userId)`, `(projectId)`, `(inviteePhone)` |

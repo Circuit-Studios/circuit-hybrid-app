@@ -32,3 +32,11 @@ export function assertProductionOtpProviders(config: Env): void {
     process.exit(1);
   }
 }
+
+/** Direct register must never be enabled in production — remove route before App Store. */
+export function assertProductionDirectRegisterDisabled(config: Env): void {
+  if (config.APP_ENV === 'prod' && config.ALLOW_DIRECT_REGISTER) {
+    console.error('APP_ENV=prod cannot start with ALLOW_DIRECT_REGISTER=true.');
+    process.exit(1);
+  }
+}

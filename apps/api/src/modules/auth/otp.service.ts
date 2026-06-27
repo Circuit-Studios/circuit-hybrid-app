@@ -89,7 +89,6 @@ async function issueOtp(
     data: {
       channel,
       target: normalized,
-      phone: channel === OtpChannel.PHONE ? normalized : undefined,
       purpose: otpPurpose,
       codeHash,
       expiresAt,

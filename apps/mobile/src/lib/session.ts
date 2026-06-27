@@ -52,9 +52,7 @@ export function isIdleSessionExpired(lastActivityAtMs: number, now = Date.now())
   return now - lastActivityAtMs >= IDLE_TIMEOUT_MS;
 }
 
-export function isScriptAnalysisInProgress(
-  status: ScriptAnalysisStatus | undefined,
-): boolean {
+export function isScriptAnalysisInProgress(status: ScriptAnalysisStatus | undefined): boolean {
   if (status == null) return false;
   return status !== 'COMPLETED' && status !== 'FAILED';
 }

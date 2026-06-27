@@ -5,9 +5,6 @@ import { OtpChannel, OtpPurpose } from '@prisma/client';
  *
  * All OTP persistence goes through AuthOtp — never EmailOtp or channel-specific tables.
  * Issue/verify logic: otp.service.ts. Policy: docs/OTP_STORAGE.md
- *
- * TODO: add helpers here for any direct prisma.authOtp usage in auth.routes.ts
- * (e.g. password-reset invalidation) so queries stay centralized.
  */
 export function activeAuthOtpWhere(
   channel: OtpChannel,
@@ -18,13 +15,12 @@ export function activeAuthOtpWhere(
   target: string;
   purpose: OtpPurpose;
   consumedAt: null;
-  consumed: false;
 } {
-  return { channel, target, purpose, consumedAt: null, consumed: false };
+  return { channel, target, purpose, consumedAt: null };
 }
 
-export function consumeAuthOtpData(at: Date): { consumedAt: Date; consumed: true } {
-  return { consumedAt: at, consumed: true };
+export function consumeAuthOtpData(at: Date): { consumedAt: Date } {
+  return { consumedAt: at };
 }
 
 /** AuthOtp rows keyed by email target (often userId=null — formerly EmailOtp). */
@@ -38,10 +34,7 @@ export function authOtpDeleteByEmailTargetWhere(email: string): {
 /** AuthOtp rows keyed by phone target (often userId=null). */
 export function authOtpDeleteByPhoneTargetWhere(phone: string): {
   channel: typeof OtpChannel.PHONE;
-  OR: Array<{ target: string } | { phone: string }>;
+  target: string;
 } {
-  return {
-    channel: OtpChannel.PHONE,
-    OR: [{ target: phone }, { phone }],
-  };
+  return { channel: OtpChannel.PHONE, target: phone };
 }

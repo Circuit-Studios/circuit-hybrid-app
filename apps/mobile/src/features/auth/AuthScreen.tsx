@@ -188,7 +188,18 @@ export default function AuthScreen() {
     ? metrics.totalMaxWidth!
     : Math.min(width - metrics.horizontalPadding * 2, metrics.contentMaxWidth);
 
-  const scrollBottomPadding = metrics.bottomPadding + insets.bottom;
+  /** Room for error + hint lines above the pinned CTA (not logged). */
+  const STICKY_FEEDBACK_RESERVE = 52;
+  const useStickyFooter = !metrics.isLandscapeTwoColumn;
+
+  const scrollBottomPadding = useStickyFooter
+    ? metrics.stickyFooterPaddingTop +
+      metrics.stickyFooterHeight +
+      metrics.stickyCtaBottomOffset +
+      insets.bottom +
+      (isSignup ? metrics.signupScrollPaddingBottom : metrics.scrollBottomReserve) +
+      STICKY_FEEDBACK_RESERVE
+    : metrics.bottomPadding + insets.bottom;
 
   const handleCtaPress = useCallback(() => {
     setAttempted(true);
@@ -264,7 +275,7 @@ export default function AuthScreen() {
   const submitBlock = (
     <>
       {feedbackBlock}
-      <View style={{ marginTop: metrics.ctaMarginTop }}>
+      <View style={useStickyFooter ? undefined : { marginTop: metrics.ctaMarginTop }}>
         <AuthPrimaryButton
           title={ctaLabel}
           disabled={!canSubmit || submitting}
@@ -300,7 +311,6 @@ export default function AuthScreen() {
       <AuthHeader />
       <AuthSegmentControl value={tab} onChange={switchTab} compact={isSignup} />
       {formBlock}
-      {submitBlock}
     </>
   );
 
@@ -328,7 +338,6 @@ export default function AuthScreen() {
                 paddingTop: metrics.topPadding,
                 paddingHorizontal: metrics.horizontalPadding,
                 paddingBottom: scrollBottomPadding,
-                flexGrow: isSignup ? undefined : 1,
               },
             ]}
             keyboardShouldPersistTaps="handled"
@@ -338,6 +347,20 @@ export default function AuthScreen() {
           >
             <View style={[styles.inner, { maxWidth: contentMaxWidth }]}>{mainContent}</View>
           </ScrollView>
+          {useStickyFooter ? (
+            <View
+              style={[
+                styles.stickyFooter,
+                {
+                  paddingHorizontal: metrics.horizontalPadding,
+                  paddingTop: metrics.stickyFooterPaddingTop,
+                  paddingBottom: insets.bottom + metrics.stickyCtaBottomOffset,
+                },
+              ]}
+            >
+              <View style={[styles.inner, { maxWidth: contentMaxWidth }]}>{submitBlock}</View>
+            </View>
+          ) : null}
         </KeyboardAvoidingView>
       </View>
     </AuthMetricsProvider>
@@ -359,6 +382,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     width: '100%',
     alignSelf: 'center',
+  },
+  stickyFooter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: authPalette.bg,
   },
   passwordField: { marginBottom: 0 },
   forgotLink: {

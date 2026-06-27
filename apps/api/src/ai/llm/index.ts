@@ -1,7 +1,5 @@
-import { env } from '../../config/env.js';
 import { isFeatureEnabled } from '../../config/features.js';
 import { NvidiaLlmProvider } from './nvidia.client.js';
-import { OpenAiLlmProvider } from './openai.client.js';
 import type { ChatJsonOptions, ChatJsonResult, LlmChatProvider } from './types.js';
 
 export type {
@@ -25,16 +23,14 @@ export function resetLlmProviderForTests(): void {
 export async function getLlmProvider(): Promise<LlmChatProvider> {
   if (cachedProvider) return cachedProvider;
 
-  if (env.LLM_PROVIDER === 'NVIDIA') {
-    const nvidiaEnabled = await isFeatureEnabled('llm.nvidia');
-    if (!nvidiaEnabled) {
-      throw new Error('NVIDIA LLM provider is disabled by feature flag');
-    }
-    cachedProvider = new NvidiaLlmProvider();
-    return cachedProvider;
+  const nvidiaEnabled = await isFeatureEnabled('llm.nvidia');
+  if (!nvidiaEnabled) {
+    throw new Error(
+      'NVIDIA LLM is disabled (feature flag llm.nvidia). Enable it in feature_flags or run prisma migrate deploy.',
+    );
   }
 
-  cachedProvider = new OpenAiLlmProvider();
+  cachedProvider = new NvidiaLlmProvider();
   return cachedProvider;
 }
 

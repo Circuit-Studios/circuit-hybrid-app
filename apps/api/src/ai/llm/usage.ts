@@ -3,7 +3,7 @@ import { prisma } from '../../lib/prisma.js';
 import type { LlmTokenUsage } from './types.js';
 
 export interface LlmRunContext {
-  provider: 'OPENAI' | 'NVIDIA';
+  provider: 'NVIDIA';
   model: string;
   stage: string;
   projectId?: string;

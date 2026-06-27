@@ -2,7 +2,6 @@ import { BackgroundJobKind, BackgroundJobStatus } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { logger } from '../lib/logger.js';
 import { isFeatureEnabled } from '../config/features.js';
-import { analyzeScript } from '../ai/pipelines/script-analysis.pipeline.js';
 import { runShootingPlanPipeline } from '../ai/pipelines/shooting-plan.pipeline.js';
 
 export async function createScriptAnalysisJob(scriptId: string, projectId: string) {
@@ -16,24 +15,12 @@ export async function createScriptAnalysisJob(scriptId: string, projectId: strin
   });
 }
 
-/**
- * Runs script analysis jobs. Prefers the batched shooting-plan pipeline when enabled;
- * falls back to legacy 6-stage analyzeScript only when shooting plan is off.
- */
+/** Runs the batched shooting-plan pipeline (scene split → suggestions → plan). */
 export async function runScriptAnalysisJob(scriptId: string): Promise<void> {
-  const shootingPlanEnabled = await isFeatureEnabled('scripts.shootingPlan');
-  if (shootingPlanEnabled) {
-    await runShootingPlanPipeline(scriptId);
-    return;
+  if (!(await isFeatureEnabled('scripts.shootingPlan'))) {
+    throw new Error('Shooting plan pipeline is disabled');
   }
-
-  const legacyEnabled = await isFeatureEnabled('scripts.aiAnalysis');
-  if (legacyEnabled) {
-    await analyzeScript(scriptId);
-    return;
-  }
-
-  throw new Error('No script analysis pipeline is enabled');
+  await runShootingPlanPipeline(scriptId);
 }
 
 export async function processBackgroundJob(jobId: string): Promise<void> {
@@ -53,13 +40,13 @@ export async function processBackgroundJob(jobId: string): Promise<void> {
   try {
     if (!job.scriptId) throw new Error('Script analysis job missing scriptId');
 
-    if (job.kind === BackgroundJobKind.SCRIPT_ANALYSIS) {
+    if (
+      job.kind === BackgroundJobKind.SCRIPT_ANALYSIS ||
+      job.kind === BackgroundJobKind.SHOOTING_PLAN
+    ) {
       await runScriptAnalysisJob(job.scriptId);
-    } else if (job.kind === BackgroundJobKind.SHOOTING_PLAN) {
-      if (!(await isFeatureEnabled('scripts.shootingPlan'))) {
-        throw new Error('Shooting plan pipeline is disabled');
-      }
-      await runShootingPlanPipeline(job.scriptId);
+    } else {
+      throw new Error(`Unsupported background job kind: ${job.kind}`);
     }
 
     await prisma.backgroundJob.update({

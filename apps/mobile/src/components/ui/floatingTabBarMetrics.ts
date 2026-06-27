@@ -6,12 +6,6 @@ export const FLOATING_TAB_BAR_HEIGHT = tabBar.height;
 /** Active icon yellow circle diameter. */
 export const FLOATING_TAB_BAR_ACTIVE_CIRCLE_SIZE = tabBar.activeCircleSize;
 
-/** @deprecated Use FLOATING_TAB_BAR_ACTIVE_CIRCLE_SIZE */
-export const FLOATING_TAB_BAR_ACTIVE_PILL_WIDTH = tabBar.activePillWidth;
-
-/** @deprecated Use FLOATING_TAB_BAR_ACTIVE_CIRCLE_SIZE */
-export const FLOATING_TAB_BAR_ACTIVE_PILL_HEIGHT = tabBar.activePillHeight;
-
 /** Minimum touch target for each tab item (inactive well). */
 export const FLOATING_TAB_ITEM_MIN = tabBar.itemTouchMin;
 
