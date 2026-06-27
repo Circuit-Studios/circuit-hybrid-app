@@ -5,6 +5,12 @@ CREATE TYPE "PushPlatform" AS ENUM ('IOS', 'ANDROID', 'WEB');
 CREATE TYPE "UserRole" AS ENUM ('DIRECTOR', 'PRODUCER', 'EXECUTIVE_PRODUCER', 'LINE_PRODUCER', 'AD', 'DOP', 'DEPT_HEAD', 'CREW', 'ACTOR', 'VENDOR');
 
 -- CreateEnum
+CREATE TYPE "OtpChannel" AS ENUM ('PHONE', 'EMAIL');
+
+-- CreateEnum
+CREATE TYPE "OtpPurpose" AS ENUM ('SIGNUP', 'LOGIN', 'VERIFY_EMAIL', 'PASSWORD_RESET');
+
+-- CreateEnum
 CREATE TYPE "ProjectStage" AS ENUM ('PRE_PRODUCTION', 'PRODUCTION', 'POST_PRODUCTION');
 
 -- CreateEnum
@@ -12,6 +18,9 @@ CREATE TYPE "ProjectLanguage" AS ENUM ('TELUGU', 'HINDI', 'TAMIL', 'MALAYALAM', 
 
 -- CreateEnum
 CREATE TYPE "MembershipStatus" AS ENUM ('INVITED', 'ACTIVE', 'REMOVED');
+
+-- CreateEnum
+CREATE TYPE "SetStatus" AS ENUM ('ON_SET', 'EN_ROUTE', 'DONE', 'OFF');
 
 -- CreateEnum
 CREATE TYPE "ScriptAnalysisStatus" AS ENUM ('PENDING', 'EXTRACTING_TEXT', 'ANALYZING_CHARACTERS', 'ANALYZING_SCENES', 'ANALYZING_COMBINATIONS', 'SUGGESTING_DEPARTMENTS', 'ESTIMATING_SHOOT_DAYS', 'DRAFTING_BUDGET', 'COMPLETED', 'FAILED');
@@ -46,11 +55,24 @@ CREATE TYPE "NotificationChannel" AS ENUM ('PUSH', 'SMS', 'IN_APP');
 -- CreateEnum
 CREATE TYPE "NotificationKind" AS ENUM ('CONFLICT_ALERT', 'TASK_ASSIGNED', 'TASK_DUE_SOON', 'SHOOT_DAY_UPDATED', 'SHOOT_DAY_CALL', 'PROJECT_INVITE', 'AI_ANALYSIS_DONE', 'GENERIC');
 
+-- CreateEnum
+CREATE TYPE "BackgroundJobStatus" AS ENUM ('PENDING', 'RUNNING', 'SUCCEEDED', 'FAILED');
+
+-- CreateEnum
+CREATE TYPE "BackgroundJobKind" AS ENUM ('SCRIPT_ANALYSIS', 'SHOOTING_PLAN');
+
+-- CreateEnum
+CREATE TYPE "TaskSuggestionStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'CONVERTED');
+
+-- CreateEnum
+CREATE TYPE "LlmRunStatus" AS ENUM ('SUCCEEDED', 'FAILED');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
     "phone" TEXT,
     "email" TEXT,
+    "emailVerified" BOOLEAN NOT NULL DEFAULT false,
     "firstName" TEXT NOT NULL,
     "lastName" TEXT NOT NULL,
     "defaultRole" "UserRole" NOT NULL DEFAULT 'CREW',
@@ -78,13 +100,27 @@ CREATE TABLE "PushToken" (
 CREATE TABLE "AuthOtp" (
     "id" TEXT NOT NULL,
     "userId" TEXT,
-    "phone" TEXT NOT NULL,
+    "channel" "OtpChannel" NOT NULL DEFAULT 'PHONE',
+    "target" TEXT NOT NULL,
+    "purpose" "OtpPurpose" NOT NULL DEFAULT 'LOGIN',
     "codeHash" TEXT NOT NULL,
+    "attempts" INTEGER NOT NULL DEFAULT 0,
     "expiresAt" TIMESTAMP(3) NOT NULL,
-    "consumed" BOOLEAN NOT NULL DEFAULT false,
+    "consumedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "AuthOtp_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "feature_flags" (
+    "key" TEXT NOT NULL,
+    "enabled" BOOLEAN NOT NULL DEFAULT true,
+    "configJson" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "feature_flags_pkey" PRIMARY KEY ("key")
 );
 
 -- CreateTable
@@ -117,6 +153,9 @@ CREATE TABLE "ProjectMember" (
     "role" "UserRole" NOT NULL,
     "projectDepartmentId" TEXT,
     "status" "MembershipStatus" NOT NULL DEFAULT 'INVITED',
+    "setStatus" "SetStatus" NOT NULL DEFAULT 'OFF',
+    "setStatusNote" TEXT,
+    "setStatusUpdatedAt" TIMESTAMP(3),
     "invitedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "acceptedAt" TIMESTAMP(3),
 
@@ -323,6 +362,84 @@ CREATE TABLE "Notification" (
     CONSTRAINT "Notification_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "BackgroundJob" (
+    "id" TEXT NOT NULL,
+    "kind" "BackgroundJobKind" NOT NULL,
+    "status" "BackgroundJobStatus" NOT NULL DEFAULT 'PENDING',
+    "projectId" TEXT NOT NULL,
+    "scriptId" TEXT,
+    "payload" JSONB,
+    "error" TEXT,
+    "startedAt" TIMESTAMP(3),
+    "endedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "BackgroundJob_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TaskSuggestion" (
+    "id" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "scriptId" TEXT,
+    "shootingPlanId" TEXT,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "departmentKind" "DepartmentKind" NOT NULL,
+    "priority" "TaskPriority" NOT NULL DEFAULT 'MEDIUM',
+    "sceneNumbers" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "characterNames" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "rationale" TEXT,
+    "confidence" DOUBLE PRECISION,
+    "estimatedDueOffsetDays" INTEGER,
+    "status" "TaskSuggestionStatus" NOT NULL DEFAULT 'PENDING',
+    "convertedTaskId" TEXT,
+    "reviewedByUserId" TEXT,
+    "reviewedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TaskSuggestion_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ShootingPlan" (
+    "id" TEXT NOT NULL,
+    "projectId" TEXT NOT NULL,
+    "scriptId" TEXT NOT NULL,
+    "summary" TEXT NOT NULL,
+    "totalShootDays" INTEGER NOT NULL,
+    "assumptions" JSONB,
+    "status" TEXT NOT NULL DEFAULT 'DRAFT',
+    "risks" JSONB NOT NULL,
+    "plan" JSONB NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ShootingPlan_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "LlmRun" (
+    "id" TEXT NOT NULL,
+    "provider" TEXT NOT NULL,
+    "model" TEXT NOT NULL,
+    "stage" TEXT NOT NULL,
+    "projectId" TEXT,
+    "scriptId" TEXT,
+    "inputTokens" INTEGER,
+    "outputTokens" INTEGER,
+    "totalTokens" INTEGER,
+    "durationMs" INTEGER NOT NULL,
+    "status" "LlmRunStatus" NOT NULL,
+    "error" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "LlmRun_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_phone_key" ON "User"("phone");
 
@@ -339,7 +456,7 @@ CREATE INDEX "PushToken_userId_idx" ON "PushToken"("userId");
 CREATE INDEX "PushToken_deviceId_idx" ON "PushToken"("deviceId");
 
 -- CreateIndex
-CREATE INDEX "AuthOtp_phone_consumed_idx" ON "AuthOtp"("phone", "consumed");
+CREATE INDEX "AuthOtp_channel_target_purpose_consumedAt_idx" ON "AuthOtp"("channel", "target", "purpose", "consumedAt");
 
 -- CreateIndex
 CREATE INDEX "AuthOtp_expiresAt_idx" ON "AuthOtp"("expiresAt");
@@ -422,6 +539,33 @@ CREATE INDEX "Notification_userId_createdAt_idx" ON "Notification"("userId", "cr
 -- CreateIndex
 CREATE INDEX "Notification_projectId_idx" ON "Notification"("projectId");
 
+-- CreateIndex
+CREATE INDEX "BackgroundJob_projectId_status_idx" ON "BackgroundJob"("projectId", "status");
+
+-- CreateIndex
+CREATE INDEX "BackgroundJob_scriptId_idx" ON "BackgroundJob"("scriptId");
+
+-- CreateIndex
+CREATE INDEX "TaskSuggestion_projectId_status_idx" ON "TaskSuggestion"("projectId", "status");
+
+-- CreateIndex
+CREATE INDEX "TaskSuggestion_scriptId_idx" ON "TaskSuggestion"("scriptId");
+
+-- CreateIndex
+CREATE INDEX "ShootingPlan_projectId_idx" ON "ShootingPlan"("projectId");
+
+-- CreateIndex
+CREATE INDEX "ShootingPlan_scriptId_idx" ON "ShootingPlan"("scriptId");
+
+-- CreateIndex
+CREATE INDEX "LlmRun_projectId_createdAt_idx" ON "LlmRun"("projectId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "LlmRun_scriptId_createdAt_idx" ON "LlmRun"("scriptId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "LlmRun_provider_model_createdAt_idx" ON "LlmRun"("provider", "model", "createdAt");
+
 -- AddForeignKey
 ALTER TABLE "PushToken" ADD CONSTRAINT "PushToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -497,3 +641,41 @@ ALTER TABLE "BudgetLine" ADD CONSTRAINT "BudgetLine_projectId_fkey" FOREIGN KEY 
 -- AddForeignKey
 ALTER TABLE "Notification" ADD CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+-- AddForeignKey
+ALTER TABLE "BackgroundJob" ADD CONSTRAINT "BackgroundJob_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "BackgroundJob" ADD CONSTRAINT "BackgroundJob_scriptId_fkey" FOREIGN KEY ("scriptId") REFERENCES "Script"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaskSuggestion" ADD CONSTRAINT "TaskSuggestion_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaskSuggestion" ADD CONSTRAINT "TaskSuggestion_scriptId_fkey" FOREIGN KEY ("scriptId") REFERENCES "Script"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaskSuggestion" ADD CONSTRAINT "TaskSuggestion_shootingPlanId_fkey" FOREIGN KEY ("shootingPlanId") REFERENCES "ShootingPlan"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ShootingPlan" ADD CONSTRAINT "ShootingPlan_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ShootingPlan" ADD CONSTRAINT "ShootingPlan_scriptId_fkey" FOREIGN KEY ("scriptId") REFERENCES "Script"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LlmRun" ADD CONSTRAINT "LlmRun_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LlmRun" ADD CONSTRAINT "LlmRun_scriptId_fkey" FOREIGN KEY ("scriptId") REFERENCES "Script"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+
+-- Seed default feature flags (selectable in DB; code falls back to enabled when a row is missing).
+INSERT INTO "feature_flags" ("key", "enabled", "updatedAt") VALUES
+  ('scripts.upload', true, CURRENT_TIMESTAMP),
+  ('scripts.shootingPlan', true, CURRENT_TIMESTAMP),
+  ('scripts.taskSuggestions', true, CURRENT_TIMESTAMP),
+  ('team.invites', true, CURRENT_TIMESTAMP),
+  ('auth.emailOtp', true, CURRENT_TIMESTAMP),
+  ('auth.phoneOtp', true, CURRENT_TIMESTAMP),
+  ('notifications.push', true, CURRENT_TIMESTAMP)
+ON CONFLICT ("key") DO NOTHING;
