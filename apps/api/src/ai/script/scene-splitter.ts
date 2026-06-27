@@ -1,10 +1,16 @@
-export interface SplitScene {
+export type ScriptSceneChunk = {
   sceneNumber: string;
   slugline: string;
   text: string;
-}
+  startOffset: number;
+  endOffset: number;
+};
 
-const SLUGLINE_RE = /^(INT\.|EXT\.|INT\/EXT\.|I\/E\.|EXT\/INT\.|INT\.\/EXT\.|EST\.|SCENE\s+\d+)/i;
+/** @alias ScriptSceneChunk */
+export type SplitScene = ScriptSceneChunk;
+
+const SLUGLINE_RE =
+  /^(INT\.|EXT\.|INT\/EXT\.|I\/E\.|EXT\/INT\.|INT\.\/EXT\.|EST\.|INT\s+-|EXT\s+-|SCENE\s+\d+)/i;
 
 function normaliseSlugline(line: string): string {
   return line.trim().replace(/\s+/g, ' ');
@@ -20,14 +26,17 @@ function inferSceneNumber(index: number, slugline: string): string {
  * Deterministic screenplay splitter — breaks on sluglines like INT./EXT.
  * Used before LLM extraction so the model works on bounded scene chunks.
  */
-export function splitScenes(rawText: string): SplitScene[] {
-  const lines = rawText.replace(/\r\n/g, '\n').split('\n');
-  const scenes: SplitScene[] = [];
+export function splitScenes(rawText: string): ScriptSceneChunk[] {
+  const normalised = rawText.replace(/\r\n/g, '\n');
+  const lines = normalised.split('\n');
+  const scenes: ScriptSceneChunk[] = [];
   let currentSlug = '';
   let currentLines: string[] = [];
   let sceneIndex = 0;
+  let sceneStartOffset = 0;
+  let lineOffset = 0;
 
-  const flush = () => {
+  const flush = (endOffset: number) => {
     const text = currentLines.join('\n').trim();
     if (!currentSlug && !text) return;
     const slugline = currentSlug || 'UNHEADED SCENE';
@@ -35,6 +44,8 @@ export function splitScenes(rawText: string): SplitScene[] {
       sceneNumber: inferSceneNumber(sceneIndex, slugline),
       slugline,
       text: text || slugline,
+      startOffset: sceneStartOffset,
+      endOffset,
     });
     sceneIndex += 1;
     currentSlug = '';
@@ -42,30 +53,44 @@ export function splitScenes(rawText: string): SplitScene[] {
   };
 
   for (const line of lines) {
+    const lineStart = lineOffset;
+    const lineEnd = lineOffset + line.length;
     const trimmed = line.trim();
+
     if (SLUGLINE_RE.test(trimmed)) {
-      if (currentSlug || currentLines.length > 0) flush();
+      if (currentSlug || currentLines.length > 0) flush(lineStart);
       currentSlug = normaliseSlugline(trimmed);
+      sceneStartOffset = lineStart;
       currentLines.push(trimmed);
+      lineOffset = lineEnd + 1;
       continue;
     }
+
     if (currentSlug) currentLines.push(line);
+    lineOffset = lineEnd + 1;
   }
 
-  flush();
+  flush(normalised.length);
 
-  if (scenes.length === 0 && rawText.trim()) {
+  if (scenes.length === 0 && normalised.trim()) {
     scenes.push({
       sceneNumber: '1',
       slugline: 'FULL SCRIPT',
-      text: rawText.trim(),
+      text: normalised.trim(),
+      startOffset: 0,
+      endOffset: normalised.length,
     });
   }
 
   return dedupeSceneNumbers(scenes);
 }
 
-function dedupeSceneNumbers(scenes: SplitScene[]): SplitScene[] {
+/** Spec alias for splitScenes. */
+export function splitScriptIntoScenes(scriptText: string): ScriptSceneChunk[] {
+  return splitScenes(scriptText);
+}
+
+function dedupeSceneNumbers(scenes: ScriptSceneChunk[]): ScriptSceneChunk[] {
   const seen = new Map<string, number>();
   return scenes.map((scene) => {
     const base = scene.sceneNumber;

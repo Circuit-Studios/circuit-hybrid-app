@@ -1,3 +1,5 @@
+import type { ScriptAnalysisStatus } from '@/api/types';
+
 /** OTP signup verification window (server OTP_TTL_SECONDS). */
 export const OTP_TTL_MS = 5 * 60 * 1000;
 
@@ -6,6 +8,9 @@ export const IDLE_TIMEOUT_MS = 3 * 60 * 1000;
 
 /** How often we re-check idle timeout while signed in. */
 export const IDLE_CHECK_INTERVAL_MS = 15_000;
+
+/** How often foreground tasks refresh last-activity while running. */
+export const SESSION_KEEPALIVE_PULSE_MS = 30_000;
 
 function decodeBase64Url(value: string): string {
   const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
@@ -45,6 +50,13 @@ export function isSessionExpired(expiresAtMs: number, now = Date.now()): boolean
 
 export function isIdleSessionExpired(lastActivityAtMs: number, now = Date.now()): boolean {
   return now - lastActivityAtMs >= IDLE_TIMEOUT_MS;
+}
+
+export function isScriptAnalysisInProgress(
+  status: ScriptAnalysisStatus | undefined,
+): boolean {
+  if (status == null) return false;
+  return status !== 'COMPLETED' && status !== 'FAILED';
 }
 
 export function formatRemainingSession(seconds: number): string {

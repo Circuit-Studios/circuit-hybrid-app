@@ -247,6 +247,48 @@ Flags are cached server-side for 30 seconds.
 
 ---
 
+## LLM provider (OpenAI / NVIDIA NIM)
+
+LLM configuration is **API-only**. Never put `NVIDIA_API_KEY`, model IDs, or `LLM_PROVIDER` in mobile `.env` or `/app/config`.
+
+| Variable                  | Purpose                                                                                      |
+| ------------------------- | -------------------------------------------------------------------------------------------- |
+| `LLM_PROVIDER`            | `OPENAI` (default) or `NVIDIA`                                                               |
+| `NVIDIA_API_KEY`          | Required when `LLM_PROVIDER=NVIDIA` — set in Render dashboard or `apps/api/.env.development` |
+| `NVIDIA_BASE_URL`         | Default `https://integrate.api.nvidia.com/v1`                                                |
+| `NVIDIA_MODEL_EXTRACTOR`  | Scene extraction (defaults to planner if unset)                                              |
+| `NVIDIA_MODEL_PLANNER`    | Shooting plan + task suggestions (**required** for NVIDIA)                                   |
+| `NVIDIA_MODEL_FAST`       | Fast/helper calls (defaults to extractor)                                                    |
+| `NVIDIA_MODEL_FALLBACK`   | Optional repair/fallback model                                                               |
+| `LLM_MAX_SCRIPT_CHARS`    | Script text cap before analysis                                                              |
+| `LLM_MAX_CHUNK_CHARS`     | Scene batch size for extractor calls                                                         |
+| `LLM_*_TEMPERATURE`       | Per-role temperature defaults                                                                |
+| `LLM_JSON_REPAIR_RETRIES` | JSON repair attempts after invalid model output (default `1`)                                |
+| `LLM_REQUEST_TIMEOUT_MS`  | Per-request timeout (default `120000`)                                                       |
+
+**Recommended NVIDIA models** (configure via env — not hardcoded):
+
+- Extractor: `nvidia/nemotron-3-super-120b-a12b`
+- Planner: `nvidia/nemotron-3-ultra-550b-a55b`
+- Fast: `nvidia/nemotron-3-nano-30b-a3b`
+- Fallback: `nvidia/llama-3.1-nemotron-ultra-253b-v1`
+
+**Script planning pipeline** (after PDF upload + `POST /scripts/:id/analyze`):
+
+1. Extract PDF text
+2. Split into scenes
+3. Extract scene facts (characters, locations, risks)
+4. Generate **task suggestions** (`TaskSuggestion` rows, status `PENDING`)
+5. Generate **shooting plan** (`ShootingPlan` JSON, status `DRAFT`)
+
+AI output is **reviewable** — final `Task` rows are created only when a director approves a suggestion. No automatic `ShootDay` schedule is created from AI output.
+
+**Usage tracking:** every LLM call writes an `LlmRun` row (provider, model, stage, tokens, duration, status). Raw script text and prompts are never stored.
+
+**Feature flag:** `llm.nvidia` must be enabled when using `LLM_PROVIDER=NVIDIA`.
+
+---
+
 ## `.gitignore` rules
 
 These paths are never committed:

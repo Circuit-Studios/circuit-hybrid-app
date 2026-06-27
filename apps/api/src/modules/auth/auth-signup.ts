@@ -73,7 +73,9 @@ export async function findOrCreateUserAfterOtp(input: VerifyOtpBody): Promise<Us
         throw badRequest('Password is required to create an account');
       }
       const signupPassword = signupPasswordSchema.parse(input.signup.password);
-      await assertOptionalSignupIdentifiersAvailable(undefined, input.signup.phone);
+      const phone =
+        input.signup && 'phone' in input.signup ? input.signup.phone : undefined;
+      await assertOptionalSignupIdentifiersAvailable(undefined, phone);
       const existingEmail = await prisma.user.findUnique({ where: { email: input.email } });
       if (existingEmail) {
         throw conflict('An account with this email already exists');
@@ -82,7 +84,7 @@ export async function findOrCreateUserAfterOtp(input: VerifyOtpBody): Promise<Us
       user = await createSignupUser({
         email: input.email,
         emailVerified: true,
-        phone: input.signup.phone,
+        phone,
         firstName: input.signup.firstName,
         lastName: input.signup.lastName,
         defaultRole: input.signup.role,
@@ -108,7 +110,9 @@ export async function findOrCreateUserAfterOtp(input: VerifyOtpBody): Promise<Us
       throw badRequest('Password is required to create an account');
     }
     const signupPassword = signupPasswordSchema.parse(input.signup.password);
-    await assertOptionalSignupIdentifiersAvailable(input.signup.email, undefined);
+    const email =
+      input.signup && 'email' in input.signup ? input.signup.email : undefined;
+    await assertOptionalSignupIdentifiersAvailable(email, undefined);
     const existingPhone = await prisma.user.findUnique({ where: { phone: input.phone } });
     if (existingPhone) {
       throw conflict('An account with this phone number already exists');
@@ -116,8 +120,8 @@ export async function findOrCreateUserAfterOtp(input: VerifyOtpBody): Promise<Us
     const passwordHash = await hashPassword(signupPassword);
     user = await createSignupUser({
       phone: input.phone,
-      email: input.signup.email,
-      ...(input.signup.email ? { emailVerified: true } : {}),
+      email,
+      ...(email ? { emailVerified: true } : {}),
       firstName: input.signup.firstName,
       lastName: input.signup.lastName,
       defaultRole: input.signup.role,

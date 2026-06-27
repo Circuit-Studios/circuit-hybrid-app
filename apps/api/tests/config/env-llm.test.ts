@@ -23,16 +23,17 @@ describe('LLM env validation', () => {
     expect(exit).toHaveBeenCalledWith(1);
   });
 
-  it('defaults extractor/fast models to planner for NVIDIA', async () => {
+  it('defaults extractor to planner and fast to extractor for NVIDIA', async () => {
     process.env.LLM_PROVIDER = 'NVIDIA';
     process.env.NVIDIA_API_KEY = 'nvapi-test';
     process.env.NVIDIA_MODEL_PLANNER = 'nvidia/planner-model';
-    delete process.env.NVIDIA_MODEL_EXTRACTOR;
+    process.env.NVIDIA_MODEL_EXTRACTOR = 'nvidia/extractor-model';
     delete process.env.NVIDIA_MODEL_FAST;
     process.env.OPENAI_API_KEY = 'sk-test';
 
     const { env } = await import('../../src/config/env.js');
-    expect(env.NVIDIA_MODEL_EXTRACTOR).toBe('nvidia/planner-model');
-    expect(env.NVIDIA_MODEL_FAST).toBe('nvidia/planner-model');
+    expect(env.NVIDIA_MODEL_EXTRACTOR).toBe('nvidia/extractor-model');
+    expect(env.NVIDIA_MODEL_FAST).toBe('nvidia/extractor-model');
+    expect(env.NVIDIA_MODEL_FALLBACK).toBe('nvidia/planner-model');
   });
 });

@@ -8,6 +8,7 @@ import { asyncHandler, badRequest, forbidden, notFound } from '../../lib/http.js
 import { requireAuth } from '../../middleware/auth.js';
 import { requireFeature } from '../../middleware/require-feature.js';
 import { canEditScripts, getActiveMembership } from '../../auth/permissions.js';
+import { isFeatureEnabled } from '../../config/features.js';
 import { createScriptAnalysisJob, enqueueBackgroundJob } from '../../jobs/background-jobs.js';
 import { assertPdfMagicBytes, sanitizeDownloadFilename } from '../../lib/pdf-upload.js';
 import { getStorage } from '../../storage/index.js';
@@ -80,8 +81,13 @@ router.post(
 router.post(
   '/scripts/:scriptId/analyze',
   requireAuth,
-  requireFeature('scripts.aiAnalysis'),
   asyncHandler(async (req, res) => {
+    const shootingPlanEnabled = await isFeatureEnabled('scripts.shootingPlan');
+    const legacyAnalysisEnabled = await isFeatureEnabled('scripts.aiAnalysis');
+    if (!shootingPlanEnabled && !legacyAnalysisEnabled) {
+      throw forbidden('Script analysis is currently disabled');
+    }
+
     const scriptId = req.params.scriptId!;
     const userId = req.user!.sub;
 

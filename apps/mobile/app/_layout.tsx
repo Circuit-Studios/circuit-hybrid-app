@@ -9,6 +9,7 @@ import { useEffect, useMemo } from 'react';
 import { AuthProvider, useAuth } from '@/auth/AuthContext';
 import { AppConfigProvider } from '@/config/AppConfigContext';
 import { IdleActivityCapture } from '@/auth/IdleActivityCapture';
+import { ScriptAnalysisSessionKeepAlive } from '@/auth/ScriptAnalysisSessionKeepAlive';
 import { createQueryClient } from '@/lib/queryClient';
 import { RealtimeProvider } from '@/realtime/RealtimeProvider';
 import { colors } from '@/theme';
@@ -35,6 +36,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <AppConfigProvider>
             <AuthProvider>
+              <ScriptAnalysisSessionKeepAlive />
               <IdleActivityCapture>
                 <RealtimeProvider>
                   <StatusBar style="dark" />

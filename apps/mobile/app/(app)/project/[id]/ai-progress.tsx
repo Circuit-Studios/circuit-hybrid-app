@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { registerActiveScriptAnalysis } from '@/auth/activeScriptAnalysis';
+import { useKeepSessionAliveWhile } from '@/auth/useKeepSessionAliveWhile';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Card } from '@/components/Card';
@@ -9,11 +11,11 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { getAnalysis, triggerAnalysis } from '@/api/scripts';
 import { readApiError } from '@/api/client';
 import { qk } from '@/api/queryKeys';
+import { isScriptAnalysisInProgress } from '@/lib/session';
 import { colors, radius, spacing, typography } from '@/theme';
 import type { ScriptAnalysisStatus } from '@/api/types';
 
-// Mirrors the backend's ScriptAnalysisStatus enum and the 6 pipeline steps.
-// Each entry tells the UI: "if status === phase, this is the active line."
+// Batched shooting-plan pipeline stages (matches backend ScriptAnalysisStatus).
 interface PipelinePhase {
   status: ScriptAnalysisStatus;
   label: string;
@@ -27,34 +29,19 @@ const PIPELINE: PipelinePhase[] = [
     detail: 'Extracting clean text from the script.',
   },
   {
-    status: 'ANALYZING_CHARACTERS',
-    label: 'Mapping characters',
-    detail: 'Leads, supports, day-roles, screen time.',
-  },
-  {
     status: 'ANALYZING_SCENES',
     label: 'Breaking down scenes',
-    detail: 'INT/EXT · day/night · who appears where.',
-  },
-  {
-    status: 'ANALYZING_COMBINATIONS',
-    label: 'Finding combination scenes',
-    detail: 'Scenes to shoot together for fewer days.',
+    detail: 'Batched scene extraction — safe for long scripts.',
   },
   {
     status: 'SUGGESTING_DEPARTMENTS',
-    label: 'Suggesting departments',
-    detail: 'Only the departments your story needs.',
+    label: 'Task suggestions',
+    detail: 'Reviewable prep tasks by department.',
   },
   {
     status: 'ESTIMATING_SHOOT_DAYS',
-    label: 'Estimating shoot days',
-    detail: 'Per-actor day estimates and optimisation hints.',
-  },
-  {
-    status: 'DRAFTING_BUDGET',
-    label: 'Drafting your budget',
-    detail: 'Line items by department in ₹ INR.',
+    label: 'Shooting plan',
+    detail: 'Director-facing schedule draft.',
   },
 ];
 
@@ -69,6 +56,11 @@ function phaseIndex(status: ScriptAnalysisStatus): number {
 export default function AIProgressScreen() {
   const { id: projectId, scriptId } = useLocalSearchParams<{ id: string; scriptId?: string }>();
   const router = useRouter();
+
+  useEffect(() => {
+    if (!scriptId) return;
+    registerActiveScriptAnalysis(scriptId);
+  }, [scriptId]);
 
   const { data, error, refetch } = useQuery({
     queryKey: qk.analysis(scriptId!),
@@ -87,12 +79,19 @@ export default function AIProgressScreen() {
   const status = data?.script.analysisStatus;
   const currentIdx = status ? phaseIndex(status) : -1;
 
-  // When analysis finishes, jump to the results screen automatically.
+  useKeepSessionAliveWhile(isScriptAnalysisInProgress(status) || (!data && !!scriptId));
+
   useEffect(() => {
-    if (status === 'COMPLETED' && projectId && scriptId) {
+    if (status !== 'COMPLETED' || !projectId || !scriptId) return;
+    const summary = data?.summary;
+    const isLegacy =
+      summary != null && typeof summary === 'object' && 'characters' in summary;
+    if (isLegacy) {
       router.replace(`/(app)/project/${projectId}/ai-results?scriptId=${scriptId}`);
+    } else {
+      router.replace(`/(app)/project/${projectId}/director-review?scriptId=${scriptId}`);
     }
-  }, [status, projectId, scriptId, router]);
+  }, [status, projectId, scriptId, router, data?.summary]);
 
   async function handleRetry() {
     if (!scriptId) return;
@@ -111,10 +110,10 @@ export default function AIProgressScreen() {
         <Text style={styles.back}>‹ Back to project</Text>
       </Pressable>
 
-      <Text style={styles.title}>Analysing your script</Text>
+      <Text style={styles.title}>Building your shooting plan</Text>
       <Text style={styles.body}>
-        This usually takes 30–90 seconds depending on script length. You can leave the screen — we
-        keep working and you can come back any time.
+        This usually takes 1–3 minutes for long scripts. We process scenes in batches so full PDFs
+        stay reliable. You can leave the screen — we keep working.
       </Text>
 
       {status === 'FAILED' ? (

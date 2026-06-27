@@ -1,3 +1,4 @@
+import { File, UploadType } from 'expo-file-system';
 import { api, API_BASE_URL } from './client';
 import type { ScriptRecord, ScriptAnalysisResponse } from './types';
 import { logApiRequest, logApiResponse } from '@/lib/logger';
@@ -12,48 +13,50 @@ export interface UploadScriptOptions {
   onProgress?: (pct: number) => void;
 }
 
-// Uses FormData directly because the backend's `multer` middleware reads
-// `multipart/form-data` with a `script` field. We bypass axios for upload
-// because RN's FormData support behind axios has historically been flaky for
-// large binaries — `fetch` is the safest path here.
+// Native multipart upload via expo-file-system — avoids RN 0.85 FormData
+// "Unsupported FormDataPart implementation" when appending { uri, name, type }.
 export async function uploadScript(opts: UploadScriptOptions): Promise<ScriptRecord> {
   const token = await storage.getToken();
-  const form = new FormData();
-  // React Native's File-like blob shape for FormData.
-  form.append('script', {
-    uri: opts.fileUri,
-    name: opts.fileName,
-    type: opts.mimeType ?? 'application/pdf',
-  } as unknown as Blob);
-
   const url = `${API_BASE_URL}/projects/${opts.projectId}/scripts`;
   const { requestId, headers } = withRequestId({
-    Authorization: token ? `Bearer ${token}` : '',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   });
   const startTime = logApiRequest('POST', url, requestId);
 
-  const res = await fetch(url, {
-    method: 'POST',
+  const file = new File(opts.fileUri);
+  const result = await file.upload(url, {
+    uploadType: UploadType.MULTIPART,
+    fieldName: 'script',
+    mimeType: opts.mimeType ?? 'application/pdf',
     headers,
-    body: form,
+    onProgress: opts.onProgress
+      ? ({ bytesSent, totalBytes }) => {
+          if (totalBytes > 0) {
+            opts.onProgress!(Math.round((bytesSent / totalBytes) * 100));
+          }
+        }
+      : undefined,
   });
 
   logApiResponse(
     'POST',
     url,
-    res.status,
+    result.status,
     startTime,
-    readResponseRequestId(Object.fromEntries(res.headers.entries())) ?? requestId,
+    readResponseRequestId(result.headers) ?? requestId,
   );
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Upload failed (${res.status}): ${text}`);
+  if (result.status < 200 || result.status >= 300) {
+    throw new Error(`Upload failed (${result.status}): ${result.body}`);
   }
-  return res.json() as Promise<ScriptRecord>;
+
+  return JSON.parse(result.body) as ScriptRecord;
 }
 
+import { registerActiveScriptAnalysis } from '@/auth/activeScriptAnalysis';
+
 export async function triggerAnalysis(scriptId: string): Promise<void> {
+  registerActiveScriptAnalysis(scriptId);
   await api.post(`/scripts/${scriptId}/analyze`);
 }
 

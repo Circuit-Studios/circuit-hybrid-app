@@ -19,13 +19,17 @@ export async function extractPdfText(storageKey: string): Promise<ExtractedScrip
 
   const result = await pdfParse(buffer);
   return {
-    rawText: normalise(result.text),
+    rawText: sanitizeScriptText(result.text),
     pageCount: result.numpages,
   };
 }
 
-function normalise(text: string): string {
+/** Strip bytes Postgres TEXT/UTF-8 rejects (e.g. null from pdf-parse). */
+export function sanitizeScriptText(text: string): string {
   return text
+    .replace(/\0/g, '')
+    .replace(/[\x01-\x08\x0B\x0C\x0E-\x1F]/g, '')
+    .replace(/\uFFFD/g, '')
     .replace(/\r\n/g, '\n')
     .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')

@@ -1,6 +1,8 @@
 # Circuit Backend
 
-Node.js + Express + Prisma + Postgres + OpenAI backend for the Circuit MVP.
+Node.js + Express + Prisma + Postgres backend for the Circuit MVP.
+
+Supports **OpenAI** or **NVIDIA NIM** for script analysis via `LLM_PROVIDER` (see [`../../docs/ENVIRONMENT.md`](../../docs/ENVIRONMENT.md#llm-provider-openai--nvidia-nim)).
 
 ## Quick start (local)
 
