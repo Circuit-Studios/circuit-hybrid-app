@@ -1,7 +1,14 @@
 const activeScriptIds = new Set<string>();
 const listeners = new Set<() => void>();
+/** Stable snapshot for useSyncExternalStore — same reference until the set mutates. */
+let snapshot: string[] = [];
+
+function syncSnapshot(): void {
+  snapshot = Array.from(activeScriptIds);
+}
 
 function emit(): void {
+  syncSnapshot();
   for (const listener of listeners) listener();
 }
 
@@ -22,5 +29,5 @@ export function subscribeActiveScriptAnalyses(listener: () => void): () => void 
 }
 
 export function getActiveScriptAnalysisIds(): string[] {
-  return Array.from(activeScriptIds);
+  return snapshot;
 }

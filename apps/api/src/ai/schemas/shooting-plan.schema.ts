@@ -1,25 +1,32 @@
 import { z } from 'zod';
 import { estimatedComplexitySchema, sceneTimeOfDaySchema } from './scene-breakdown.schema.js';
+import {
+  tolerantInt,
+  tolerantNullableText,
+  tolerantObjectArray,
+  tolerantString,
+  tolerantStringList,
+} from './coerce.js';
 
 export const shootingPlanDaySchema = z.object({
-  dayNumber: z.number().int().min(1).max(300),
-  location: z.string().max(200).nullable(),
-  timeOfDay: sceneTimeOfDaySchema.nullable(),
-  sceneNumbers: z.array(z.string().min(1).max(16)).max(80),
-  keyCast: z.array(z.string().min(1).max(120)).max(40),
-  departmentsNeeded: z.array(z.string().min(1).max(80)).max(30),
-  estimatedComplexity: estimatedComplexitySchema,
-  directorNotes: z.string().max(800).nullable(),
-  risks: z.array(z.string().max(400)).max(15),
-  prepTasks: z.array(z.string().max(400)).max(20),
+  dayNumber: tolerantInt(1, 300, 1),
+  location: tolerantNullableText(200),
+  timeOfDay: sceneTimeOfDaySchema.nullable().catch(null),
+  sceneNumbers: tolerantStringList(80, 16),
+  keyCast: tolerantStringList(40, 120),
+  departmentsNeeded: tolerantStringList(30, 80),
+  estimatedComplexity: estimatedComplexitySchema.catch('MEDIUM'),
+  directorNotes: tolerantNullableText(800),
+  risks: tolerantStringList(15, 400),
+  prepTasks: tolerantStringList(20, 400),
 });
 
 export const shootingPlanResponseSchema = z.object({
-  summary: z.string().min(1).max(3000),
-  assumptions: z.array(z.string().max(500)).max(20),
-  shootDays: z.array(shootingPlanDaySchema).max(300),
-  riskSummary: z.string().max(2000),
-  recommendedNextSteps: z.array(z.string().max(400)).max(15),
+  summary: tolerantString(3000),
+  assumptions: tolerantStringList(20, 500),
+  shootDays: tolerantObjectArray(shootingPlanDaySchema, 300),
+  riskSummary: tolerantString(2000),
+  recommendedNextSteps: tolerantStringList(15, 400),
 });
 
 export type ShootingPlanDay = z.infer<typeof shootingPlanDaySchema>;

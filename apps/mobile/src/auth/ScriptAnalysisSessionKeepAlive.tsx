@@ -1,8 +1,9 @@
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useSyncExternalStore } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { getAnalysis } from '@/api/scripts';
 import { qk } from '@/api/queryKeys';
 import { isScriptAnalysisInProgress } from '@/lib/session';
+import type { ScriptAnalysisStatus } from '@/api/types';
 import {
   getActiveScriptAnalysisIds,
   subscribeActiveScriptAnalyses,
@@ -31,16 +32,32 @@ export function ScriptAnalysisSessionKeepAlive() {
     })),
   });
 
-  useEffect(() => {
-    if (!enabled) return;
-    for (const query of queries) {
-      const scriptId = query.data?.script.id;
-      const analysisStatus = query.data?.script.analysisStatus;
-      if (scriptId && !isScriptAnalysisInProgress(analysisStatus)) {
-        unregisterActiveScriptAnalysis(scriptId);
+  const analysisSnapshot = queries
+    .map((q) => `${q.data?.script.id ?? ''}:${q.data?.script.analysisStatus ?? ''}`)
+    .join('|');
+
+  const completedScriptIds = useMemo(() => {
+    const done: string[] = [];
+    if (!analysisSnapshot) return '';
+    for (const part of analysisSnapshot.split('|')) {
+      const [scriptId, analysisStatus] = part.split(':');
+      if (
+        scriptId &&
+        analysisStatus &&
+        !isScriptAnalysisInProgress(analysisStatus as ScriptAnalysisStatus)
+      ) {
+        done.push(scriptId);
       }
     }
-  }, [enabled, queries]);
+    return done.sort().join(',');
+  }, [analysisSnapshot]);
+
+  useEffect(() => {
+    if (!enabled || !completedScriptIds) return;
+    for (const scriptId of completedScriptIds.split(',')) {
+      if (scriptId) unregisterActiveScriptAnalysis(scriptId);
+    }
+  }, [enabled, completedScriptIds]);
 
   const keepAlive =
     enabled &&

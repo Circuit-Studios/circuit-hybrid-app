@@ -1,4 +1,10 @@
 import { z } from 'zod';
+import {
+  tolerantNullableText,
+  tolerantNumber,
+  tolerantString,
+  tolerantStringList,
+} from './coerce.js';
 
 export const interiorExteriorSchema = z.enum(['INT', 'EXT', 'INT_EXT', 'UNKNOWN']);
 export const sceneTimeOfDaySchema = z.enum([
@@ -12,33 +18,52 @@ export const sceneTimeOfDaySchema = z.enum([
 export const estimatedComplexitySchema = z.enum(['LOW', 'MEDIUM', 'HIGH']);
 
 export const extractedSceneFactSchema = z.object({
-  sceneNumber: z.string().min(1).max(16),
-  slugline: z.string().min(1).max(240),
-  location: z.string().max(160).nullable(),
-  interiorExterior: interiorExteriorSchema,
-  timeOfDay: sceneTimeOfDaySchema,
-  summary: z.string().max(800).nullable(),
-  characters: z.array(z.string().min(1).max(120)).max(40),
-  props: z.array(z.string().min(1).max(120)).max(40),
-  vehicles: z.array(z.string().min(1).max(120)).max(20),
-  animals: z.array(z.string().min(1).max(120)).max(20),
-  stunts: z.array(z.string().max(400)).max(10),
-  vfx: z.array(z.string().max(400)).max(10),
-  sfx: z.array(z.string().max(400)).max(10),
-  costumes: z.array(z.string().max(200)).max(20),
-  makeup: z.array(z.string().max(200)).max(20),
-  artDepartment: z.array(z.string().max(200)).max(20),
-  cameraLightingNotes: z.array(z.string().max(400)).max(10),
-  soundRisks: z.array(z.string().max(400)).max(10),
-  productionRisks: z.array(z.string().max(400)).max(10),
-  continuityNotes: z.array(z.string().max(400)).max(10),
-  estimatedComplexity: estimatedComplexitySchema,
-  confidence: z.number().min(0).max(1),
+  sceneNumber: tolerantString(16),
+  slugline: tolerantString(240),
+  location: tolerantNullableText(160),
+  interiorExterior: interiorExteriorSchema.catch('UNKNOWN'),
+  timeOfDay: sceneTimeOfDaySchema.catch('UNKNOWN'),
+  summary: tolerantNullableText(800),
+  characters: tolerantStringList(40, 120),
+  props: tolerantStringList(40, 120),
+  vehicles: tolerantStringList(20, 120),
+  animals: tolerantStringList(20, 120),
+  stunts: tolerantStringList(10, 400),
+  vfx: tolerantStringList(10, 400),
+  sfx: tolerantStringList(10, 400),
+  costumes: tolerantStringList(20, 200),
+  makeup: tolerantStringList(20, 200),
+  artDepartment: tolerantStringList(20, 200),
+  cameraLightingNotes: tolerantStringList(10, 400),
+  soundRisks: tolerantStringList(10, 400),
+  productionRisks: tolerantStringList(10, 400),
+  continuityNotes: tolerantStringList(10, 400),
+  estimatedComplexity: estimatedComplexitySchema.catch('MEDIUM'),
+  confidence: tolerantNumber(0, 1, 0.5),
 });
 
 export const sceneBreakdownResponseSchema = z.object({
   scenes: z.array(extractedSceneFactSchema).max(500),
 });
+
+/**
+ * Loose envelope handed to the LLM client. We only assert that `scenes` is an
+ * array here; each element is validated independently in the pipeline so a
+ * single unparseable scene is skipped instead of failing the whole batch.
+ */
+export const sceneBreakdownEnvelopeSchema = z.object({
+  scenes: z.preprocess((v) => (Array.isArray(v) ? v : []), z.array(z.unknown()).max(500)),
+});
+
+/** Parse one raw scene; returns null (rather than throwing) when unusable. */
+export function parseSceneFact(raw: unknown): ExtractedSceneFact | null {
+  const result = extractedSceneFactSchema.safeParse(raw);
+  if (!result.success) return null;
+  const scene = result.data;
+  // Drop junk rows where the model dropped both identifiers.
+  if (!scene.sceneNumber && !scene.slugline) return null;
+  return scene;
+}
 
 export type ExtractedSceneFact = z.output<typeof extractedSceneFactSchema>;
 export type SceneBreakdownResponse = z.output<typeof sceneBreakdownResponseSchema>;

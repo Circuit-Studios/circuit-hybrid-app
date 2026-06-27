@@ -87,10 +87,12 @@ EMAIL_OTP_PROVIDER=MOCK
 PHONE_OTP_PROVIDER=MOCK
 OTP_SECRET=replace_with_local_otp_secret_min_32_chars
 
-OPENAI_API_KEY=your_openai_key
-OPENAI_MODEL=gpt-4o
-OPENAI_MODEL_FAST=gpt-4o-mini
-OPENAI_MAX_RETRIES=3
+# NVIDIA NIM — see "LLM provider (NVIDIA NIM)" section below
+LLM_PROVIDER=NVIDIA
+NVIDIA_API_KEY=nvapi_xxxxx
+NVIDIA_MODEL_EXTRACTOR=nvidia/nemotron-3-nano-30b-a3b
+NVIDIA_MODEL_PLANNER=nvidia/nemotron-3-super-120b-a12b
+NVIDIA_MODEL_FAST=nvidia/nemotron-3-nano-30b-a3b
 
 LANGSMITH_TRACING=false
 
@@ -232,6 +234,8 @@ Toggle modules without a mobile rebuild. Backend enforces via `requireFeature()`
 | ---------------------- | ------- | ---------------------------- |
 | `scripts.upload`       | on      | `POST /projects/:id/scripts` |
 | `scripts.shootingPlan` | on      | `POST /scripts/:id/analyze`  |
+| `scripts.taskSuggestions` | on   | Task suggestion review APIs  |
+| `llm.nvidia`           | on      | NVIDIA LLM pipeline          |
 | `team.invites`         | on      | `POST /projects/:id/members` |
 | `auth.emailOtp`        | on      | Email OTP send/verify        |
 | `auth.phoneOtp`        | on      | Phone OTP send/verify        |
@@ -247,45 +251,79 @@ Flags are cached server-side for 30 seconds.
 
 ---
 
-## LLM provider (OpenAI / NVIDIA NIM)
+## LLM provider (NVIDIA NIM only)
 
-LLM configuration is **API-only**. Never put `NVIDIA_API_KEY`, model IDs, or `LLM_PROVIDER` in mobile `.env` or `/app/config`.
+Circuit uses **NVIDIA NIM** for all AI pipeline stages. Configuration is **API-only** — never put `NVIDIA_API_KEY` or model IDs in mobile `.env` or `/app/config`.
 
-| Variable                  | Purpose                                                                                      |
-| ------------------------- | -------------------------------------------------------------------------------------------- |
-| `LLM_PROVIDER`            | `OPENAI` (default) or `NVIDIA`                                                               |
-| `NVIDIA_API_KEY`          | Required when `LLM_PROVIDER=NVIDIA` — set in Render dashboard or `apps/api/.env.development` |
-| `NVIDIA_BASE_URL`         | Default `https://integrate.api.nvidia.com/v1`                                                |
-| `NVIDIA_MODEL_EXTRACTOR`  | Scene extraction (defaults to planner if unset)                                              |
-| `NVIDIA_MODEL_PLANNER`    | Shooting plan + task suggestions (**required** for NVIDIA)                                   |
-| `NVIDIA_MODEL_FAST`       | Fast/helper calls (defaults to extractor)                                                    |
-| `NVIDIA_MODEL_FALLBACK`   | Optional repair/fallback model                                                               |
-| `LLM_MAX_SCRIPT_CHARS`    | Script text cap before analysis                                                              |
-| `LLM_MAX_CHUNK_CHARS`     | Scene batch size for extractor calls                                                         |
-| `LLM_*_TEMPERATURE`       | Per-role temperature defaults                                                                |
-| `LLM_JSON_REPAIR_RETRIES` | JSON repair attempts after invalid model output (default `1`)                                |
-| `LLM_REQUEST_TIMEOUT_MS`  | Per-request timeout (default `120000`)                                                       |
+Get a free API key: [build.nvidia.com](https://build.nvidia.com) → API catalog → generate key (`nvapi-...`). Free credits apply to MVP; monitor usage in the NVIDIA dashboard.
 
-**Recommended NVIDIA models** (configure via env — not hardcoded):
+### Required variables
 
-- Extractor: `nvidia/nemotron-3-super-120b-a12b`
-- Planner: `nvidia/nemotron-3-ultra-550b-a55b`
-- Fast: `nvidia/nemotron-3-nano-30b-a3b`
-- Fallback: `nvidia/llama-3.1-nemotron-ultra-253b-v1`
+| Variable               | Purpose                                              |
+| ---------------------- | ---------------------------------------------------- |
+| `LLM_PROVIDER`         | Must be `NVIDIA`                                     |
+| `NVIDIA_API_KEY`       | `nvapi-...` from NVIDIA Build                        |
+| `NVIDIA_MODEL_PLANNER` | Task suggestions + shooting plan (**required**)      |
+| `NVIDIA_MODEL_EXTRACTOR` | Scene extraction (defaults to planner if unset)    |
+| `NVIDIA_MODEL_FAST`    | JSON repair / helper (defaults to extractor)         |
 
-**Script planning pipeline** (after PDF upload + `POST /scripts/:id/analyze`):
+### Optional tuning
+
+| Variable                  | Default   | Notes                                           |
+| ------------------------- | --------- | ----------------------------------------------- |
+| `NVIDIA_BASE_URL`         | NVIDIA v1 | `https://integrate.api.nvidia.com/v1`           |
+| `NVIDIA_MODEL_FALLBACK`   | planner   | Repair fallback model                           |
+| `LLM_MAX_SCRIPT_CHARS`    | `250000`  | Enough for ~175-page scripts                    |
+| `LLM_MAX_CHUNK_CHARS`     | `18000`   | Scenes per extractor batch                      |
+| `LLM_PLANNER_TEMPERATURE` | `0.2`     | Planner creativity                              |
+| `LLM_EXTRACTOR_TEMPERATURE` | `0.1`   | Extraction — keep low                           |
+| `LLM_FAST_TEMPERATURE`    | `0`       | Repair calls                                    |
+| `LLM_JSON_REPAIR_RETRIES` | `1`       | Retries after invalid JSON                      |
+| `LLM_REQUEST_TIMEOUT_MS`  | `120000`  | Use `180000`+ on Render for long scripts        |
+
+### Recommended model tiers
+
+**MVP (free credits — start here)**
+
+| Role      | Model                              | Why                                      |
+| --------- | ---------------------------------- | ---------------------------------------- |
+| Extractor | `nvidia/nemotron-3-nano-30b-a3b`   | Fast, cheap, batched scene extraction    |
+| Planner   | `nvidia/nemotron-3-super-120b-a12b` | Plans on merged scene facts — good quality |
+| Fast      | `nvidia/nemotron-3-nano-30b-a3b`   | JSON repair                              |
+
+**Upgrade (when credits run low on quality, not speed)**
+
+| Role      | Model                               |
+| --------- | ----------------------------------- |
+| Extractor | `nvidia/nemotron-3-super-120b-a12b` |
+| Planner   | `nvidia/nemotron-3-ultra-550b-a55b` |
+
+**Render MVP copy-paste**
+
+```bash
+LLM_PROVIDER=NVIDIA
+NVIDIA_API_KEY=nvapi_xxxxx
+NVIDIA_MODEL_EXTRACTOR=nvidia/nemotron-3-nano-30b-a3b
+NVIDIA_MODEL_PLANNER=nvidia/nemotron-3-super-120b-a12b
+NVIDIA_MODEL_FAST=nvidia/nemotron-3-nano-30b-a3b
+LLM_REQUEST_TIMEOUT_MS=180000
+```
+
+Remove any legacy `OPENAI_*` variables from Render — the API no longer reads them.
+
+### Pipeline (after PDF upload + analyze)
 
 1. Extract PDF text
-2. Split into scenes
-3. Extract scene facts (characters, locations, risks)
-4. Generate **task suggestions** (`TaskSuggestion` rows, status `PENDING`)
-5. Generate **shooting plan** (`ShootingPlan` JSON, status `DRAFT`)
+2. Split into scenes (deterministic)
+3. Extract scene facts per batch (extractor model)
+4. Generate task suggestions (planner model)
+5. Generate shooting plan (planner model)
 
-AI output is **reviewable** — final `Task` rows are created only when a director approves a suggestion. No automatic `ShootDay` schedule is created from AI output.
+Director approves suggestions → `Task` rows. **Apply to schedule** (mobile) or API creates `ShootDay` rows from the plan.
 
-**Usage tracking:** every LLM call writes an `LlmRun` row (provider, model, stage, tokens, duration, status). Raw script text and prompts are never stored.
+**Feature flags:** `llm.nvidia`, `scripts.shootingPlan`, `scripts.taskSuggestions` must be enabled (seeded by migration).
 
-**Feature flag:** `llm.nvidia` must be enabled when using `LLM_PROVIDER=NVIDIA`.
+**Usage tracking:** every LLM call writes an `LlmRun` row. Raw script text and prompts are never stored.
 
 ---
 
