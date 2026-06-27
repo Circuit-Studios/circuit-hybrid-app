@@ -55,9 +55,14 @@ const schema = z.object({
   NVIDIA_MODEL_EXTRACTOR: optionalString,
   NVIDIA_MODEL_PLANNER: optionalString,
   NVIDIA_MODEL_FAST: optionalString,
+  NVIDIA_MODEL_FALLBACK: optionalString,
   LLM_MAX_SCRIPT_CHARS: z.coerce.number().int().positive().default(250_000),
   LLM_MAX_CHUNK_CHARS: z.coerce.number().int().positive().default(18_000),
   LLM_PLANNER_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.2),
+  LLM_EXTRACTOR_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.1),
+  LLM_FAST_TEMPERATURE: z.coerce.number().min(0).max(2).default(0),
+  LLM_JSON_REPAIR_RETRIES: z.coerce.number().int().min(0).max(3).default(1),
+  LLM_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
 
   OPENAI_API_KEY: optionalString,
   OPENAI_MODEL: z.string().default('gpt-4o'),
@@ -94,10 +99,13 @@ function applyLegacyOtpProvider(data: Env): Env {
 function resolveNvidiaModels(data: Env): Env {
   if (data.LLM_PROVIDER !== 'NVIDIA') return data;
   const planner = data.NVIDIA_MODEL_PLANNER!;
+  const extractor = data.NVIDIA_MODEL_EXTRACTOR ?? planner;
+  const fast = data.NVIDIA_MODEL_FAST ?? extractor;
   return {
     ...data,
-    NVIDIA_MODEL_EXTRACTOR: data.NVIDIA_MODEL_EXTRACTOR ?? planner,
-    NVIDIA_MODEL_FAST: data.NVIDIA_MODEL_FAST ?? planner,
+    NVIDIA_MODEL_EXTRACTOR: extractor,
+    NVIDIA_MODEL_FAST: fast,
+    NVIDIA_MODEL_FALLBACK: data.NVIDIA_MODEL_FALLBACK ?? planner,
   };
 }
 

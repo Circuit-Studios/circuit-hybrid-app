@@ -2,6 +2,7 @@ import {
   formatRemainingSession,
   IDLE_TIMEOUT_MS,
   isIdleSessionExpired,
+  isScriptAnalysisInProgress,
   isSessionExpired,
   OTP_TTL_MS,
   readJwtExpiresAtMs,
@@ -33,6 +34,13 @@ describe('session expiry', () => {
     const lastActivity = Date.now() - IDLE_TIMEOUT_MS - 1;
     expect(isIdleSessionExpired(lastActivity)).toBe(true);
     expect(isIdleSessionExpired(Date.now())).toBe(false);
+  });
+
+  it('detects in-progress script analysis', () => {
+    expect(isScriptAnalysisInProgress('ANALYZING_SCENES')).toBe(true);
+    expect(isScriptAnalysisInProgress('COMPLETED')).toBe(false);
+    expect(isScriptAnalysisInProgress('FAILED')).toBe(false);
+    expect(isScriptAnalysisInProgress(undefined)).toBe(false);
   });
 
   it('prefers API expiresAt over JWT exp', () => {

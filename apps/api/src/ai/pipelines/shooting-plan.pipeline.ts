@@ -2,6 +2,12 @@ import { TaskSuggestionStatus, type Prisma } from '@prisma/client';
 import { env } from '../../config/env.js';
 import { prisma } from '../../lib/prisma.js';
 import { logger } from '../../lib/logger.js';
+import { dispatchNotification } from '../../notifications/notifications.service.js';
+import {
+  completeScriptPlanning,
+  failScriptAnalysis,
+  updateScriptAnalysisStatus,
+} from './script-analysis-status.js';
 import { chatJson } from '../llm/index.js';
 import { extractPdfText } from '../pdf.js';
 import {
@@ -12,11 +18,22 @@ import { taskSuggestionsResponseSchema } from '../schemas/task-suggestions.schem
 import { shootingPlanResponseSchema } from '../schemas/shooting-plan.schema.js';
 import { batchScenes, splitScenes } from '../script/scene-splitter.js';
 import {
-  SHOOTING_PLAN_SYSTEM_PROMPT,
-  buildSceneExtractionPrompt,
-  buildShootingPlanPrompt,
+  SCENE_BREAKDOWN_SYSTEM_PROMPT,
+  buildSceneBreakdownPrompt,
+} from '../prompts/scene-breakdown.prompt.js';
+import {
+  TASK_SUGGESTIONS_SYSTEM_PROMPT,
   buildTaskSuggestionsPrompt,
-} from '../prompts/shooting-plan.js';
+} from '../prompts/task-suggestions.prompt.js';
+import {
+  SHOOTING_PLAN_SYSTEM_PROMPT,
+  buildShootingPlanPrompt,
+} from '../prompts/shooting-plan.prompt.js';
+import { mapDepartmentToKind } from '../department-map.js';
+
+function mergeStringLists(a: string[], b: string[]): string[] {
+  return Array.from(new Set([...a, ...b]));
+}
 
 function mergeSceneFacts(batches: ExtractedSceneFact[][]): ExtractedSceneFact[] {
   const byKey = new Map<string, ExtractedSceneFact>();
@@ -28,16 +45,34 @@ function mergeSceneFacts(batches: ExtractedSceneFact[][]): ExtractedSceneFact[] 
         continue;
       }
       const existing = byKey.get(key)!;
-      const mergedChars = Array.from(
-        new Set([...existing.charactersPresent, ...scene.charactersPresent]),
-      );
       byKey.set(key, {
         ...existing,
-        synopsis: existing.synopsis ?? scene.synopsis,
-        charactersPresent: mergedChars,
-        hasStunts: existing.hasStunts || scene.hasStunts,
-        hasVFX: existing.hasVFX || scene.hasVFX,
-        hasSong: existing.hasSong || scene.hasSong,
+        summary: existing.summary ?? scene.summary,
+        location: existing.location ?? scene.location,
+        characters: mergeStringLists(existing.characters, scene.characters),
+        props: mergeStringLists(existing.props, scene.props),
+        vehicles: mergeStringLists(existing.vehicles, scene.vehicles),
+        animals: mergeStringLists(existing.animals, scene.animals),
+        stunts: mergeStringLists(existing.stunts, scene.stunts),
+        vfx: mergeStringLists(existing.vfx, scene.vfx),
+        sfx: mergeStringLists(existing.sfx, scene.sfx),
+        costumes: mergeStringLists(existing.costumes, scene.costumes),
+        makeup: mergeStringLists(existing.makeup, scene.makeup),
+        artDepartment: mergeStringLists(existing.artDepartment, scene.artDepartment),
+        cameraLightingNotes: mergeStringLists(
+          existing.cameraLightingNotes,
+          scene.cameraLightingNotes,
+        ),
+        soundRisks: mergeStringLists(existing.soundRisks, scene.soundRisks),
+        productionRisks: mergeStringLists(existing.productionRisks, scene.productionRisks),
+        continuityNotes: mergeStringLists(existing.continuityNotes, scene.continuityNotes),
+        confidence: Math.max(existing.confidence, scene.confidence),
+        estimatedComplexity:
+          existing.estimatedComplexity === 'HIGH' || scene.estimatedComplexity === 'HIGH'
+            ? 'HIGH'
+            : existing.estimatedComplexity === 'MEDIUM' || scene.estimatedComplexity === 'MEDIUM'
+              ? 'MEDIUM'
+              : 'LOW',
       });
     }
   }
@@ -57,106 +92,151 @@ export async function runShootingPlanPipeline(scriptId: string): Promise<{
   const project = script.project;
   const log = logger.child({ scriptId, projectId: project.id, pipeline: 'shooting-plan' });
 
-  let rawText = script.rawText;
-  if (!rawText) {
-    const extracted = await extractPdfText(script.storageKey);
-    rawText = extracted.rawText;
-    await prisma.script.update({
-      where: { id: scriptId },
-      data: { rawText, pageCount: extracted.pageCount },
-    });
-  }
+  try {
+    let rawText = script.rawText;
+    if (!rawText) {
+      await updateScriptAnalysisStatus(scriptId, 'EXTRACTING_TEXT');
+      const extracted = await extractPdfText(script.storageKey);
+      rawText = extracted.rawText;
+      await prisma.script.update({
+        where: { id: scriptId },
+        data: { rawText, pageCount: extracted.pageCount },
+      });
+      log.info({ chars: rawText.length, pages: extracted.pageCount }, 'PDF text extracted');
+    }
 
-  const capped = rawText.slice(0, env.LLM_MAX_SCRIPT_CHARS);
-  const split = splitScenes(capped);
-  const batches = batchScenes(split, env.LLM_MAX_CHUNK_CHARS);
-  log.info({ sceneCount: split.length, batchCount: batches.length }, 'scenes_split');
+    const capped = rawText.slice(0, env.LLM_MAX_SCRIPT_CHARS);
+    const split = splitScenes(capped);
+    const batches = batchScenes(split, env.LLM_MAX_CHUNK_CHARS);
+    log.info({ sceneCount: split.length, batchCount: batches.length }, 'scenes_split');
 
-  const extractedBatches: ExtractedSceneFact[][] = [];
-  for (const [index, batch] of batches.entries()) {
-    const response = await chatJson({
-      role: 'extractor',
-      stage: `scene_extraction_${index + 1}`,
-      schema: sceneBreakdownResponseSchema,
-      schemaName: 'SceneBreakdown',
-      systemPrompt: SHOOTING_PLAN_SYSTEM_PROMPT,
-      userPrompt: buildSceneExtractionPrompt(batch, project.genre),
+    await updateScriptAnalysisStatus(scriptId, 'ANALYZING_SCENES');
+
+    const extractedBatches: ExtractedSceneFact[][] = [];
+    for (const batch of batches) {
+      const { data: response } = await chatJson({
+        role: 'extractor',
+        stage: 'scene_extraction',
+        schema: sceneBreakdownResponseSchema,
+        schemaName: 'SceneBreakdown',
+        systemPrompt: SCENE_BREAKDOWN_SYSTEM_PROMPT,
+        userPrompt: buildSceneBreakdownPrompt(batch, project.genre),
+        projectId: project.id,
+        scriptId,
+      });
+      extractedBatches.push(response.scenes);
+    }
+
+    const scenes = mergeSceneFacts(extractedBatches);
+    log.info({ mergedScenes: scenes.length }, 'scene_facts_merged');
+
+    await updateScriptAnalysisStatus(scriptId, 'SUGGESTING_DEPARTMENTS');
+
+    const { data: taskSuggestions } = await chatJson({
+      role: 'planner',
+      stage: 'task_suggestions',
+      schema: taskSuggestionsResponseSchema,
+      schemaName: 'TaskSuggestions',
+      systemPrompt: TASK_SUGGESTIONS_SYSTEM_PROMPT,
+      userPrompt: buildTaskSuggestionsPrompt(scenes, project.genre),
       projectId: project.id,
       scriptId,
     });
-    extractedBatches.push(response.scenes);
-  }
 
-  const scenes = mergeSceneFacts(extractedBatches);
-  log.info({ mergedScenes: scenes.length }, 'scene_facts_merged');
+    await updateScriptAnalysisStatus(scriptId, 'ESTIMATING_SHOOT_DAYS');
 
-  const taskSuggestions = await chatJson({
-    role: 'planner',
-    stage: 'task_suggestions',
-    schema: taskSuggestionsResponseSchema,
-    schemaName: 'TaskSuggestions',
-    systemPrompt: SHOOTING_PLAN_SYSTEM_PROMPT,
-    userPrompt: buildTaskSuggestionsPrompt(scenes, project.genre),
-    projectId: project.id,
-    scriptId,
-  });
-
-  const shootingPlan = await chatJson({
-    role: 'planner',
-    stage: 'shooting_plan',
-    schema: shootingPlanResponseSchema,
-    schemaName: 'ShootingPlan',
-    systemPrompt: SHOOTING_PLAN_SYSTEM_PROMPT,
-    userPrompt: buildShootingPlanPrompt(scenes, project.genre, taskSuggestions.suggestions.length),
-    projectId: project.id,
-    scriptId,
-  });
-
-  const stored = await prisma.$transaction(async (tx) => {
-    await tx.taskSuggestion.deleteMany({
-      where: { projectId: project.id, scriptId, status: TaskSuggestionStatus.PENDING },
-    });
-    await tx.shootingPlan.deleteMany({ where: { projectId: project.id, scriptId } });
-
-    const plan = await tx.shootingPlan.create({
-      data: {
-        projectId: project.id,
-        scriptId,
-        summary: shootingPlan.summary,
-        totalShootDays: shootingPlan.totalShootDays,
-        risks: shootingPlan.risks as Prisma.InputJsonValue,
-        plan: shootingPlan as unknown as Prisma.InputJsonValue,
-      },
+    const { data: shootingPlan } = await chatJson({
+      role: 'planner',
+      stage: 'shooting_plan',
+      schema: shootingPlanResponseSchema,
+      schemaName: 'ShootingPlan',
+      systemPrompt: SHOOTING_PLAN_SYSTEM_PROMPT,
+      userPrompt: buildShootingPlanPrompt(
+        scenes,
+        project.genre,
+        taskSuggestions.suggestions.length,
+      ),
+      projectId: project.id,
+      scriptId,
     });
 
-    if (taskSuggestions.suggestions.length > 0) {
-      await tx.taskSuggestion.createMany({
-        data: taskSuggestions.suggestions.map((s) => ({
+    const allRisks = [
+      ...shootingPlan.shootDays.flatMap((d) => d.risks),
+      shootingPlan.riskSummary,
+    ].filter(Boolean);
+
+    const stored = await prisma.$transaction(async (tx) => {
+      await tx.taskSuggestion.deleteMany({
+        where: { projectId: project.id, scriptId, status: TaskSuggestionStatus.PENDING },
+      });
+      await tx.shootingPlan.deleteMany({ where: { projectId: project.id, scriptId } });
+
+      const plan = await tx.shootingPlan.create({
+        data: {
           projectId: project.id,
           scriptId,
-          shootingPlanId: plan.id,
-          title: s.title,
-          description: s.description ?? undefined,
-          departmentKind: s.departmentKind,
-          priority: s.priority,
-          sceneNumbers: s.sceneNumbers,
-          characterNames: s.characterNames,
-          estimatedDueOffsetDays: s.estimatedDueOffsetDays ?? undefined,
-          status: TaskSuggestionStatus.PENDING,
-        })),
+          summary: shootingPlan.summary,
+          totalShootDays: shootingPlan.shootDays.length,
+          assumptions: shootingPlan.assumptions as Prisma.InputJsonValue,
+          status: 'DRAFT',
+          risks: allRisks as Prisma.InputJsonValue,
+          plan: shootingPlan as unknown as Prisma.InputJsonValue,
+        },
       });
-    }
 
-    return plan;
-  });
+      if (taskSuggestions.suggestions.length > 0) {
+        await tx.taskSuggestion.createMany({
+          data: taskSuggestions.suggestions.map((s) => ({
+            projectId: project.id,
+            scriptId,
+            shootingPlanId: plan.id,
+            title: s.title,
+            description: s.description ?? undefined,
+            departmentKind: mapDepartmentToKind(s.department),
+            priority: s.priority,
+            sceneNumbers: s.sceneNumbers,
+            rationale: s.rationale,
+            confidence: s.confidence,
+            estimatedDueOffsetDays: s.suggestedDueOffsetDays ?? undefined,
+            status: TaskSuggestionStatus.PENDING,
+          })),
+        });
+      }
 
-  log.info(
-    { shootingPlanId: stored.id, suggestions: taskSuggestions.suggestions.length },
-    'shooting_plan_stored',
-  );
+      return plan;
+    });
 
-  return {
-    shootingPlanId: stored.id,
-    suggestionCount: taskSuggestions.suggestions.length,
-  };
+    await completeScriptPlanning(scriptId, project.id, {
+      planningPipeline: true,
+      sceneCount: scenes.length,
+      suggestionCount: taskSuggestions.suggestions.length,
+      shootDayCount: shootingPlan.shootDays.length,
+      summary: shootingPlan.summary,
+      shootingPlanId: stored.id,
+    });
+
+    void dispatchNotification({
+      userIds: [script.uploadedByUserId, project.ownerUserId],
+      kind: 'AI_ANALYSIS_DONE',
+      title: 'Your shooting plan is ready',
+      body: `${taskSuggestions.suggestions.length} task suggestions and a ${shootingPlan.shootDays.length}-day draft plan.`,
+      projectId: project.id,
+      deepLink: `/project/${project.id}/director-review`,
+      context: { scriptId },
+    });
+
+    log.info(
+      { shootingPlanId: stored.id, suggestions: taskSuggestions.suggestions.length },
+      'shooting_plan_stored',
+    );
+
+    return {
+      shootingPlanId: stored.id,
+      suggestionCount: taskSuggestions.suggestions.length,
+    };
+  } catch (error) {
+    log.error({ error }, 'shooting_plan_pipeline_failed');
+    await failScriptAnalysis(scriptId, project.id, error);
+    throw error;
+  }
 }

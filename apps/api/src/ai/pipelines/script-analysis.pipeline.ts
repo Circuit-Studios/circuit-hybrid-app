@@ -50,7 +50,7 @@ export async function analyzeScript(scriptId: string): Promise<void> {
 
     // 1) Characters
     await updateStatus(scriptId, 'ANALYZING_CHARACTERS');
-    const characters = await chatJson({
+    const { data: characters } = await chatJson({
       role: 'fast',
       stage: 'characters',
       schema: aiCharactersResponseSchema,
@@ -64,7 +64,7 @@ export async function analyzeScript(scriptId: string): Promise<void> {
 
     // 2) Scenes
     await updateStatus(scriptId, 'ANALYZING_SCENES');
-    const scenes = await chatJson({
+    const { data: scenes } = await chatJson({
       role: 'planner',
       stage: 'scenes',
       schema: aiScenesResponseSchema,
@@ -81,7 +81,7 @@ export async function analyzeScript(scriptId: string): Promise<void> {
 
     // 3) Combinations
     await updateStatus(scriptId, 'ANALYZING_COMBINATIONS');
-    const combinations = await chatJson({
+    const { data: combinations } = await chatJson({
       role: 'planner',
       stage: 'combinations',
       schema: aiCombinationsResponseSchema,
@@ -98,7 +98,7 @@ export async function analyzeScript(scriptId: string): Promise<void> {
 
     // 4) Departments
     await updateStatus(scriptId, 'SUGGESTING_DEPARTMENTS');
-    const departments = await chatJson({
+    const { data: departments } = await chatJson({
       role: 'planner',
       stage: 'departments',
       schema: aiDepartmentsResponseSchema,
@@ -116,7 +116,7 @@ export async function analyzeScript(scriptId: string): Promise<void> {
 
     // 5) Shoot days
     await updateStatus(scriptId, 'ESTIMATING_SHOOT_DAYS');
-    const shootDays = await chatJson({
+    const { data: shootDays } = await chatJson({
       role: 'planner',
       stage: 'shoot_days',
       schema: aiShootDaysResponseSchema,
@@ -135,7 +135,7 @@ export async function analyzeScript(scriptId: string): Promise<void> {
 
     // 6) Budget
     await updateStatus(scriptId, 'DRAFTING_BUDGET');
-    const budget = await chatJson({
+    const { data: budget } = await chatJson({
       role: 'planner',
       stage: 'budget',
       schema: aiBudgetResponseSchema,

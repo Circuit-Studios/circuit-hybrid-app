@@ -16,6 +16,26 @@ export async function createScriptAnalysisJob(scriptId: string, projectId: strin
   });
 }
 
+/**
+ * Runs script analysis jobs. Prefers the batched shooting-plan pipeline when enabled;
+ * falls back to legacy 6-stage analyzeScript only when shooting plan is off.
+ */
+export async function runScriptAnalysisJob(scriptId: string): Promise<void> {
+  const shootingPlanEnabled = await isFeatureEnabled('scripts.shootingPlan');
+  if (shootingPlanEnabled) {
+    await runShootingPlanPipeline(scriptId);
+    return;
+  }
+
+  const legacyEnabled = await isFeatureEnabled('scripts.aiAnalysis');
+  if (legacyEnabled) {
+    await analyzeScript(scriptId);
+    return;
+  }
+
+  throw new Error('No script analysis pipeline is enabled');
+}
+
 export async function processBackgroundJob(jobId: string): Promise<void> {
   const job = await prisma.backgroundJob.findUnique({ where: { id: jobId } });
   if (!job) throw new Error(`Background job ${jobId} not found`);
@@ -34,17 +54,12 @@ export async function processBackgroundJob(jobId: string): Promise<void> {
     if (!job.scriptId) throw new Error('Script analysis job missing scriptId');
 
     if (job.kind === BackgroundJobKind.SCRIPT_ANALYSIS) {
-      if (await isFeatureEnabled('scripts.aiAnalysis')) {
-        await analyzeScript(job.scriptId);
-      }
-
-      if (await isFeatureEnabled('scripts.shootingPlan')) {
-        await runShootingPlanPipeline(job.scriptId);
-      }
+      await runScriptAnalysisJob(job.scriptId);
     } else if (job.kind === BackgroundJobKind.SHOOTING_PLAN) {
-      if (await isFeatureEnabled('scripts.shootingPlan')) {
-        await runShootingPlanPipeline(job.scriptId);
+      if (!(await isFeatureEnabled('scripts.shootingPlan'))) {
+        throw new Error('Shooting plan pipeline is disabled');
       }
+      await runShootingPlanPipeline(job.scriptId);
     }
 
     await prisma.backgroundJob.update({

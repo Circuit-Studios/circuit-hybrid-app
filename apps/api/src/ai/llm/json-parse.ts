@@ -1,17 +1,11 @@
 import type { ZodSchema } from 'zod';
 import { logger } from '../../lib/logger.js';
+import {
+  buildJsonRepairUserPrompt,
+  JSON_REPAIR_SYSTEM_PROMPT,
+} from '../prompts/json-repair.prompt.js';
 
-const REPAIR_SYSTEM =
-  'You repair malformed JSON. Return only valid JSON matching the requested schema. No markdown fences.';
-
-export function buildRepairUserPrompt(schemaName: string, invalidContent: string): string {
-  return [
-    `The previous response for schema "${schemaName}" was invalid.`,
-    'Return corrected JSON only.',
-    'Invalid content (truncated):',
-    invalidContent.slice(0, 2000),
-  ].join('\n');
-}
+export { JSON_REPAIR_SYSTEM_PROMPT, buildJsonRepairUserPrompt as buildRepairUserPrompt };
 
 export function parseAssistantJson(raw: string): unknown {
   const trimmed = raw.trim();

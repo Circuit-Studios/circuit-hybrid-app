@@ -27,6 +27,7 @@ export async function recordLlmRun(
         scriptId: ctx.scriptId,
         inputTokens: usage?.inputTokens,
         outputTokens: usage?.outputTokens,
+        totalTokens: usage?.totalTokens,
         durationMs,
         status,
         error: error?.slice(0, 500),

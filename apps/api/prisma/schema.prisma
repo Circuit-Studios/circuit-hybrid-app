@@ -641,6 +641,8 @@ model TaskSuggestion {
   priority               TaskPriority         @default(MEDIUM)
   sceneNumbers           String[]             @default([])
   characterNames         String[]             @default([])
+  rationale              String?              @db.Text
+  confidence             Float?
   estimatedDueOffsetDays Int?
   status                 TaskSuggestionStatus @default(PENDING)
   convertedTaskId        String?
@@ -663,6 +665,8 @@ model ShootingPlan {
   scriptId        String
   summary         String   @db.Text
   totalShootDays  Int
+  assumptions     Json?
+  status          String   @default("DRAFT")
   risks           Json
   plan            Json
   createdAt       DateTime @default(now())
@@ -690,6 +694,7 @@ model LlmRun {
   scriptId     String?
   inputTokens  Int?
   outputTokens Int?
+  totalTokens  Int?
   durationMs   Int
   status       LlmRunStatus
   error        String?
@@ -700,4 +705,5 @@ model LlmRun {
 
   @@index([projectId, createdAt])
   @@index([scriptId, createdAt])
+  @@index([provider, model, createdAt])
 }
