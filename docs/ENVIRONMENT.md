@@ -94,24 +94,44 @@ Build/start commands: [apps/api/docs/DEPLOYMENT.md](../apps/api/docs/DEPLOYMENT.
 
 ---
 
-## NVIDIA LLM (required)
+## LLM providers (required)
 
-API-only — never in mobile `.env`.
+API-only — never in mobile `.env`. Two providers ship: **NVIDIA** (default) and **Gemini**.
+`LLM_PROVIDER` sets the default for every role; optional per-role overrides let you A/B them
+without code changes.
 
-| Variable                 | MVP value                                                     |
-| ------------------------ | ------------------------------------------------------------- |
-| `LLM_PROVIDER`           | `NVIDIA`                                                      |
-| `NVIDIA_API_KEY`         | `nvapi-...` from [build.nvidia.com](https://build.nvidia.com) |
-| `NVIDIA_MODEL_EXTRACTOR` | `nvidia/nemotron-3-nano-30b-a3b`                              |
-| `NVIDIA_MODEL_PLANNER`   | `nvidia/nemotron-3-super-120b-a12b`                           |
-| `NVIDIA_MODEL_FAST`      | `nvidia/nemotron-3-nano-30b-a3b`                              |
-| `LLM_REQUEST_TIMEOUT_MS` | `180000` for long scripts on Render                           |
+| Variable                 | Values / example                | Notes                              |
+| ------------------------ | ------------------------------- | ---------------------------------- |
+| `LLM_PROVIDER`           | `NVIDIA` \| `GEMINI`            | Default provider for all roles     |
+| `LLM_PROVIDER_EXTRACTOR` | `NVIDIA` \| `GEMINI`            | Optional override (scene extract)  |
+| `LLM_PROVIDER_PLANNER`   | `NVIDIA` \| `GEMINI`            | Optional override (plan / tasks)   |
+| `LLM_PROVIDER_FAST`      | `NVIDIA` \| `GEMINI`            | Optional override (JSON repair)    |
+| `LLM_REQUEST_TIMEOUT_MS` | `180000`                        | Raise for long scripts on Render   |
+
+Only the provider(s) actually used must be configured (validated at boot).
+
+**NVIDIA** (`nvapi-...` from [build.nvidia.com](https://build.nvidia.com)):
+
+| Variable                 | MVP value                          |
+| ------------------------ | ---------------------------------- |
+| `NVIDIA_API_KEY`         | `nvapi-...`                        |
+| `NVIDIA_MODEL_EXTRACTOR` | `nvidia/nemotron-3-nano-30b-a3b`   |
+| `NVIDIA_MODEL_PLANNER`   | `nvidia/nemotron-3-super-120b-a12b`|
+| `NVIDIA_MODEL_FAST`      | `nvidia/nemotron-3-nano-30b-a3b`   |
+
+**Gemini** (`AIza...` from [aistudio.google.com](https://aistudio.google.com), native JSON output):
+
+| Variable                 | Example              |
+| ------------------------ | -------------------- |
+| `GEMINI_API_KEY`         | `AIza...`            |
+| `GEMINI_MODEL_EXTRACTOR` | `gemini-2.5-flash`   |
+| `GEMINI_MODEL_PLANNER`   | `gemini-2.5-pro`     |
+| `GEMINI_MODEL_FAST`      | `gemini-2.5-flash`   |
 
 Optional: `LLM_MAX_SCRIPT_CHARS` (default `250000`), `LLM_MAX_CHUNK_CHARS` (default `18000`).
 
-Remove legacy `OPENAI_*` vars — the API no longer reads them.
-
-**Feature flags** (DB, seeded by migration): `llm.nvidia`, `scripts.shootingPlan`, `scripts.taskSuggestions` must be enabled.
+**Feature flags** (DB, seeded by migration): the selected provider's flag (`llm.nvidia` /
+`llm.gemini`) plus `scripts.shootingPlan`, `scripts.taskSuggestions` must be enabled.
 
 ---
 
@@ -136,4 +156,4 @@ Toggle in DB without mobile rebuild:
 UPDATE feature_flags SET enabled = false WHERE key = 'scripts.upload';
 ```
 
-Keys: `scripts.upload`, `scripts.shootingPlan`, `scripts.taskSuggestions`, `llm.nvidia`, `team.invites`, `auth.emailOtp`, `auth.phoneOtp`, `notifications.push`
+Keys: `scripts.upload`, `scripts.shootingPlan`, `scripts.taskSuggestions`, `llm.nvidia`, `llm.gemini`, `team.invites`, `auth.emailOtp`, `auth.phoneOtp`, `notifications.push`

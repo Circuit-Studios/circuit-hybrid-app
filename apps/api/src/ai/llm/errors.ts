@@ -1,4 +1,4 @@
-export type LlmProviderName = 'NVIDIA';
+export type LlmProviderName = 'NVIDIA' | 'GEMINI';
 
 /** Max chars of model output passed to JSON repair — memory only, never logged. */
 export const LLM_RAW_OUTPUT_REPAIR_MAX_CHARS = 2000;

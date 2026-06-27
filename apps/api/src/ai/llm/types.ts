@@ -1,6 +1,6 @@
 import type { ZodType, ZodTypeDef } from 'zod';
 
-export type LlmProvider = 'NVIDIA';
+export type LlmProvider = 'NVIDIA' | 'GEMINI';
 
 export type LlmRole = 'extractor' | 'planner' | 'fast' | 'fallback';
 

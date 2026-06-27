@@ -50,7 +50,12 @@ const schema = z.object({
 
   REDIS_URL: optionalUrl,
 
-  LLM_PROVIDER: z.literal('NVIDIA').default('NVIDIA'),
+  LLM_PROVIDER: z.preprocess(emptyToUndefined, z.enum(['NVIDIA', 'GEMINI']).default('NVIDIA')),
+  // Optional per-role provider overrides — fall back to LLM_PROVIDER when unset.
+  LLM_PROVIDER_EXTRACTOR: z.preprocess(emptyToUndefined, z.enum(['NVIDIA', 'GEMINI']).optional()),
+  LLM_PROVIDER_PLANNER: z.preprocess(emptyToUndefined, z.enum(['NVIDIA', 'GEMINI']).optional()),
+  LLM_PROVIDER_FAST: z.preprocess(emptyToUndefined, z.enum(['NVIDIA', 'GEMINI']).optional()),
+
   NVIDIA_API_KEY: optionalString,
   NVIDIA_BASE_URL: z.preprocess(
     emptyToUndefined,
@@ -60,6 +65,16 @@ const schema = z.object({
   NVIDIA_MODEL_PLANNER: optionalString,
   NVIDIA_MODEL_FAST: optionalString,
   NVIDIA_MODEL_FALLBACK: optionalString,
+
+  GEMINI_API_KEY: optionalString,
+  GEMINI_BASE_URL: z.preprocess(
+    emptyToUndefined,
+    z.string().url().default('https://generativelanguage.googleapis.com/v1beta'),
+  ),
+  GEMINI_MODEL_EXTRACTOR: optionalString,
+  GEMINI_MODEL_PLANNER: optionalString,
+  GEMINI_MODEL_FAST: optionalString,
+
   LLM_MAX_SCRIPT_CHARS: z.coerce.number().int().positive().default(250_000),
   LLM_MAX_CHUNK_CHARS: z.coerce.number().int().positive().default(18_000),
   LLM_PLANNER_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.2),
@@ -95,8 +110,20 @@ function applyLegacyOtpProvider(data: Env): Env {
   return next;
 }
 
+type LlmProviderName = Env['LLM_PROVIDER'];
+type LlmRoleName = 'extractor' | 'planner' | 'fast';
+
+/** Resolve which provider serves each role (per-role override → global default). */
+export function llmRoleProviders(data: Env = env): Record<LlmRoleName, LlmProviderName> {
+  return {
+    extractor: data.LLM_PROVIDER_EXTRACTOR ?? data.LLM_PROVIDER,
+    planner: data.LLM_PROVIDER_PLANNER ?? data.LLM_PROVIDER,
+    fast: data.LLM_PROVIDER_FAST ?? data.LLM_PROVIDER,
+  };
+}
+
 function resolveNvidiaModels(data: Env): Env {
-  const planner = data.NVIDIA_MODEL_PLANNER!;
+  const planner = data.NVIDIA_MODEL_PLANNER;
   const extractor = data.NVIDIA_MODEL_EXTRACTOR ?? planner;
   const fast = data.NVIDIA_MODEL_FAST ?? extractor;
   return {
@@ -107,15 +134,38 @@ function resolveNvidiaModels(data: Env): Env {
   };
 }
 
+function resolveGeminiModels(data: Env): Env {
+  const planner = data.GEMINI_MODEL_PLANNER;
+  const extractor = data.GEMINI_MODEL_EXTRACTOR ?? planner;
+  const fast = data.GEMINI_MODEL_FAST ?? extractor ?? planner;
+  return {
+    ...data,
+    GEMINI_MODEL_EXTRACTOR: extractor,
+    GEMINI_MODEL_FAST: fast,
+  };
+}
+
 function assertLlmProviderConfig(data: Env): void {
-  if (!data.NVIDIA_API_KEY) {
-    console.error('Invalid environment configuration:');
-    console.error('  - NVIDIA_API_KEY: required');
-    process.exit(1);
+  const used = new Set(Object.values(llmRoleProviders(data)));
+  const errors: string[] = [];
+
+  if (used.has('NVIDIA')) {
+    if (!data.NVIDIA_API_KEY) errors.push('NVIDIA_API_KEY: required when any role uses NVIDIA');
+    if (!data.NVIDIA_MODEL_PLANNER && !data.NVIDIA_MODEL_EXTRACTOR && !data.NVIDIA_MODEL_FAST) {
+      errors.push('NVIDIA_MODEL_PLANNER: required when any role uses NVIDIA');
+    }
   }
-  if (!data.NVIDIA_MODEL_PLANNER) {
+
+  if (used.has('GEMINI')) {
+    if (!data.GEMINI_API_KEY) errors.push('GEMINI_API_KEY: required when any role uses Gemini');
+    if (!data.GEMINI_MODEL_PLANNER && !data.GEMINI_MODEL_EXTRACTOR && !data.GEMINI_MODEL_FAST) {
+      errors.push('GEMINI_MODEL_PLANNER: required when any role uses Gemini');
+    }
+  }
+
+  if (errors.length > 0) {
     console.error('Invalid environment configuration:');
-    console.error('  - NVIDIA_MODEL_PLANNER: required');
+    for (const e of errors) console.error(`  - ${e}`);
     process.exit(1);
   }
 }
@@ -132,6 +182,7 @@ function loadEnv(): Env {
 
   let resolved = applyLegacyOtpProvider(parsed.data);
   resolved = resolveNvidiaModels(resolved);
+  resolved = resolveGeminiModels(resolved);
   assertLlmProviderConfig(resolved);
   assertResendEmailOtpConfig(resolved);
   assertProductionOtpProviders(resolved);

@@ -1,6 +1,14 @@
+import { env, llmRoleProviders } from '../../config/env.js';
 import { isFeatureEnabled } from '../../config/features.js';
+import { GeminiLlmProvider } from './gemini.client.js';
 import { NvidiaLlmProvider } from './nvidia.client.js';
-import type { ChatJsonOptions, ChatJsonResult, LlmChatProvider } from './types.js';
+import type {
+  ChatJsonOptions,
+  ChatJsonResult,
+  LlmChatProvider,
+  LlmProvider,
+  LlmRole,
+} from './types.js';
 
 export type {
   ChatJsonInput,
@@ -14,29 +22,60 @@ export type {
 export { LlmError } from './errors.js';
 export { logLlmRun } from './logLlmRun.js';
 
-let cachedProvider: LlmChatProvider | null = null;
+const FEATURE_FLAG_FOR_PROVIDER: Record<LlmProvider, string> = {
+  NVIDIA: 'llm.nvidia',
+  GEMINI: 'llm.gemini',
+};
+
+const providerCache = new Map<LlmProvider, LlmChatProvider>();
 
 export function resetLlmProviderForTests(): void {
-  cachedProvider = null;
+  providerCache.clear();
 }
 
-export async function getLlmProvider(): Promise<LlmChatProvider> {
-  if (cachedProvider) return cachedProvider;
+/** Resolve which provider serves a given pipeline role (env-driven). */
+function providerForRole(role: LlmRole): LlmProvider {
+  const roles = llmRoleProviders(env);
+  switch (role) {
+    case 'extractor':
+      return roles.extractor;
+    case 'fast':
+      return roles.fast;
+    case 'planner':
+    case 'fallback':
+    default:
+      return roles.planner;
+  }
+}
 
-  const nvidiaEnabled = await isFeatureEnabled('llm.nvidia');
-  if (!nvidiaEnabled) {
+function instantiateProvider(name: LlmProvider): LlmChatProvider {
+  return name === 'GEMINI' ? new GeminiLlmProvider() : new NvidiaLlmProvider();
+}
+
+async function getProvider(name: LlmProvider): Promise<LlmChatProvider> {
+  const flag = FEATURE_FLAG_FOR_PROVIDER[name];
+  if (!(await isFeatureEnabled(flag))) {
     throw new Error(
-      'NVIDIA LLM is disabled (feature flag llm.nvidia). Enable it in feature_flags or run prisma migrate deploy.',
+      `${name} LLM is disabled (feature flag ${flag}). Enable it in feature_flags or switch LLM_PROVIDER.`,
     );
   }
 
-  cachedProvider = new NvidiaLlmProvider();
-  return cachedProvider;
+  let provider = providerCache.get(name);
+  if (!provider) {
+    provider = instantiateProvider(name);
+    providerCache.set(name, provider);
+  }
+  return provider;
+}
+
+/** Default provider (planner role) — kept for backward compatibility. */
+export async function getLlmProvider(): Promise<LlmChatProvider> {
+  return getProvider(providerForRole('planner'));
 }
 
 /** Provider-agnostic JSON chat entry point used by all AI pipelines. */
 export async function chatJson<T>(opts: ChatJsonOptions<T>): Promise<ChatJsonResult<T>> {
-  const provider = await getLlmProvider();
+  const provider = await getProvider(providerForRole(opts.role));
   return provider.chatJson(opts);
 }
 
