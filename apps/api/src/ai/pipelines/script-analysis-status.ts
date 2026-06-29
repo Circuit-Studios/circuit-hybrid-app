@@ -1,6 +1,8 @@
 import { ScriptAnalysisStatus, type Prisma } from '@prisma/client';
 import { prisma } from '../../lib/prisma.js';
+import { logger } from '../../lib/logger.js';
 import { emitToProject } from '../../realtime/socket.js';
+import { LlmError, toSafeAnalysisError } from '../llm/errors.js';
 
 export async function updateScriptAnalysisStatus(
   scriptId: string,
@@ -24,13 +26,27 @@ export async function failScriptAnalysis(
   scriptId: string,
   projectId: string,
   error: unknown,
+  safeMessage?: string,
 ): Promise<void> {
-  const message = error instanceof Error ? error.message : String(error);
+  // Log the full provider detail internally (status/model/stage live on
+  // LlmError); never persist it to the mobile-visible analysisError field.
+  logger.error(
+    {
+      scriptId,
+      projectId,
+      detail: error instanceof Error ? error.message : String(error),
+      ...(error instanceof LlmError
+        ? { provider: error.provider, statusCode: error.statusCode, stage: error.stage }
+        : {}),
+    },
+    'script_analysis_failed',
+  );
+
   await prisma.script.update({
     where: { id: scriptId },
     data: {
       analysisStatus: ScriptAnalysisStatus.FAILED,
-      analysisError: message.slice(0, 1000),
+      analysisError: safeMessage ?? toSafeAnalysisError(error),
       analysisEndedAt: new Date(),
     },
   });

@@ -14,7 +14,7 @@ import { env } from '../config/env.js';
 import { logger } from '../lib/logger.js';
 
 let producerConn: RedisInstance | null = null;
-let workerConn: RedisInstance | null = null;
+const workerConns: RedisInstance[] = [];
 
 function makeConnection(role: 'producer' | 'worker'): RedisInstance | null {
   if (!env.REDIS_URL) return null;
@@ -37,14 +37,19 @@ export function getProducerConnection(): RedisInstance | null {
   return producerConn;
 }
 
-export function getWorkerConnection(): RedisInstance | null {
-  if (!env.REDIS_URL) return null;
-  if (!workerConn) workerConn = makeConnection('worker');
-  return workerConn;
+/**
+ * Each BullMQ worker needs its OWN blocking connection — they cannot share one
+ * (a worker's blocking `BRPOPLPUSH` would starve the others). Returns a fresh
+ * connection per call; all are closed by {@link disconnectRedis}.
+ */
+export function createWorkerConnection(): RedisInstance | null {
+  const conn = makeConnection('worker');
+  if (conn) workerConns.push(conn);
+  return conn;
 }
 
 export async function disconnectRedis(): Promise<void> {
-  await Promise.all([producerConn?.quit(), workerConn?.quit()]);
+  await Promise.all([producerConn?.quit(), ...workerConns.map((c) => c.quit())]);
   producerConn = null;
-  workerConn = null;
+  workerConns.length = 0;
 }
