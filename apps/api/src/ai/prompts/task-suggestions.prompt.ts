@@ -5,7 +5,10 @@ Generate actionable pre-production and shoot-prep task suggestions for a directo
 Return JSON only — no markdown, no prose outside JSON.
 Do not create schedule rows or final tasks — only reviewable suggestions.
 
-Each suggestion must include:
+Return a single JSON object of the exact shape: {"suggestions": [ ... ]}.
+The top-level key MUST be "suggestions" (an array). Do not rename it.
+
+Each suggestion in the array must include:
 title, description, department, priority (LOW|MEDIUM|HIGH|URGENT), sceneNumbers,
 rationale, confidence (0 to 1), suggestedDueOffsetDays (optional integer).`;
 

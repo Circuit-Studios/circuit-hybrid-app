@@ -233,6 +233,11 @@ export interface Task {
   department?: { id: string; displayName: string; kind: DepartmentKind };
 }
 
+/** A task assigned to the current user, annotated with its owning project. */
+export interface MyTask extends Task {
+  project: { id: string; name: string };
+}
+
 export interface ShootDay {
   id: string;
   projectId: string;

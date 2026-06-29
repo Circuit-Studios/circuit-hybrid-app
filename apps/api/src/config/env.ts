@@ -95,7 +95,7 @@ const schema = z.object({
   LLM_EXTRACTOR_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.1),
   LLM_FAST_TEMPERATURE: z.coerce.number().min(0).max(2).default(0),
   LLM_JSON_REPAIR_RETRIES: z.coerce.number().int().min(0).max(3).default(1),
-  LLM_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
+  LLM_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(180_000),
 
   LANGSMITH_TRACING: envBoolean(false),
   LANGSMITH_API_KEY: z.string().optional(),

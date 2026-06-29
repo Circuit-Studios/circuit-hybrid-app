@@ -4,7 +4,7 @@ import {
   JSON_REPAIR_SYSTEM_PROMPT,
   buildJsonRepairUserPrompt,
 } from '../prompts/json-repair.prompt.js';
-import { LlmError } from './errors.js';
+import { LlmError, LlmJsonParseError } from './errors.js';
 import { parseAndValidate, repairSnippetFromError } from './json-parse.js';
 import { recordLlmRun } from './usage.js';
 import type { ChatJsonOptions, ChatJsonResult, LlmChatProvider, LlmTokenUsage } from './types.js';
@@ -82,7 +82,8 @@ export class GeminiLlmProvider implements LlmChatProvider {
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
-        const isRepair = attempt > 0;
+        // Repair only for malformed-JSON failures; plain-retry transient errors.
+        const isRepair = attempt > 0 && lastErr instanceof LlmJsonParseError;
         const repairModel = env.GEMINI_MODEL_FAST ?? model;
         const { data, usage } = isRepair
           ? await this.repairOnce(opts, repairModel, lastErr)
@@ -205,9 +206,18 @@ export class GeminiLlmProvider implements LlmChatProvider {
     firstErr: unknown,
   ): Promise<{ data: T; usage?: LlmTokenUsage }> {
     const invalidSnippet = repairSnippetFromError(firstErr);
+    // Resend the full original context so the model can regenerate real content
+    // rather than returning a structurally-valid but empty object.
     const body = {
-      systemInstruction: { parts: [{ text: JSON_REPAIR_SYSTEM_PROMPT }] },
+      systemInstruction: {
+        parts: [
+          {
+            text: `${opts.systemPrompt}\n\n${JSON_REPAIR_SYSTEM_PROMPT}\n\nReturn valid JSON only for schema "${opts.schemaName}".`,
+          },
+        ],
+      },
       contents: [
+        { role: 'user', parts: [{ text: opts.userPrompt }] },
         {
           role: 'user',
           parts: [{ text: buildJsonRepairUserPrompt(opts.schemaName, invalidSnippet) }],

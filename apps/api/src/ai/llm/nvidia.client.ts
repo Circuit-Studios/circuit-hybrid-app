@@ -4,7 +4,7 @@ import {
   JSON_REPAIR_SYSTEM_PROMPT,
   buildJsonRepairUserPrompt,
 } from '../prompts/json-repair.prompt.js';
-import { LlmError } from './errors.js';
+import { LlmError, LlmJsonParseError } from './errors.js';
 import { parseAndValidate, repairSnippetFromError } from './json-parse.js';
 import { recordLlmRun } from './usage.js';
 import type { ChatJsonOptions, ChatJsonResult, LlmChatProvider, LlmTokenUsage } from './types.js';
@@ -70,7 +70,11 @@ export class NvidiaLlmProvider implements LlmChatProvider {
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
-        const isRepair = attempt > 0;
+        // Only run the JSON-repair path when the previous failure was actually a
+        // malformed/invalid-JSON response. For transient errors (timeouts, HTTP
+        // 5xx) "repairing" makes no sense — there is no content to fix, and the
+        // model tends to return junk — so we simply retry the original request.
+        const isRepair = attempt > 0 && lastErr instanceof LlmJsonParseError;
         const repairModel = env.NVIDIA_MODEL_FAST!;
         const { data, usage } = isRepair
           ? await this.repairOnce(opts, repairModel, lastErr)
@@ -190,11 +194,18 @@ export class NvidiaLlmProvider implements LlmChatProvider {
     firstErr: unknown,
   ): Promise<{ data: T; usage?: LlmTokenUsage }> {
     const invalidSnippet = repairSnippetFromError(firstErr);
+    // Resend the FULL original context so the model can regenerate real content.
+    // A snippet-only repair leaves the model with no scene data and tends to
+    // return a structurally-valid but EMPTY object.
     const body = {
       model,
       temperature: 0,
       messages: [
-        { role: 'system', content: JSON_REPAIR_SYSTEM_PROMPT },
+        {
+          role: 'system',
+          content: `${opts.systemPrompt}\n\n${JSON_REPAIR_SYSTEM_PROMPT}\n\nReturn valid JSON only for schema "${opts.schemaName}". Do not include reasoning, <think> blocks, or markdown.`,
+        },
+        { role: 'user', content: opts.userPrompt },
         { role: 'user', content: buildJsonRepairUserPrompt(opts.schemaName, invalidSnippet) },
       ],
       response_format: { type: 'json_object' },

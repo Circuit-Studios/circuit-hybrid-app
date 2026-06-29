@@ -10,7 +10,9 @@ process.env.LOG_LEVEL ??= 'warn';
 process.env.JWT_SECRET ??= 'test-secret-please-ignore-32-chars-min';
 process.env.JWT_ISSUER ??= 'circuit-test';
 process.env.JWT_AUDIENCE ??= 'circuit-test-mobile';
-process.env.DATABASE_URL ??= 'postgresql://test:test@localhost:5432/circuit_test';
+// Matches docker-compose Postgres + CI (circuit/circuit). DB-backed integration
+// tests run against `circuit_test`; pure unit tests never open a connection.
+process.env.DATABASE_URL ??= 'postgresql://circuit:circuit@localhost:5432/circuit_test';
 process.env.LLM_PROVIDER ??= 'NVIDIA';
 process.env.NVIDIA_API_KEY ??= 'nvapi-test';
 process.env.NVIDIA_MODEL_PLANNER ??= 'nvidia/test-planner';

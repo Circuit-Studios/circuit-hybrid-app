@@ -238,4 +238,42 @@ router.delete(
   }),
 );
 
+// GET /me/tasks — tasks assigned to the signed-in user across every project
+// they're an active member of. Powers the global "Tasks" tab (cross-project
+// "my work" / Spider mode), as opposed to a single project's department board.
+router.get(
+  '/me/tasks',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const userId = req.user!.sub;
+    const status = req.query.status as TaskStatus | undefined;
+
+    const memberships = await prisma.projectMember.findMany({
+      where: { userId, status: MembershipStatus.ACTIVE },
+      select: { projectId: true },
+    });
+    const projectIds = memberships.map((m) => m.projectId);
+    if (projectIds.length === 0) {
+      res.json([]);
+      return;
+    }
+
+    const tasks = await prisma.task.findMany({
+      where: {
+        assigneeUserId: userId,
+        projectId: { in: projectIds },
+        ...(status ? { status } : {}),
+      },
+      include: {
+        department: { select: { id: true, displayName: true, kind: true } },
+        project: { select: { id: true, name: true } },
+      },
+      orderBy: [{ dueDate: 'asc' }, { priority: 'desc' }, { createdAt: 'desc' }],
+      take: 200,
+    });
+
+    res.json(tasks);
+  }),
+);
+
 export default router;

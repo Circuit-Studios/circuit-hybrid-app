@@ -17,7 +17,7 @@ const TAB_META: Record<
     icon: keyof typeof Ionicons.glyphMap;
   }
 > = {
-  workspace: { label: 'Overview', icon: 'home-outline' },
+  workspace: { label: 'Overview', icon: 'film-outline' },
   tasks: { label: 'Tasks', icon: 'list-outline' },
   schedule: { label: 'Schedule', icon: 'calendar-outline' },
   team: { label: 'Team', icon: 'people-outline' },

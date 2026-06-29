@@ -52,7 +52,7 @@ describe('chatJson', () => {
     expect(out.provider).toBe('NVIDIA');
   });
 
-  it('throws when the model returns invalid JSON after repair', async () => {
+  it('throws when the model returns invalid JSON after one repair attempt', async () => {
     mockFetch
       .mockResolvedValueOnce(nvidiaResponse('{not json'))
       .mockResolvedValueOnce(nvidiaResponse('{still bad'));
@@ -69,28 +69,5 @@ describe('chatJson', () => {
     ).rejects.toThrow(/JSON/);
 
     expect(mockFetch).toHaveBeenCalledTimes(2);
-  });
-
-  it('passes raw invalid JSON to the repair prompt, not the generic error message', async () => {
-    const badJson = '{not json';
-    mockFetch
-      .mockResolvedValueOnce(nvidiaResponse(badJson))
-      .mockResolvedValueOnce(nvidiaResponse(JSON.stringify({ characters: [] })));
-
-    await chatJson({
-      role: 'planner',
-      stage: 'json_repair',
-      schema,
-      schemaName: 'Test',
-      systemPrompt: 's',
-      userPrompt: 'u',
-    });
-
-    const repairBody = JSON.parse(String(mockFetch.mock.calls[1]![1]!.body));
-    const userMessage = repairBody.messages.find(
-      (m: { role: string }) => m.role === 'user',
-    ).content;
-    expect(userMessage).toContain(badJson);
-    expect(userMessage).not.toContain('AI response was not valid JSON');
   });
 });

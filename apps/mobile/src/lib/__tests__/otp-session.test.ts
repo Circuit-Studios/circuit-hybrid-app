@@ -21,27 +21,18 @@ describe('validateOtpSession', () => {
     });
   });
 
-  it('rejects incomplete signup session', () => {
-    expect(
-      validateOtpSession({
-        ...baseSession,
-        mode: 'signup',
-        password: 'short',
-        role: 'CREW',
-        firstName: 'Ada',
-      }),
-    ).toEqual({ ok: false, issue: 'incomplete_signup' });
-  });
-
-  it('rejects signup session with empty password', () => {
-    expect(
-      validateOtpSession({
-        ...baseSession,
-        mode: 'signup',
-        password: '',
-        role: 'CREW',
-        firstName: 'Ada',
-      }),
-    ).toEqual({ ok: false, issue: 'incomplete_signup' });
+  it('rejects incomplete signup sessions', () => {
+    const incomplete = {
+      ...baseSession,
+      mode: 'signup' as const,
+      password: 'short',
+      role: 'CREW' as const,
+      firstName: 'Ada',
+    };
+    expect(validateOtpSession(incomplete)).toEqual({ ok: false, issue: 'incomplete_signup' });
+    expect(validateOtpSession({ ...incomplete, password: '' })).toEqual({
+      ok: false,
+      issue: 'incomplete_signup',
+    });
   });
 });

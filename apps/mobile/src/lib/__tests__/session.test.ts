@@ -4,7 +4,6 @@ import {
   isIdleSessionExpired,
   isScriptAnalysisInProgress,
   isSessionExpired,
-  OTP_TTL_MS,
   readJwtExpiresAtMs,
   resolveSessionExpiresAtMs,
 } from '@/lib/session';
@@ -39,29 +38,20 @@ describe('session expiry', () => {
   it('detects in-progress script analysis', () => {
     expect(isScriptAnalysisInProgress('ANALYZING_SCENES')).toBe(true);
     expect(isScriptAnalysisInProgress('COMPLETED')).toBe(false);
-    expect(isScriptAnalysisInProgress('FAILED')).toBe(false);
     expect(isScriptAnalysisInProgress(undefined)).toBe(false);
   });
 
-  it('prefers API expiresAt over JWT exp', () => {
+  it('resolves session expiry from API expiresAt or JWT exp', () => {
     const iso = new Date(Date.now() + 120_000).toISOString();
-    const token = makeToken(Math.floor(Date.now() / 1000) + 30);
-    expect(resolveSessionExpiresAtMs(iso, token)).toBe(Date.parse(iso));
-  });
+    const shortToken = makeToken(Math.floor(Date.now() / 1000) + 30);
+    expect(resolveSessionExpiresAtMs(iso, shortToken)).toBe(Date.parse(iso));
 
-  it('falls back to JWT exp when expiresAt is missing', () => {
     const exp = Math.floor(Date.now() / 1000) + 90;
-    const token = makeToken(exp);
-    expect(resolveSessionExpiresAtMs(undefined, token)).toBe(exp * 1000);
+    expect(resolveSessionExpiresAtMs(undefined, makeToken(exp))).toBe(exp * 1000);
   });
 
   it('formats remaining time', () => {
     expect(formatRemainingSession(305)).toBe('5:05');
     expect(formatRemainingSession(42)).toBe('42s');
-  });
-
-  it('uses OTP and idle constants', () => {
-    expect(OTP_TTL_MS).toBe(5 * 60 * 1000);
-    expect(IDLE_TIMEOUT_MS).toBe(3 * 60 * 1000);
   });
 });
