@@ -8,6 +8,20 @@ import {
 
 const emptyToUndefined = (value: unknown) => (value === '' ? undefined : value);
 
+/** Env vars are always strings — `z.coerce.boolean()` treats `"false"` as true. */
+function envBoolean(defaultValue: boolean) {
+  return z.preprocess((value) => {
+    if (value === undefined || value === '') return defaultValue;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === 'true' || normalized === '1' || normalized === 'yes') return true;
+      if (normalized === 'false' || normalized === '0' || normalized === 'no') return false;
+    }
+    return Boolean(value);
+  }, z.boolean());
+}
+
 const optionalUrl = z.preprocess(emptyToUndefined, z.string().url().optional());
 
 const optionalString = z.preprocess(emptyToUndefined, z.string().optional());
@@ -32,7 +46,7 @@ const schema = z.object({
   LOGIN_IDENTIFIER: z.enum(['PHONE', 'EMAIL', 'BOTH']).default('PHONE'),
   EMAIL_OTP_PROVIDER: z.enum(['MOCK', 'RESEND']).default('MOCK'),
   PHONE_OTP_PROVIDER: z.enum(['MOCK', 'MSG91', 'TWILIO']).default('MOCK'),
-  ALLOW_MOCK_OTP_IN_PROD: z.coerce.boolean().default(false),
+  ALLOW_MOCK_OTP_IN_PROD: envBoolean(false),
 
   RESEND_API_KEY: optionalString,
   RESEND_OTP_TEMPLATE_ID: optionalString,
@@ -40,7 +54,7 @@ const schema = z.object({
   RESEND_FROM_EMAIL: optionalString,
   RESEND_REPLY_TO: optionalString,
 
-  ALLOW_DIRECT_REGISTER: z.coerce.boolean().default(false),
+  ALLOW_DIRECT_REGISTER: envBoolean(false),
 
   MSG91_AUTH_KEY: optionalString,
   MSG91_SENDER_ID: optionalString,
@@ -81,9 +95,9 @@ const schema = z.object({
   LLM_EXTRACTOR_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.1),
   LLM_FAST_TEMPERATURE: z.coerce.number().min(0).max(2).default(0),
   LLM_JSON_REPAIR_RETRIES: z.coerce.number().int().min(0).max(3).default(1),
-  LLM_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
+  LLM_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(180_000),
 
-  LANGSMITH_TRACING: z.coerce.boolean().default(false),
+  LANGSMITH_TRACING: envBoolean(false),
   LANGSMITH_API_KEY: z.string().optional(),
   LANGSMITH_PROJECT: z.string().optional(),
 

@@ -37,9 +37,29 @@ export const taskSuggestionItemSchemaWithLegacy = taskSuggestionItemSchema.or(
   }),
 );
 
-export const taskSuggestionsResponseSchema = z.object({
-  suggestions: tolerantObjectArray(taskSuggestionItemSchema, 120),
-});
+/**
+ * Models occasionally wrap the array under the schema name (e.g.
+ * `{ "TaskSuggestions": [...] }`) or another single key instead of the expected
+ * `suggestions`. Normalise those shapes (and a bare top-level array) before
+ * validation so a correct payload under the wrong key isn't silently dropped.
+ */
+function unwrapSuggestions(value: unknown): unknown {
+  if (Array.isArray(value)) return { suggestions: value };
+  if (value && typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    if (Array.isArray(obj.suggestions)) return value;
+    const arrayValues = Object.values(obj).filter(Array.isArray);
+    if (arrayValues.length === 1) return { suggestions: arrayValues[0] };
+  }
+  return value;
+}
+
+export const taskSuggestionsResponseSchema = z.preprocess(
+  unwrapSuggestions,
+  z.object({
+    suggestions: tolerantObjectArray(taskSuggestionItemSchema, 120),
+  }),
+);
 
 export type TaskSuggestionItem = z.infer<typeof taskSuggestionItemSchema>;
 export type TaskSuggestionsResponse = z.infer<typeof taskSuggestionsResponseSchema>;

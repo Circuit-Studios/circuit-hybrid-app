@@ -8,7 +8,7 @@ import {
   type FloatingTabItem,
 } from '@/components/ui/FloatingTabBar';
 
-type AppTabKey = 'home' | 'activity' | 'schedule' | 'team';
+type AppTabKey = 'home' | 'tasks' | 'schedule' | 'team';
 
 const TAB_META: Record<
   AppTabKey,
@@ -23,10 +23,10 @@ const TAB_META: Record<
     icon: 'home-outline',
     href: '/(app)/(tabs)/home',
   },
-  activity: {
-    label: 'Activity',
-    icon: 'pulse-outline',
-    href: '/(app)/(tabs)/activity',
+  tasks: {
+    label: 'Tasks',
+    icon: 'list-outline',
+    href: '/(app)/(tabs)/tasks',
   },
   schedule: {
     label: 'Schedule',
@@ -41,7 +41,7 @@ const TAB_META: Record<
 };
 
 function resolveActiveTab(pathname: string): AppTabKey {
-  if (pathname.includes('/activity')) return 'activity';
+  if (pathname.includes('/tasks')) return 'tasks';
   if (pathname.includes('/schedule')) return 'schedule';
   if (pathname.includes('/team')) return 'team';
   return 'home';

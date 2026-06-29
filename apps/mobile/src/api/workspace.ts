@@ -1,6 +1,7 @@
 import { api } from './client';
 import type {
   ConflictAlert,
+  MyTask,
   ProjectHealth,
   ShootDay,
   Task,
@@ -21,6 +22,11 @@ export interface ListTasksParams {
 
 export async function listTasks(projectId: string, params: ListTasksParams = {}): Promise<Task[]> {
   const { data } = await api.get<Task[]>(`/projects/${projectId}/tasks`, { params });
+  return data;
+}
+
+export async function listMyTasks(params: { status?: TaskStatus } = {}): Promise<MyTask[]> {
+  const { data } = await api.get<MyTask[]>('/me/tasks', { params });
   return data;
 }
 

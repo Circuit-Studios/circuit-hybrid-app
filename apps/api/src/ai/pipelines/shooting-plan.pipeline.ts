@@ -201,6 +201,16 @@ export async function runShootingPlanPipeline(scriptId: string): Promise<{
       scriptId,
     });
 
+    // An empty shoot-day list means the planner produced nothing usable (often a
+    // reasoning model wrapping JSON in prose that degraded to empty arrays). Fail
+    // loudly instead of silently storing a blank plan marked COMPLETED.
+    if (shootingPlan.shootDays.length === 0) {
+      throw new LlmError('Shooting plan generation produced no shoot days', {
+        provider: 'NVIDIA',
+        stage: 'shooting_plan',
+      });
+    }
+
     const allRisks = [
       ...shootingPlan.shootDays.flatMap((d) => d.risks),
       shootingPlan.riskSummary,
