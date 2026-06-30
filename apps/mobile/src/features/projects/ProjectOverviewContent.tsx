@@ -2,10 +2,11 @@ import { useMemo } from 'react';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Card } from '@/components/Card';
 import { StatusBadge } from '@/components/StatusBadge';
-import { HealthRing, type HealthRingSegment } from '@/components/HealthRing';
+import { HealthRing } from '@/components/HealthRing';
 import { EmptyState } from '@/components/EmptyState';
 import { SectionHeader } from '@/components/SectionHeader';
 import { getProject } from '@/api/projects';
@@ -15,28 +16,56 @@ import { readApiError } from '@/api/client';
 import { useAppConfig } from '@/config/AppConfigContext';
 import { useContentFrame } from '@/hooks/useContentFrame';
 import { useProjectRoom } from '@/realtime/useProjectRoom';
-import { getHealthRingSize, colors, radius, spacing, typography } from '@/theme';
+import { getHealthRingSize, colors, radius, shadows, spacing, typography } from '@/theme';
 import { formatProjectLanguages, formatRole, formatStatus, relativeTimeFrom } from '@/lib/format';
-import type { ConflictAlert, DepartmentKind } from '@/api/types';
+import type { ConflictAlert, DepartmentSummary } from '@/api/types';
 
-const DEPT_COLORS: Record<DepartmentKind, string> = {
-  DIRECTION: colors.ringDirection,
-  PRODUCTION: colors.ringDirection,
-  CASTING: colors.ringDirection,
-  DOP_CAMERA: colors.ringDOP,
-  ART: colors.ringArt,
-  COSTUME: colors.ringCostume,
-  MAKEUP_HAIR: colors.ringMakeup,
-  STUNTS: colors.ringStunts,
-  VFX: colors.ringSound,
-  SOUND: colors.ringSound,
-  MUSIC: colors.ringSound,
-  LOCATION: colors.ringArt,
-  EDITORIAL: colors.ringDOP,
-  POST_DI: colors.ringSound,
-  POST_SOUND: colors.ringSound,
-  OTHER: colors.ringDefault,
-};
+interface DepartmentProgress {
+  id: string;
+  label: string;
+  value: number;
+  tasks: DepartmentSummary['tasks'];
+}
+
+type DepartmentReadinessStatus = 'ready' | 'in_progress' | 'not_started';
+
+function departmentReadiness(dept: DepartmentProgress): DepartmentReadinessStatus {
+  const { todo, inProgress, done, blocked } = dept.tasks;
+  const total = todo + inProgress + done + blocked;
+  if (dept.value >= 100 || (total > 0 && done === total)) return 'ready';
+  if (total === 0) return 'not_started';
+  if (inProgress > 0 || done > 0 || blocked > 0) return 'in_progress';
+  return 'not_started';
+}
+
+/** Status colour for the leading dot: muted (not started), gold (in progress), green (ready). */
+function departmentStatusColor(dept: DepartmentProgress): string {
+  const status = departmentReadiness(dept);
+  if (status === 'ready') return colors.success;
+  if (status === 'not_started') return colors.textMuted;
+  return colors.brand;
+}
+
+function departmentStatusLabel(dept: DepartmentProgress): string {
+  const status = departmentReadiness(dept);
+  if (status === 'ready') return 'Ready';
+  if (status === 'not_started') return 'Not started';
+  return 'In progress';
+}
+
+function departmentPriority(dept: DepartmentProgress): number {
+  const status = departmentReadiness(dept);
+  if (status === 'in_progress') return 0;
+  if (status === 'not_started') return 1;
+  return 2;
+}
+
+function departmentSort(a: DepartmentProgress, b: DepartmentProgress): number {
+  const priorityDelta = departmentPriority(a) - departmentPriority(b);
+  if (priorityDelta !== 0) return priorityDelta;
+  if (b.tasks.inProgress !== a.tasks.inProgress) return b.tasks.inProgress - a.tasks.inProgress;
+  return a.value - b.value;
+}
 
 export interface ProjectOverviewContentProps {
   projectId: string;
@@ -111,27 +140,38 @@ export function ProjectOverviewContent({ projectId }: ProjectOverviewContentProp
     );
   }
 
-  const segments: HealthRingSegment[] = health.departments
-    .filter((d) => d.required)
-    .slice(0, 6)
+  const departments: DepartmentProgress[] = health.departments
+    .filter((d) => {
+      const taskCount = d.tasks.todo + d.tasks.inProgress + d.tasks.done + d.tasks.blocked;
+      return d.required || taskCount > 0;
+    })
     .map((d) => ({
       id: d.id,
       label: d.displayName,
       value: d.progress,
-      color: DEPT_COLORS[d.kind] ?? colors.ringDefault,
-    }));
+      tasks: d.tasks,
+    }))
+    .sort(departmentSort);
+  const readyCount = departments.filter((d) => departmentReadiness(d) === 'ready').length;
 
   return (
     <>
-      <Card variant="hero" style={styles.heroCard}>
-        <Text style={styles.heroEyebrow}>Production workspace</Text>
-        <Text style={styles.title}>{project.name}</Text>
-        <View style={styles.metaRow}>
-          <StatusBadge label={formatStatus(project.currentStage)} tone="info" />
-          {project.role ? <StatusBadge label={formatRole(project.role)} tone="accent" /> : null}
-          <StatusBadge label={formatProjectLanguages(project)} tone="neutral" />
-        </View>
-      </Card>
+      <View style={styles.heroGlow}>
+        <LinearGradient
+          colors={[colors.amberLight, colors.brand, colors.brandStrong]}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 1 }}
+          style={styles.heroCard}
+        >
+          <Text style={styles.heroEyebrow}>Production workspace</Text>
+          <Text style={styles.title}>{project.name}</Text>
+          <View style={styles.metaRow}>
+            <HeroMetaPill label={formatStatus(project.currentStage)} />
+            {project.role ? <HeroMetaPill label={formatRole(project.role)} /> : null}
+            <HeroMetaPill label={formatProjectLanguages(project)} />
+          </View>
+        </LinearGradient>
+      </View>
 
       <View style={styles.statsRow}>
         <Stat big={`${health.overallProgress}%`} label="Overall ready" />
@@ -155,10 +195,10 @@ export function ProjectOverviewContent({ projectId }: ProjectOverviewContentProp
 
       <SectionHeader
         title="Project health"
-        sub="Each ring segment tracks a required department. Tap a department to review its tasks."
+        sub="See which departments need attention before the next shoot day."
       />
-      <Card variant="glass">
-        {segments.length === 0 ? (
+      <Card variant="glass" style={styles.healthCard}>
+        {departments.length === 0 ? (
           <View style={styles.healthEmpty}>
             <Text style={styles.placeholder}>
               Upload your script and Circuit will map required departments here.
@@ -172,27 +212,32 @@ export function ProjectOverviewContent({ projectId }: ProjectOverviewContentProp
             ) : null}
           </View>
         ) : (
-          <View style={[styles.ringWrap, isWide && styles.ringWrapTablet]}>
-            <HealthRing
-              size={ringSize}
-              segments={segments}
-              centerLabel={`${health.overallProgress}%`}
-              centerSub="Pre-production"
-            />
-            <View style={[styles.legend, isWide && styles.legendTablet]}>
-              {segments.map((seg) => (
-                <Pressable
-                  key={seg.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`View tasks for ${seg.label}`}
-                  onPress={() => router.push(`/(app)/(tabs)/tasks?dept=${seg.id}`)}
-                  style={({ pressed }) => [styles.legendRow, pressed && styles.legendRowPressed]}
-                >
-                  <View style={[styles.legendDot, { backgroundColor: seg.color }]} />
-                  <Text style={styles.legendLabel}>{seg.label}</Text>
-                  <Text style={styles.legendValue}>{seg.value}%</Text>
-                  <Text style={styles.legendChevron}>›</Text>
-                </Pressable>
+          <View style={styles.readinessConsole}>
+            <View style={styles.readinessHeader}>
+              <View style={styles.readinessCopy}>
+                <Text style={styles.readinessEyebrow}>Project readiness</Text>
+                <Text style={styles.readinessTitle}>
+                  {readyCount} of {departments.length} departments ready
+                </Text>
+                <Text style={styles.readinessSub}>
+                  Focus on the open departments before moving the shoot forward.
+                </Text>
+              </View>
+              <HealthRing
+                size={ringSize}
+                thickness={10}
+                value={health.overallProgress}
+                centerLabel={`${health.overallProgress}%`}
+              />
+            </View>
+
+            <View style={[styles.departmentList, isWide && styles.departmentListTablet]}>
+              {departments.map((dept) => (
+                <DepartmentRow
+                  key={dept.id}
+                  dept={dept}
+                  onPress={() => router.push(`/(app)/(tabs)/activity?dept=${dept.id}`)}
+                />
               ))}
             </View>
           </View>
@@ -241,6 +286,66 @@ export function ProjectOverviewContent({ projectId }: ProjectOverviewContentProp
   );
 }
 
+function DepartmentRow({ dept, onPress }: { dept: DepartmentProgress; onPress: () => void }) {
+  const value = Math.max(0, Math.min(100, dept.value));
+  const statusColor = departmentStatusColor(dept);
+  const status = departmentReadiness(dept);
+  const statusLabel = departmentStatusLabel(dept);
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`View tasks for ${dept.label}, ${statusLabel}, ${value}% ready`}
+      onPress={onPress}
+      style={({ pressed }) => [styles.deptRow, pressed && styles.deptRowPressed]}
+    >
+      <View style={styles.deptHead}>
+        <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+        <Text style={styles.deptLabel} numberOfLines={1}>
+          {dept.label}
+        </Text>
+        <View
+          style={[
+            styles.statusPill,
+            status === 'ready' && styles.statusPillReady,
+            status === 'in_progress' && styles.statusPillInProgress,
+            status === 'not_started' && styles.statusPillNotStarted,
+          ]}
+        >
+          <Text
+            style={[
+              styles.statusPillText,
+              status === 'ready' && styles.statusPillTextReady,
+              status === 'in_progress' && styles.statusPillTextInProgress,
+              status === 'not_started' && styles.statusPillTextNotStarted,
+            ]}
+          >
+            {statusLabel}
+          </Text>
+        </View>
+        <Text style={styles.deptValue}>{value}%</Text>
+        <Text style={styles.deptChevron}>›</Text>
+      </View>
+      <View style={styles.progressBarTrack}>
+        <View
+          style={[
+            styles.progressBarFill,
+            status === 'ready' && styles.progressBarFillReady,
+            { width: `${value}%` },
+          ]}
+        />
+      </View>
+    </Pressable>
+  );
+}
+
+function HeroMetaPill({ label }: { label: string }) {
+  return (
+    <View style={styles.heroPill}>
+      <Text style={styles.heroPillText}>{label}</Text>
+    </View>
+  );
+}
+
 function Stat({ big, label, tone }: { big: string; label: string; tone?: 'success' | 'danger' }) {
   return (
     <View style={styles.statTile}>
@@ -278,10 +383,20 @@ function ConflictRow({ alert }: { alert: ConflictAlert }) {
 
 const styles = StyleSheet.create({
   center: { paddingVertical: spacing.xxl, alignItems: 'center', justifyContent: 'center' },
-  heroCard: { marginBottom: spacing.lg },
+  heroGlow: {
+    alignSelf: 'stretch',
+    borderRadius: radius.card,
+    marginBottom: spacing.lg,
+    ...shadows.glow,
+  },
+  heroCard: {
+    borderRadius: radius.card,
+    overflow: 'hidden',
+    padding: spacing.lg,
+  },
   heroEyebrow: {
     ...typography.micro,
-    color: 'rgba(255,255,255,0.85)',
+    color: 'rgba(255,255,255,0.9)',
     marginBottom: spacing.sm,
   },
   title: {
@@ -290,6 +405,15 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  heroPill: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.42)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.65)',
+  },
+  heroPillText: { ...typography.micro, color: colors.onBrand },
   statsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   statTile: {
     flex: 1,
@@ -318,28 +442,54 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     textAlign: 'center',
   },
-  ringWrap: { alignItems: 'center', paddingVertical: spacing.md },
-  ringWrapTablet: {
+  healthCard: { marginBottom: spacing.sm },
+  readinessConsole: { gap: spacing.md },
+  readinessHeader: {
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    gap: spacing.xl,
+    justifyContent: 'space-between',
+    gap: spacing.md,
   },
-  legend: { alignSelf: 'stretch', marginTop: spacing.lg, width: '100%', gap: spacing.sm },
-  legendTablet: { marginTop: 0, flex: 1, maxWidth: 360 },
-  legendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.xs,
+  readinessCopy: { flex: 1, gap: 3 },
+  readinessEyebrow: { ...typography.micro, color: colors.brandStrong },
+  readinessTitle: { ...typography.heading, color: colors.textPrimary },
+  readinessSub: { ...typography.caption, color: colors.textSecondary },
+  departmentList: { gap: spacing.sm },
+  departmentListTablet: { flexDirection: 'row', flexWrap: 'wrap' },
+  deptRow: {
+    gap: 6,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
     borderRadius: radius.md,
+    backgroundColor: 'rgba(255,255,255,0.38)',
   },
-  legendRowPressed: { backgroundColor: colors.accentSoft },
-  legendDot: { width: 12, height: 12, borderRadius: 999 },
-  legendLabel: { ...typography.body, color: colors.textPrimary, flex: 1 },
-  legendValue: { ...typography.bodyStrong, color: colors.textSecondary },
-  legendChevron: { ...typography.bodyStrong, color: colors.textMuted },
+  deptRowPressed: { backgroundColor: colors.accentSoft },
+  deptHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  statusDot: { width: 10, height: 10, borderRadius: 999 },
+  deptLabel: { ...typography.body, color: colors.textPrimary, flex: 1 },
+  deptValue: { ...typography.bodyStrong, color: colors.textSecondary },
+  deptChevron: { ...typography.bodyStrong, color: colors.textMuted },
+  statusPill: {
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+  },
+  statusPillReady: { backgroundColor: colors.successSoft },
+  statusPillInProgress: { backgroundColor: colors.accentSoft },
+  statusPillNotStarted: { backgroundColor: colors.surfaceMuted },
+  statusPillText: { ...typography.micro, letterSpacing: 0.4 },
+  statusPillTextReady: { color: colors.success },
+  statusPillTextInProgress: { color: colors.brandStrong },
+  statusPillTextNotStarted: { color: colors.textSecondary },
+  progressBarTrack: {
+    height: 4,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surfaceMuted,
+    overflow: 'hidden',
+    marginLeft: spacing.sm + 10,
+  },
+  progressBarFill: { height: 4, borderRadius: radius.pill, backgroundColor: colors.brand },
+  progressBarFillReady: { backgroundColor: colors.success },
   healthEmpty: { gap: spacing.md, alignItems: 'flex-start' },
   placeholder: { ...typography.body, color: colors.textSecondary },
   conflictEmptyCard: { gap: spacing.sm },

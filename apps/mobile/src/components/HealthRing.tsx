@@ -1,72 +1,68 @@
 import { StyleSheet, Text, View } from 'react-native';
-import Svg, { Circle, G } from 'react-native-svg';
+import Svg, { Circle, Defs, G, LinearGradient, Stop } from 'react-native-svg';
 import { colors, typography } from '@/theme';
-
-export interface HealthRingSegment {
-  id: string;
-  label: string;
-  value: number; // 0..100
-  color: string;
-}
 
 interface HealthRingProps {
   size?: number;
   thickness?: number;
-  segments: HealthRingSegment[];
-  /** Big number shown in the middle of the ring. Defaults to weighted avg. */
+  /** Overall progress 0..100 shown by the gold arc. */
+  value: number;
+  /** Big number shown in the middle of the ring. Defaults to `${value}%`. */
   centerLabel?: string;
   centerSub?: string;
+  trackColor?: string;
 }
 
+/** Single bold progress ring with a gold gradient arc. */
 export function HealthRing({
-  size = 220,
-  thickness = 12,
-  segments,
+  size = 104,
+  thickness = 10,
+  value,
   centerLabel,
   centerSub,
+  trackColor = colors.ringTrack,
 }: HealthRingProps) {
   const cx = size / 2;
   const cy = size / 2;
-  const radii = segments.map((_, idx) => cx - thickness * (idx + 0.5) - 2);
-  const avg = segments.length
-    ? Math.round(segments.reduce((sum, s) => sum + s.value, 0) / segments.length)
-    : 0;
+  const r = cx - thickness / 2 - 2;
+  const circumference = 2 * Math.PI * r;
+  const clamped = Math.max(0, Math.min(100, value));
+  const dashoffset = circumference - (circumference * clamped) / 100;
 
   return (
     <View style={[styles.wrap, { width: size, height: size }]}>
       <Svg width={size} height={size}>
-        {segments.map((seg, idx) => {
-          const r = radii[idx] ?? cx - thickness;
-          const circumference = 2 * Math.PI * r;
-          const clamped = Math.max(0, Math.min(100, seg.value));
-          const stroke = circumference - (circumference * clamped) / 100;
-          return (
-            <G key={seg.id} rotation="-90" originX={cx} originY={cy}>
-              <Circle
-                cx={cx}
-                cy={cy}
-                r={r}
-                stroke={colors.ringTrack}
-                strokeWidth={thickness}
-                fill="transparent"
-              />
-              <Circle
-                cx={cx}
-                cy={cy}
-                r={r}
-                stroke={seg.color}
-                strokeWidth={thickness}
-                strokeLinecap="round"
-                strokeDasharray={`${circumference}`}
-                strokeDashoffset={stroke}
-                fill="transparent"
-              />
-            </G>
-          );
-        })}
+        <Defs>
+          <LinearGradient id="healthRingGold" x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor={colors.amberLight} />
+            <Stop offset="0.5" stopColor={colors.brand} />
+            <Stop offset="1" stopColor={colors.brandStrong} />
+          </LinearGradient>
+        </Defs>
+        <Circle
+          cx={cx}
+          cy={cy}
+          r={r}
+          stroke={trackColor}
+          strokeWidth={thickness}
+          fill="transparent"
+        />
+        <G rotation="-90" originX={cx} originY={cy}>
+          <Circle
+            cx={cx}
+            cy={cy}
+            r={r}
+            stroke="url(#healthRingGold)"
+            strokeWidth={thickness}
+            strokeLinecap="round"
+            strokeDasharray={`${circumference}`}
+            strokeDashoffset={dashoffset}
+            fill="transparent"
+          />
+        </G>
       </Svg>
       <View style={[styles.center, { width: size, height: size }]} pointerEvents="none">
-        <Text style={styles.bigNumber}>{centerLabel ?? `${avg}%`}</Text>
+        <Text style={styles.bigNumber}>{centerLabel ?? `${Math.round(clamped)}%`}</Text>
         {centerSub ? <Text style={styles.sub}>{centerSub}</Text> : null}
       </View>
     </View>
@@ -80,6 +76,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bigNumber: { ...typography.display, color: colors.textPrimary },
-  sub: { ...typography.caption, color: colors.textSecondary, marginTop: 4 },
+  bigNumber: { ...typography.title, color: colors.textPrimary, fontSize: 22, lineHeight: 26 },
+  sub: { ...typography.caption, color: colors.textSecondary, marginTop: 2, fontSize: 11 },
 });

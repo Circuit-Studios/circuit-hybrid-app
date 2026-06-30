@@ -4,6 +4,7 @@ import { prisma } from '../../lib/prisma.js';
 import { asyncHandler, forbidden, notFound } from '../../lib/http.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { hasFullProjectVisibility } from '../../auth/permissions.js';
+import { computeProgressFromTasks } from './progress.service.js';
 
 const router: Router = Router();
 
@@ -114,10 +115,14 @@ router.get(
       tasksByDept.set(row.departmentId, bucket);
     }
 
-    const segments = departments.map((d) => ({
-      ...d,
-      tasks: tasksByDept.get(d.id) ?? { todo: 0, inProgress: 0, done: 0, blocked: 0 },
-    }));
+    const segments = departments.map((d) => {
+      const tasks = tasksByDept.get(d.id) ?? { todo: 0, inProgress: 0, done: 0, blocked: 0 };
+      return {
+        ...d,
+        progress: computeProgressFromTasks(tasks),
+        tasks,
+      };
+    });
 
     // Weighted average across required departments only — optional depts
     // (like POST_DI in early pre-prod) shouldn't drag the headline number

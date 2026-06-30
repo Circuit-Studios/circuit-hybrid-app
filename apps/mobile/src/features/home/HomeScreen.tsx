@@ -99,7 +99,7 @@ export default function HomeScreen() {
           icon="add"
           label="Add task"
           accent
-          onPress={() => router.push('/(app)/(tabs)/tasks')}
+          onPress={() => router.push('/(app)/(tabs)/activity')}
         />
       </ScrollView>
 

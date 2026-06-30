@@ -56,8 +56,9 @@ const styles = StyleSheet.create({
     borderColor: colors.surface,
   },
   badgeText: {
-    color: colors.onBrand,
+    color: '#FFFFFF',
     fontSize: 10,
     fontWeight: '700',
+    lineHeight: 12,
   },
 });

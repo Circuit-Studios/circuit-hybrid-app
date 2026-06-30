@@ -233,12 +233,16 @@ export interface Task {
   department?: { id: string; displayName: string; kind: DepartmentKind };
 }
 
+export type ShootTimeOfDay = 'DAY' | 'NIGHT';
+
 export interface ShootDay {
   id: string;
   projectId: string;
   dayNumber: number;
   date: string;
   location: string | null;
+  timeOfDay: ShootTimeOfDay | null;
+  personsRequired: number | null;
   callTimeUserId: string | null;
   notes: string | null;
   scenes?: Array<{

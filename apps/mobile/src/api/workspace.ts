@@ -3,6 +3,7 @@ import type {
   ConflictAlert,
   ProjectHealth,
   ShootDay,
+  ShootTimeOfDay,
   Task,
   TaskPriority,
   TaskStatus,
@@ -69,6 +70,8 @@ export interface CreateShootDayInput {
   dayNumber: number;
   date: string;
   location?: string;
+  timeOfDay?: ShootTimeOfDay;
+  personsRequired?: number;
   notes?: string;
   callTimeUserId?: string;
   sceneIds?: string[];
@@ -79,6 +82,24 @@ export async function createShootDay(
   input: CreateShootDayInput,
 ): Promise<ShootDay> {
   const { data } = await api.post<ShootDay>(`/projects/${projectId}/shoot-days`, input);
+  return data;
+}
+
+export interface UpdateShootDayInput {
+  date?: string;
+  location?: string | null;
+  timeOfDay?: ShootTimeOfDay | null;
+  personsRequired?: number | null;
+  notes?: string | null;
+  callTimeUserId?: string | null;
+  sceneIds?: string[];
+}
+
+export async function updateShootDay(
+  shootDayId: string,
+  input: UpdateShootDayInput,
+): Promise<ShootDay> {
+  const { data } = await api.patch<ShootDay>(`/shoot-days/${shootDayId}`, input);
   return data;
 }
 

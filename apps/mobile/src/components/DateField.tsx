@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { CalendarMonthPicker } from '@/components/CalendarMonthPicker';
 import { colors, radius, spacing, typography } from '@/theme';
 
 interface DateFieldProps {
@@ -37,21 +37,9 @@ export function DateField({
 }: DateFieldProps) {
   const [open, setOpen] = useState(false);
 
-  // Android fires onChange once per dismissal (event.type === 'dismissed' | 'set').
-  // iOS inline fires continuously while the user changes the date; we keep the
-  // picker open until the user taps Done.
-  const handleChange = useCallback(
-    (event: DateTimePickerEvent, selected?: Date) => {
-      if (Platform.OS === 'android') {
-        setOpen(false);
-        if (event.type === 'set' && selected) {
-          onChange(selected);
-        }
-        return;
-      }
-      if (selected) {
-        onChange(selected);
-      }
+  const handleSelect = useCallback(
+    (selected: Date) => {
+      onChange(selected);
     },
     [onChange],
   );
@@ -78,18 +66,13 @@ export function DateField({
         <Text style={styles.chev}>{open ? '▾' : '›'}</Text>
       </Pressable>
 
-      {open && Platform.OS === 'ios' ? (
-        <View style={styles.iosPicker}>
-          <DateTimePicker
-            value={value ?? new Date()}
-            mode="date"
-            display="inline"
-            onChange={handleChange}
+      {open ? (
+        <View style={styles.picker}>
+          <CalendarMonthPicker
+            value={value}
+            onChange={handleSelect}
             minimumDate={minimumDate}
             maximumDate={maximumDate}
-            themeVariant="dark"
-            accentColor={colors.accent}
-            textColor={colors.textPrimary}
           />
           <Pressable
             accessibilityRole="button"
@@ -100,17 +83,6 @@ export function DateField({
             <Text style={styles.doneBtnText}>Done</Text>
           </Pressable>
         </View>
-      ) : null}
-
-      {open && Platform.OS === 'android' ? (
-        <DateTimePicker
-          value={value ?? new Date()}
-          mode="date"
-          display="default"
-          onChange={handleChange}
-          minimumDate={minimumDate}
-          maximumDate={maximumDate}
-        />
       ) : null}
 
       {error ? (
@@ -146,13 +118,13 @@ const styles = StyleSheet.create({
   value: { ...typography.body, color: colors.textPrimary, flex: 1 },
   placeholder: { color: colors.textMuted },
   chev: { ...typography.bodyStrong, color: colors.textSecondary, marginLeft: spacing.sm },
-  iosPicker: {
+  picker: {
     marginTop: spacing.sm,
     backgroundColor: colors.glass,
     borderWidth: 1,
     borderColor: colors.glassBorder,
     borderRadius: radius.md,
-    padding: spacing.sm,
+    padding: spacing.md,
   },
   doneBtn: {
     alignSelf: 'flex-end',

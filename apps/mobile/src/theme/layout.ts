@@ -104,10 +104,9 @@ export function getDeptCardStyle(contentWidth: number): ViewStyle {
 }
 
 export function getHealthRingSize(contentWidth: number, isWide: boolean, height: number): number {
-  if (height < 400) return 160;
-  if (height < 520 && isWide) return 180;
-  if (!isWide) return 220;
-  return Math.min(260, Math.max(200, Math.round(contentWidth * 0.28)));
+  if (height < 400) return 88;
+  if (!isWide) return 104;
+  return Math.min(124, Math.max(104, Math.round(contentWidth * 0.18)));
 }
 
 const DROPDOWN_OPTION_ROW_HEIGHT = 48;

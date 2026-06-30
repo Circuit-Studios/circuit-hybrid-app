@@ -1,1 +1,1 @@
-export { default } from '@/features/activity/ActivityScreen';
+export { default } from '@/features/tasks/TasksTabScreen';
