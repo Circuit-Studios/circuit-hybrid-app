@@ -6,7 +6,7 @@ interface CardProps {
   children: React.ReactNode;
   style?: ViewStyle | ViewStyle[];
   padded?: boolean;
-  /** Glass panel, solid white, or orange→dark gradient hero. */
+  /** Glass panel, solid white, or all-gold gradient hero. */
   variant?: 'default' | 'glass' | 'hero';
 }
 
@@ -15,9 +15,9 @@ export function Card({ children, style, padded = true, variant = 'glass' }: Card
     return (
       <View style={[styles.card, styles.heroOuter, style]}>
         <LinearGradient
-          colors={[colors.heroFrom, colors.heroMid, colors.heroTo]}
+          colors={[colors.amberLight, colors.brand, colors.brandStrong]}
           start={{ x: 0.1, y: 0 }}
-          end={{ x: 0.5, y: 1 }}
+          end={{ x: 0.9, y: 1 }}
           style={[styles.heroGradient, padded && styles.padded]}
         >
           {children}

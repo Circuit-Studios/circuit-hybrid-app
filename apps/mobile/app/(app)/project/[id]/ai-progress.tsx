@@ -99,7 +99,7 @@ export default function AIProgressScreen() {
 
   return (
     <ScreenContainer scroll>
-      <Pressable onPress={() => router.replace(`/(app)/project/${projectId}`)} hitSlop={12}>
+      <Pressable onPress={() => router.replace('/(app)/(tabs)/home')} hitSlop={12}>
         <Text style={styles.back}>‹ Back to project</Text>
       </Pressable>
 
@@ -158,7 +158,7 @@ export default function AIProgressScreen() {
         <PrimaryButton
           title="Leave it running"
           variant="ghost"
-          onPress={() => router.replace(`/(app)/project/${projectId}`)}
+          onPress={() => router.replace('/(app)/(tabs)/home')}
         />
       </View>
     </ScreenContainer>

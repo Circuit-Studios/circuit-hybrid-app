@@ -1,40 +1,16 @@
 import { env } from '../../config/env.js';
-import { logger } from '../../lib/logger.js';
 import {
   JSON_REPAIR_SYSTEM_PROMPT,
   buildJsonRepairUserPrompt,
 } from '../prompts/json-repair.prompt.js';
-import { LlmError, LlmJsonParseError } from './errors.js';
-import { parseAndValidate, repairSnippetFromError } from './json-parse.js';
-import { recordLlmRun } from './usage.js';
-import type { ChatJsonOptions, ChatJsonResult, LlmChatProvider, LlmTokenUsage } from './types.js';
-
-function modelForRole(role: ChatJsonOptions<unknown>['role']): string {
-  switch (role) {
-    case 'extractor':
-      return env.GEMINI_MODEL_EXTRACTOR!;
-    case 'fast':
-      return env.GEMINI_MODEL_FAST!;
-    case 'fallback':
-    case 'planner':
-    default:
-      return env.GEMINI_MODEL_PLANNER ?? env.GEMINI_MODEL_EXTRACTOR!;
-  }
-}
-
-function temperatureForRole(role: ChatJsonOptions<unknown>['role'], override?: number): number {
-  if (override !== undefined) return override;
-  switch (role) {
-    case 'extractor':
-      return env.LLM_EXTRACTOR_TEMPERATURE;
-    case 'fast':
-      return env.LLM_FAST_TEMPERATURE;
-    case 'planner':
-    case 'fallback':
-    default:
-      return env.LLM_PLANNER_TEMPERATURE;
-  }
-}
+import { LlmError } from './errors.js';
+import {
+  runJsonChat,
+  type LlmProviderClient,
+  type ProviderGenerateRequest,
+  type ProviderRawResult,
+} from './json-runner.js';
+import type { ChatJsonOptions, ChatJsonResult, LlmChatProvider, LlmRole, LlmTokenUsage } from './types.js';
 
 interface GeminiGenerateResponse {
   candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
@@ -64,71 +40,58 @@ function extractText(payload: GeminiGenerateResponse): string | undefined {
     .trim();
 }
 
-export class GeminiLlmProvider implements LlmChatProvider {
+export class GeminiLlmProvider implements LlmChatProvider, LlmProviderClient {
   readonly name = 'GEMINI' as const;
 
-  async chatJson<T>(opts: ChatJsonOptions<T>): Promise<ChatJsonResult<T>> {
-    const model = modelForRole(opts.role);
-    const stage = opts.stage ?? opts.schemaName;
-    const started = Date.now();
+  chatJson<T>(opts: ChatJsonOptions<T>): Promise<ChatJsonResult<T>> {
+    return runJsonChat(this, opts);
+  }
 
-    logger.debug(
-      { provider: 'GEMINI', model, stage, promptChars: opts.userPrompt.length },
-      'llm.begin',
-    );
+  modelForRole(role: LlmRole): string {
+    switch (role) {
+      case 'extractor':
+        return env.GEMINI_MODEL_EXTRACTOR!;
+      case 'fast':
+        return env.GEMINI_MODEL_FAST!;
+      case 'fallback':
+      case 'planner':
+      default:
+        return env.GEMINI_MODEL_PLANNER ?? env.GEMINI_MODEL_EXTRACTOR!;
+    }
+  }
 
-    let lastErr: unknown;
-    const maxAttempts = 1 + env.LLM_JSON_REPAIR_RETRIES;
+  repairModelForRole(_role: LlmRole, primaryModel: string): string {
+    return env.GEMINI_MODEL_FAST ?? primaryModel;
+  }
 
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      try {
-        // Repair only for malformed-JSON failures; plain-retry transient errors.
-        const isRepair = attempt > 0 && lastErr instanceof LlmJsonParseError;
-        const repairModel = env.GEMINI_MODEL_FAST ?? model;
-        const { data, usage } = isRepair
-          ? await this.repairOnce(opts, repairModel, lastErr)
-          : await this.requestOnce(opts, model);
+  async generate(req: ProviderGenerateRequest): Promise<ProviderRawResult> {
+    const isRepair = req.repairSnippet !== undefined;
+    const systemText = isRepair
+      ? `${req.systemPrompt}\n\n${JSON_REPAIR_SYSTEM_PROMPT}\n\nReturn valid JSON only for schema "${req.schemaName}".`
+      : `${req.systemPrompt}\n\nRespond with valid JSON only for schema "${req.schemaName}".`;
 
-        const durationMs = Date.now() - started;
-        await recordLlmRun(
-          {
-            provider: 'GEMINI',
-            model,
-            stage: isRepair ? 'json_repair' : String(stage),
-            projectId: opts.projectId,
-            scriptId: opts.scriptId,
-          },
-          'SUCCEEDED',
-          durationMs,
-          usage,
-        );
-        return { data, provider: 'GEMINI', model, usage, durationMs };
-      } catch (err) {
-        lastErr = err;
-        if (attempt >= maxAttempts - 1) {
-          const message = err instanceof Error ? err.message : String(err);
-          const durationMs = Date.now() - started;
-          await recordLlmRun(
-            {
-              provider: 'GEMINI',
-              model,
-              stage: String(stage),
-              projectId: opts.projectId,
-              scriptId: opts.scriptId,
-            },
-            'FAILED',
-            durationMs,
-            undefined,
-            message,
-          );
-          throw err instanceof LlmError
-            ? err
-            : new LlmError(message, { provider: 'GEMINI', stage: String(stage), cause: err });
-        }
-      }
+    const contents: Array<{ role: string; parts: Array<{ text: string }> }> = [
+      { role: 'user', parts: [{ text: req.userPrompt }] },
+    ];
+    if (isRepair) {
+      contents.push({
+        role: 'user',
+        parts: [{ text: buildJsonRepairUserPrompt(req.schemaName, req.repairSnippet!) }],
+      });
     }
 
-    throw lastErr;
+    const body = {
+      systemInstruction: { parts: [{ text: systemText }] },
+      contents,
+      generationConfig: {
+        temperature: req.temperature,
+        responseMimeType: 'application/json',
+        ...(!isRepair && req.maxTokens ? { maxOutputTokens: req.maxTokens } : {}),
+      },
+    };
+
+    const payload = await this.geminiFetch(req.model, body, req.stage);
+    return { raw: extractText(payload), usage: parseUsage(payload) };
   }
 
   private async geminiFetch(
@@ -165,6 +128,7 @@ export class GeminiLlmProvider implements LlmChatProvider {
         throw new LlmError(`Gemini request timed out after ${env.LLM_REQUEST_TIMEOUT_MS}ms`, {
           provider: 'GEMINI',
           stage,
+          kind: 'timeout',
           cause: err,
         });
       }
@@ -172,65 +136,5 @@ export class GeminiLlmProvider implements LlmChatProvider {
     } finally {
       clearTimeout(timeout);
     }
-  }
-
-  private async requestOnce<T>(
-    opts: ChatJsonOptions<T>,
-    model: string,
-  ): Promise<{ data: T; usage?: LlmTokenUsage }> {
-    const stage = String(opts.stage ?? opts.schemaName);
-    const body = {
-      systemInstruction: {
-        parts: [
-          {
-            text: `${opts.systemPrompt}\n\nRespond with valid JSON only for schema "${opts.schemaName}".`,
-          },
-        ],
-      },
-      contents: [{ role: 'user', parts: [{ text: opts.userPrompt }] }],
-      generationConfig: {
-        temperature: temperatureForRole(opts.role, opts.temperature),
-        responseMimeType: 'application/json',
-        ...(opts.maxTokens ? { maxOutputTokens: opts.maxTokens } : {}),
-      },
-    };
-
-    const payload = await this.geminiFetch(model, body, stage);
-    const data = await parseAndValidate(extractText(payload), opts.schema, opts.schemaName);
-    return { data, usage: parseUsage(payload) };
-  }
-
-  private async repairOnce<T>(
-    opts: ChatJsonOptions<T>,
-    model: string,
-    firstErr: unknown,
-  ): Promise<{ data: T; usage?: LlmTokenUsage }> {
-    const invalidSnippet = repairSnippetFromError(firstErr);
-    // Resend the full original context so the model can regenerate real content
-    // rather than returning a structurally-valid but empty object.
-    const body = {
-      systemInstruction: {
-        parts: [
-          {
-            text: `${opts.systemPrompt}\n\n${JSON_REPAIR_SYSTEM_PROMPT}\n\nReturn valid JSON only for schema "${opts.schemaName}".`,
-          },
-        ],
-      },
-      contents: [
-        { role: 'user', parts: [{ text: opts.userPrompt }] },
-        {
-          role: 'user',
-          parts: [{ text: buildJsonRepairUserPrompt(opts.schemaName, invalidSnippet) }],
-        },
-      ],
-      generationConfig: {
-        temperature: 0,
-        responseMimeType: 'application/json',
-      },
-    };
-
-    const payload = await this.geminiFetch(model, body, 'json_repair');
-    const data = await parseAndValidate(extractText(payload), opts.schema, opts.schemaName);
-    return { data, usage: parseUsage(payload) };
   }
 }

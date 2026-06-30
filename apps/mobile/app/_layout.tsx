@@ -1,5 +1,6 @@
 import 'react-native-gesture-handler';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -13,22 +14,29 @@ import { ScriptAnalysisSessionKeepAlive } from '@/auth/ScriptAnalysisSessionKeep
 import { createQueryClient } from '@/lib/queryClient';
 import { RealtimeProvider } from '@/realtime/RealtimeProvider';
 import { colors } from '@/theme';
+import { fontAssets } from '@/theme/fonts';
 
 void SplashScreen.preventAutoHideAsync();
 
-function SplashGate({ children }: { children: React.ReactNode }) {
+function SplashGate({ fontsReady, children }: { fontsReady: boolean; children: React.ReactNode }) {
   const { status } = useAuth();
 
   useEffect(() => {
-    if (status === 'loading') return;
+    if (status === 'loading' || !fontsReady) return;
     void SplashScreen.hideAsync();
-  }, [status]);
+  }, [status, fontsReady]);
+
+  // Hold the splash (keep tree mounted) until fonts resolve so text never
+  // flashes in the system font before swapping to Plus Jakarta Sans.
+  if (!fontsReady) return null;
 
   return children;
 }
 
 export default function RootLayout() {
   const queryClient = useMemo(() => createQueryClient(), []);
+  const [fontsLoaded, fontError] = useFonts(fontAssets);
+  const fontsReady = fontsLoaded || fontError != null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -40,7 +48,7 @@ export default function RootLayout() {
               <IdleActivityCapture>
                 <RealtimeProvider>
                   <StatusBar style="dark" />
-                  <SplashGate>
+                  <SplashGate fontsReady={fontsReady}>
                     <Stack
                       screenOptions={{
                         headerShown: false,

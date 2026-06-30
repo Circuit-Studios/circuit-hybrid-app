@@ -233,10 +233,7 @@ export interface Task {
   department?: { id: string; displayName: string; kind: DepartmentKind };
 }
 
-/** A task assigned to the current user, annotated with its owning project. */
-export interface MyTask extends Task {
-  project: { id: string; name: string };
-}
+export type ShootTimeOfDay = 'DAY' | 'NIGHT';
 
 export interface ShootDay {
   id: string;
@@ -244,6 +241,8 @@ export interface ShootDay {
   dayNumber: number;
   date: string;
   location: string | null;
+  timeOfDay: ShootTimeOfDay | null;
+  personsRequired: number | null;
   callTimeUserId: string | null;
   notes: string | null;
   scenes?: Array<{

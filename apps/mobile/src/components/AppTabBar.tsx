@@ -7,8 +7,9 @@ import {
   floatingTabIconSize,
   type FloatingTabItem,
 } from '@/components/ui/FloatingTabBar';
+import { useChromeInsets } from '@/hooks/useChromeInsets';
 
-type AppTabKey = 'home' | 'tasks' | 'schedule' | 'team';
+type AppTabKey = 'home' | 'activity' | 'schedule' | 'team';
 
 const TAB_META: Record<
   AppTabKey,
@@ -23,10 +24,10 @@ const TAB_META: Record<
     icon: 'home-outline',
     href: '/(app)/(tabs)/home',
   },
-  tasks: {
-    label: 'Tasks',
-    icon: 'list-outline',
-    href: '/(app)/(tabs)/tasks',
+  activity: {
+    label: 'Activity',
+    icon: 'pulse-outline',
+    href: '/(app)/(tabs)/activity',
   },
   schedule: {
     label: 'Schedule',
@@ -40,17 +41,32 @@ const TAB_META: Record<
   },
 };
 
-function resolveActiveTab(pathname: string): AppTabKey {
-  if (pathname.includes('/tasks')) return 'tasks';
+/** Stack overlays sit above tabs — no footer tab should look selected. */
+function isOverlayRoute(pathname: string): boolean {
+  return (
+    pathname.includes('/notifications') ||
+    pathname.includes('/account') ||
+    pathname.includes('/projects') ||
+    pathname.includes('/create-project') ||
+    pathname.includes('/project/')
+  );
+}
+
+function resolveActiveTab(pathname: string): AppTabKey | null {
+  if (isOverlayRoute(pathname)) return null;
+  if (pathname.includes('/activity')) return 'activity';
   if (pathname.includes('/schedule')) return 'schedule';
   if (pathname.includes('/team')) return 'team';
-  return 'home';
+  if (pathname.includes('/home')) return 'home';
+  return null;
 }
 
 export function AppTabBar() {
   const router = useRouter();
   const pathname = usePathname();
+  const { compactTabBar } = useChromeInsets();
   const activeKey = resolveActiveTab(pathname);
+  const onTabRoute = activeKey !== null;
 
   const items: FloatingTabItem[] = useMemo(() => {
     return (Object.keys(TAB_META) as AppTabKey[]).map((key) => {
@@ -69,12 +85,21 @@ export function AppTabBar() {
           />
         ),
         onPress: () => {
-          if (key === activeKey) return;
+          // On overlays (notifications, account, …) a tab may look inactive but
+          // still match the fallback key — always navigate back to tabs.
+          if (key === activeKey && onTabRoute) return;
           router.replace(meta.href);
         },
       };
     });
-  }, [activeKey, router]);
+  }, [activeKey, onTabRoute, router]);
 
-  return <FloatingTabBar items={items} activeKey={activeKey} showLabels />;
+  return (
+    <FloatingTabBar
+      items={items}
+      activeKey={activeKey ?? ''}
+      showLabels
+      compact={compactTabBar}
+    />
+  );
 }

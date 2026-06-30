@@ -73,7 +73,7 @@ export default function UploadScriptScreen() {
         await triggerAnalysis(script.id);
         router.replace(`/(app)/project/${projectId}/ai-progress?scriptId=${script.id}`);
       } else {
-        router.replace(`/(app)/project/${projectId}`);
+        router.replace('/(app)/(tabs)/home');
       }
     } catch (err) {
       setError(readApiError(err, 'Upload failed'));
@@ -84,7 +84,7 @@ export default function UploadScriptScreen() {
 
   return (
     <ScreenContainer scroll>
-      <Pressable onPress={() => leaveUploadScript(router, projectId!)} hitSlop={12}>
+      <Pressable onPress={() => leaveUploadScript(router)} hitSlop={12}>
         <Text style={styles.back}>‹ Back</Text>
       </Pressable>
 
@@ -132,7 +132,7 @@ export default function UploadScriptScreen() {
         <PrimaryButton
           title="Skip for now"
           variant="ghost"
-          onPress={() => leaveUploadScript(router, projectId!)}
+          onPress={() => leaveUploadScript(router)}
         />
       </View>
 

@@ -11,9 +11,11 @@ import { Card } from '@/components/Card';
 import { StatusBadge } from '@/components/StatusBadge';
 import { readApiError } from '@/api/client';
 import { useAuth } from '@/auth/AuthContext';
+import { useActiveProject } from '@/context/ActiveProjectContext';
 import { leaveProjectsScreen } from '@/lib/appNavigation';
 import { useFloatingTabBarReserve } from '@/hooks/useFloatingTabBarReserve';
 import { colors, radius, spacing, typography } from '@/theme';
+import { fontFamily } from '@/theme/fonts';
 import { formatRole } from '@/lib/format';
 import type { ProjectInvite } from '@/api/types';
 import { ProjectCard } from './ProjectCard';
@@ -22,7 +24,13 @@ import { useAcceptInviteMutation, useMyInvitesQuery, useProjectsQuery } from './
 export default function ProjectList() {
   const router = useRouter();
   const { user } = useAuth();
+  const { setProjectId } = useActiveProject();
   const canStartProject = user?.defaultRole === 'DIRECTOR' || user?.defaultRole === 'PRODUCER';
+
+  const openProject = (id: string) => {
+    setProjectId(id);
+    router.replace('/(app)/(tabs)/home');
+  };
 
   const { data, isLoading, error, refetch, isRefetching } = useProjectsQuery();
   const invitesQ = useMyInvitesQuery();
@@ -91,7 +99,9 @@ export default function ProjectList() {
             contentContainerStyle={[styles.list, { paddingBottom: tabBarReserve + spacing.lg }]}
             data={projects}
             keyExtractor={(p) => p.id}
-            renderItem={({ item }) => <ProjectCard project={item} />}
+            renderItem={({ item }) => (
+              <ProjectCard project={item} onPress={() => openProject(item.id)} />
+            )}
             onRefresh={() => {
               void refetch();
               void invitesQ.refetch();
@@ -191,10 +201,10 @@ const styles = StyleSheet.create({
   },
   inviteHeader: {
     ...typography.micro,
+    fontFamily: fontFamily.bold,
     color: colors.warning,
     textTransform: 'uppercase',
     marginBottom: spacing.md,
-    fontWeight: '700',
   },
   inviteCard: {
     overflow: 'hidden',

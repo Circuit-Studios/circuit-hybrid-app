@@ -90,7 +90,7 @@ const SHOOTING_PLAN = {
       keyCast: ['Raj'],
       departmentsNeeded: ['LOCATION', 'ART'],
       estimatedComplexity: 'LOW',
-      directorNotes: 'Batch interiors',
+      sceneSummary: 'Raj confronts his father in the family house.',
       risks: ['Tight interior lighting'],
       prepTasks: ['Scout location'],
     },

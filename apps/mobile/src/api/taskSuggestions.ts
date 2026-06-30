@@ -38,7 +38,7 @@ export interface ShootingPlanRecord {
       keyCast?: string[];
       departmentsNeeded?: string[];
       estimatedComplexity?: 'LOW' | 'MEDIUM' | 'HIGH';
-      directorNotes?: string | null;
+      sceneSummary?: string | null;
       risks?: string[];
       prepTasks?: string[];
     }>;

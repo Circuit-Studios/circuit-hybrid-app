@@ -1,41 +1,16 @@
 import { env } from '../../config/env.js';
-import { logger } from '../../lib/logger.js';
 import {
   JSON_REPAIR_SYSTEM_PROMPT,
   buildJsonRepairUserPrompt,
 } from '../prompts/json-repair.prompt.js';
-import { LlmError, LlmJsonParseError } from './errors.js';
-import { parseAndValidate, repairSnippetFromError } from './json-parse.js';
-import { recordLlmRun } from './usage.js';
-import type { ChatJsonOptions, ChatJsonResult, LlmChatProvider, LlmTokenUsage } from './types.js';
-
-function modelForRole(role: ChatJsonOptions<unknown>['role']): string {
-  switch (role) {
-    case 'extractor':
-      return env.NVIDIA_MODEL_EXTRACTOR!;
-    case 'fast':
-      return env.NVIDIA_MODEL_FAST!;
-    case 'fallback':
-      return env.NVIDIA_MODEL_FALLBACK ?? env.NVIDIA_MODEL_PLANNER!;
-    case 'planner':
-    default:
-      return env.NVIDIA_MODEL_PLANNER!;
-  }
-}
-
-function temperatureForRole(role: ChatJsonOptions<unknown>['role'], override?: number): number {
-  if (override !== undefined) return override;
-  switch (role) {
-    case 'extractor':
-      return env.LLM_EXTRACTOR_TEMPERATURE;
-    case 'fast':
-      return env.LLM_FAST_TEMPERATURE;
-    case 'planner':
-    case 'fallback':
-    default:
-      return env.LLM_PLANNER_TEMPERATURE;
-  }
-}
+import { LlmError } from './errors.js';
+import {
+  runJsonChat,
+  type LlmProviderClient,
+  type ProviderGenerateRequest,
+  type ProviderRawResult,
+} from './json-runner.js';
+import type { ChatJsonOptions, ChatJsonResult, LlmChatProvider, LlmRole, LlmTokenUsage } from './types.js';
 
 interface NvidiaCompletionResponse {
   choices?: Array<{ message?: { content?: string | null } }>;
@@ -52,74 +27,59 @@ function parseUsage(payload: NvidiaCompletionResponse): LlmTokenUsage | undefine
   };
 }
 
-export class NvidiaLlmProvider implements LlmChatProvider {
+export class NvidiaLlmProvider implements LlmChatProvider, LlmProviderClient {
   readonly name = 'NVIDIA' as const;
 
-  async chatJson<T>(opts: ChatJsonOptions<T>): Promise<ChatJsonResult<T>> {
-    const model = modelForRole(opts.role);
-    const stage = opts.stage ?? opts.schemaName;
-    const started = Date.now();
+  chatJson<T>(opts: ChatJsonOptions<T>): Promise<ChatJsonResult<T>> {
+    return runJsonChat(this, opts);
+  }
 
-    logger.debug(
-      { provider: 'NVIDIA', model, stage, promptChars: opts.userPrompt.length },
-      'llm.begin',
-    );
+  modelForRole(role: LlmRole): string {
+    switch (role) {
+      case 'extractor':
+        return env.NVIDIA_MODEL_EXTRACTOR!;
+      case 'fast':
+        return env.NVIDIA_MODEL_FAST!;
+      case 'fallback':
+        return env.NVIDIA_MODEL_FALLBACK ?? env.NVIDIA_MODEL_PLANNER!;
+      case 'planner':
+      default:
+        return env.NVIDIA_MODEL_PLANNER!;
+    }
+  }
 
-    let lastErr: unknown;
-    const maxAttempts = 1 + env.LLM_JSON_REPAIR_RETRIES;
+  repairModelForRole(): string {
+    return env.NVIDIA_MODEL_FAST!;
+  }
 
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      try {
-        // Only run the JSON-repair path when the previous failure was actually a
-        // malformed/invalid-JSON response. For transient errors (timeouts, HTTP
-        // 5xx) "repairing" makes no sense — there is no content to fix, and the
-        // model tends to return junk — so we simply retry the original request.
-        const isRepair = attempt > 0 && lastErr instanceof LlmJsonParseError;
-        const repairModel = env.NVIDIA_MODEL_FAST!;
-        const { data, usage } = isRepair
-          ? await this.repairOnce(opts, repairModel, lastErr)
-          : await this.requestOnce(opts, model);
+  async generate(req: ProviderGenerateRequest): Promise<ProviderRawResult> {
+    const isRepair = req.repairSnippet !== undefined;
+    const systemContent = isRepair
+      ? `${req.systemPrompt}\n\n${JSON_REPAIR_SYSTEM_PROMPT}\n\nReturn valid JSON only for schema "${req.schemaName}". Do not include reasoning, <think> blocks, or markdown.`
+      : `${req.systemPrompt}\n\nRespond with valid JSON only for schema "${req.schemaName}".`;
 
-        const durationMs = Date.now() - started;
-        await recordLlmRun(
-          {
-            provider: 'NVIDIA',
-            model,
-            stage: isRepair ? 'json_repair' : String(stage),
-            projectId: opts.projectId,
-            scriptId: opts.scriptId,
-          },
-          'SUCCEEDED',
-          durationMs,
-          usage,
-        );
-        return { data, provider: 'NVIDIA', model, usage, durationMs };
-      } catch (err) {
-        lastErr = err;
-        if (attempt >= maxAttempts - 1) {
-          const message = err instanceof Error ? err.message : String(err);
-          const durationMs = Date.now() - started;
-          await recordLlmRun(
-            {
-              provider: 'NVIDIA',
-              model,
-              stage: String(stage),
-              projectId: opts.projectId,
-              scriptId: opts.scriptId,
-            },
-            'FAILED',
-            durationMs,
-            undefined,
-            message,
-          );
-          throw err instanceof LlmError
-            ? err
-            : new LlmError(message, { provider: 'NVIDIA', stage: String(stage), cause: err });
-        }
-      }
+    const messages: Array<{ role: string; content: string }> = [
+      { role: 'system', content: systemContent },
+      { role: 'user', content: req.userPrompt },
+    ];
+    if (isRepair) {
+      messages.push({
+        role: 'user',
+        content: buildJsonRepairUserPrompt(req.schemaName, req.repairSnippet!),
+      });
     }
 
-    throw lastErr;
+    const body = {
+      model: req.model,
+      temperature: req.temperature,
+      // Repair resends full context and relies on the model's default ceiling.
+      ...(isRepair ? {} : { max_tokens: req.maxTokens }),
+      messages,
+      response_format: { type: 'json_object' },
+    };
+
+    const payload = await this.nvidiaFetch(body, req.stage);
+    return { raw: payload.choices?.[0]?.message?.content ?? undefined, usage: parseUsage(payload) };
   }
 
   private async nvidiaFetch(
@@ -154,6 +114,7 @@ export class NvidiaLlmProvider implements LlmChatProvider {
         throw new LlmError(`NVIDIA request timed out after ${env.LLM_REQUEST_TIMEOUT_MS}ms`, {
           provider: 'NVIDIA',
           stage,
+          kind: 'timeout',
           cause: err,
         });
       }
@@ -161,59 +122,5 @@ export class NvidiaLlmProvider implements LlmChatProvider {
     } finally {
       clearTimeout(timeout);
     }
-  }
-
-  private async requestOnce<T>(
-    opts: ChatJsonOptions<T>,
-    model: string,
-  ): Promise<{ data: T; usage?: LlmTokenUsage }> {
-    const stage = String(opts.stage ?? opts.schemaName);
-    const body = {
-      model,
-      temperature: temperatureForRole(opts.role, opts.temperature),
-      max_tokens: opts.maxTokens,
-      messages: [
-        {
-          role: 'system',
-          content: `${opts.systemPrompt}\n\nRespond with valid JSON only for schema "${opts.schemaName}".`,
-        },
-        { role: 'user', content: opts.userPrompt },
-      ],
-      response_format: { type: 'json_object' },
-    };
-
-    const payload = await this.nvidiaFetch(body, stage);
-    const raw = payload.choices?.[0]?.message?.content;
-    const data = await parseAndValidate(raw, opts.schema, opts.schemaName);
-    return { data, usage: parseUsage(payload) };
-  }
-
-  private async repairOnce<T>(
-    opts: ChatJsonOptions<T>,
-    model: string,
-    firstErr: unknown,
-  ): Promise<{ data: T; usage?: LlmTokenUsage }> {
-    const invalidSnippet = repairSnippetFromError(firstErr);
-    // Resend the FULL original context so the model can regenerate real content.
-    // A snippet-only repair leaves the model with no scene data and tends to
-    // return a structurally-valid but EMPTY object.
-    const body = {
-      model,
-      temperature: 0,
-      messages: [
-        {
-          role: 'system',
-          content: `${opts.systemPrompt}\n\n${JSON_REPAIR_SYSTEM_PROMPT}\n\nReturn valid JSON only for schema "${opts.schemaName}". Do not include reasoning, <think> blocks, or markdown.`,
-        },
-        { role: 'user', content: opts.userPrompt },
-        { role: 'user', content: buildJsonRepairUserPrompt(opts.schemaName, invalidSnippet) },
-      ],
-      response_format: { type: 'json_object' },
-    };
-
-    const payload = await this.nvidiaFetch(body, 'json_repair');
-    const raw = payload.choices?.[0]?.message?.content;
-    const data = await parseAndValidate(raw, opts.schema, opts.schemaName);
-    return { data, usage: parseUsage(payload) };
   }
 }

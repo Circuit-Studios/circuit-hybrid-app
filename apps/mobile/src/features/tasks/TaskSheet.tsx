@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { LabeledInput } from '@/components/LabeledInput';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import {
@@ -115,6 +115,18 @@ export function TaskSheet({
     }
   }
 
+  function confirmDelete() {
+    if (!editing) return;
+    Alert.alert(
+      'Delete task?',
+      `"${editing.title}" will be permanently removed. This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => void destroy() },
+      ],
+    );
+  }
+
   return (
     <FormSheet visible={visible} title={editing ? 'Edit task' : 'New task'} onClose={onClose}>
       <LabeledInput
@@ -203,7 +215,7 @@ export function TaskSheet({
             title="Delete task"
             variant="danger"
             loading={deleteTaskMutation.isPending}
-            onPress={destroy}
+            onPress={confirmDelete}
           />
         ) : null}
       </FormSheetActions>

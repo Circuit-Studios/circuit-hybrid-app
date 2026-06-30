@@ -1,29 +1,30 @@
 import { useState } from 'react';
-import { useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Card } from '@/components/Card';
 import { StatusBadge } from '@/components/StatusBadge';
 import { EmptyState } from '@/components/EmptyState';
-import {
-  ProjectHeaderAction,
-  ProjectScreenScaffold,
-  projectScreenStyles,
-} from '@/components/project/ProjectScreenScaffold';
+import { ProjectHeaderAction, projectScreenStyles } from '@/components/project/ProjectScreenScaffold';
 import { InviteMemberSheet } from '@/features/team/InviteMemberSheet';
 import { canRemoveMember, memberRemoveLabel } from '@/features/team/memberActions';
 import { listMembers, removeMember } from '@/api/members';
 import { qk } from '@/api/queryKeys';
 import { readApiError } from '@/api/client';
+import { useProjectRoom } from '@/realtime/useProjectRoom';
 import { colors, spacing, typography } from '@/theme';
 import { formatRole, formatUserName } from '@/lib/format';
 import type { ProjectMember } from '@/api/types';
 
-export default function TeamScreen() {
-  const { id: projectId } = useLocalSearchParams<{ id: string }>();
+export interface ProjectTeamContentProps {
+  projectId: string;
+}
+
+/** Crew roster for the active project (members + pending invites). */
+export function ProjectTeamContent({ projectId }: ProjectTeamContentProps) {
   const qc = useQueryClient();
-  const pid = projectId ?? '';
+  const pid = projectId;
+  useProjectRoom(pid);
 
   const [inviteOpen, setInviteOpen] = useState(false);
 
@@ -71,20 +72,11 @@ export default function TeamScreen() {
   }
 
   return (
-    <ProjectScreenScaffold
-      projectId={pid}
-      activeTab="team"
-      title="Team"
-      scroll
-      trailing={<ProjectHeaderAction label="+ Invite" onPress={() => setInviteOpen(true)} />}
-      footer={
-        <InviteMemberSheet
-          visible={inviteOpen}
-          onClose={() => setInviteOpen(false)}
-          projectId={pid}
-        />
-      }
-    >
+    <>
+      <View style={styles.toolbar}>
+        <ProjectHeaderAction label="+ Invite" onPress={() => setInviteOpen(true)} />
+      </View>
+
       {membersQ.isLoading ? (
         <View style={projectScreenStyles.center}>
           <ActivityIndicator color={colors.accent} />
@@ -128,7 +120,9 @@ export default function TeamScreen() {
           ) : null}
         </>
       )}
-    </ProjectScreenScaffold>
+
+      <InviteMemberSheet visible={inviteOpen} onClose={() => setInviteOpen(false)} projectId={pid} />
+    </>
   );
 }
 
@@ -180,6 +174,7 @@ function MemberRow({
 }
 
 const styles = StyleSheet.create({
+  toolbar: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: spacing.sm },
   sectionLabel: {
     ...typography.micro,
     color: colors.textSecondary,

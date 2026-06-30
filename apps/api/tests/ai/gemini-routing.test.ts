@@ -52,30 +52,4 @@ describe('Gemini provider routing', () => {
     expect(out.data.ok).toBe(true);
     expect(String(mockFetch.mock.calls[0]![0])).toContain(':generateContent');
   });
-
-  it('keeps the planner role on NVIDIA (default provider)', async () => {
-    process.env.LLM_PROVIDER_EXTRACTOR = 'GEMINI';
-
-    const { chatJson, resetLlmProviderForTests } = await import('../../src/ai/llm/index.js');
-    resetLlmProviderForTests();
-
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        choices: [{ message: { content: JSON.stringify({ ok: true }) } }],
-        usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
-      }),
-    });
-
-    const out = await chatJson({
-      role: 'planner',
-      stage: 'shooting_plan',
-      schema,
-      schemaName: 'Test',
-      systemPrompt: 's',
-      userPrompt: 'u',
-    });
-
-    expect(out.provider).toBe('NVIDIA');
-  });
 });

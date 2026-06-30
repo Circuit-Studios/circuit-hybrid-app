@@ -1,4 +1,5 @@
 // Core design tokens — Circuit v1 gold/glass light theme.
+import { fontFamily } from './fonts';
 
 export const colors = {
   // Brand — vivid golden yellow (auth mockup)
@@ -20,15 +21,18 @@ export const colors = {
   surface: '#FFFFFF',
   surfaceGlass: 'rgba(255,255,255,0.72)',
   surfaceElevated: '#FFFFFF',
-  surfaceMuted: 'rgba(0,0,0,0.05)',
+  surfaceMuted: 'rgba(26,20,10,0.05)',
   glass: 'rgba(255,255,255,0.72)',
-  glassBorder: 'rgba(0,0,0,0.06)',
-  border: 'rgba(0,0,0,0.06)',
-  borderSubtle: 'rgba(0,0,0,0.04)',
+  // Warm-tinted hairlines read as softer/more premium on the cream surfaces
+  // than pure-black borders.
+  glassBorder: 'rgba(26,20,10,0.07)',
+  border: 'rgba(26,20,10,0.08)',
+  borderSubtle: 'rgba(26,20,10,0.05)',
 
   textPrimary: '#121212',
-  textSecondary: '#5C5C5C',
-  textMuted: '#9CA3AF',
+  // Slightly deeper + warmer than before for better contrast on cream.
+  textSecondary: '#57544E',
+  textMuted: '#8C887F',
   onBrand: '#121212',
 
   // Backward-compatible aliases (used across existing screens)
@@ -148,33 +152,62 @@ export const radius = {
   pill: 999,
 } as const;
 
+// Plus Jakarta Sans is geometric and runs a touch wider than SF Pro, so
+// display/title tracking is eased slightly and line-heights are tuned for it.
+// `fontFamily` is set per weight because RN ignores `fontWeight` once a custom
+// family is applied; `fontWeight` is kept as a graceful system-font fallback.
 export const typography = {
   display: {
+    fontFamily: fontFamily.extrabold,
     fontSize: 34,
-    fontWeight: '700' as const,
-    letterSpacing: -0.8,
-    lineHeight: 40,
+    fontWeight: '800' as const,
+    letterSpacing: -0.6,
+    lineHeight: 41,
   },
   title: {
+    fontFamily: fontFamily.bold,
     fontSize: 26,
     fontWeight: '700' as const,
-    letterSpacing: -0.4,
-    lineHeight: 32,
+    letterSpacing: -0.3,
+    lineHeight: 33,
   },
   heading: {
+    fontFamily: fontFamily.semibold,
     fontSize: 17,
     fontWeight: '600' as const,
-    letterSpacing: -0.15,
+    letterSpacing: -0.1,
     lineHeight: 24,
   },
-  subtitle: { fontSize: 16, fontWeight: '500' as const, lineHeight: 24 },
-  body: { fontSize: 15, fontWeight: '400' as const, lineHeight: 24 },
-  bodyStrong: { fontSize: 15, fontWeight: '600' as const, lineHeight: 24 },
-  caption: { fontSize: 13, fontWeight: '400' as const, lineHeight: 20 },
+  subtitle: {
+    fontFamily: fontFamily.medium,
+    fontSize: 16,
+    fontWeight: '500' as const,
+    letterSpacing: -0.1,
+    lineHeight: 24,
+  },
+  body: {
+    fontFamily: fontFamily.regular,
+    fontSize: 15,
+    fontWeight: '400' as const,
+    lineHeight: 23,
+  },
+  bodyStrong: {
+    fontFamily: fontFamily.semibold,
+    fontSize: 15,
+    fontWeight: '600' as const,
+    lineHeight: 23,
+  },
+  caption: {
+    fontFamily: fontFamily.regular,
+    fontSize: 13,
+    fontWeight: '400' as const,
+    lineHeight: 19,
+  },
   micro: {
+    fontFamily: fontFamily.semibold,
     fontSize: 11,
     fontWeight: '600' as const,
-    letterSpacing: 1.2,
+    letterSpacing: 1.1,
     textTransform: 'uppercase' as const,
   },
 } as const;

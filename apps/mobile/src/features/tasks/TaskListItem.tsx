@@ -3,6 +3,7 @@ import { Card } from '@/components/Card';
 import { StatusBadge } from '@/components/StatusBadge';
 import { taskDueLabel } from '@/features/tasks/taskBoardUtils';
 import { colors, priorityMeta, spacing, taskStatusMeta, typography } from '@/theme';
+import { fontFamily } from '@/theme/fonts';
 import type { Task } from '@/api/types';
 
 export interface TaskListItemProps {
@@ -68,6 +69,6 @@ const styles = StyleSheet.create({
   taskMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' },
   prioDot: { width: 8, height: 8, borderRadius: 4 },
   taskMetaText: { ...typography.caption, color: colors.textSecondary },
-  taskMetaUrgent: { color: colors.danger, fontWeight: '600' },
+  taskMetaUrgent: { fontFamily: fontFamily.semibold, color: colors.danger },
   metaDivider: { ...typography.caption, color: colors.textMuted },
 });

@@ -122,7 +122,7 @@ interface PlannedShootDay {
   dayNumber: number;
   location?: string | null;
   sceneNumbers?: string[];
-  directorNotes?: string | null;
+  sceneSummary?: string | null;
   departmentsNeeded?: string[];
 }
 
@@ -160,7 +160,7 @@ function buildShootDayNotes(day: PlannedShootDay): string | undefined {
   if (day.departmentsNeeded && day.departmentsNeeded.length > 0) {
     parts.push(`Departments: ${day.departmentsNeeded.join(', ')}`);
   }
-  if (day.directorNotes) parts.push(day.directorNotes);
+  if (day.sceneSummary) parts.push(day.sceneSummary);
   const text = parts.join('\n').trim();
   return text.length > 0 ? text.slice(0, 2000) : undefined;
 }

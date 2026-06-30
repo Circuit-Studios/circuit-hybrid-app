@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, G } from 'react-native-svg';
 import { colors, spacing, typography } from '@/theme';
+import { fontFamily } from '@/theme/fonts';
 
 interface StatRingProps {
   value: string;
@@ -58,6 +59,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  value: { fontSize: 22, fontWeight: '800', color: colors.brand },
+  value: { fontFamily: fontFamily.extrabold, fontSize: 22, color: colors.brand },
   label: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
 });

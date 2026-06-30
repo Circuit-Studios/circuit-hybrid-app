@@ -30,6 +30,7 @@ import { patchBudgetLine, patchCharacter, patchDepartment, patchScene } from '@/
 import { readApiError } from '@/api/client';
 import { qk } from '@/api/queryKeys';
 import { colors, radius, spacing, typography } from '@/theme';
+import { fontFamily } from '@/theme/fonts';
 import type { BudgetLineRecord, CharacterRecord, DepartmentRecord, SceneRecord } from '@/api/types';
 
 // ============================================================
@@ -493,7 +494,7 @@ const styles = StyleSheet.create({
   },
   optionChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
   optionChipText: { ...typography.caption, color: colors.textSecondary },
-  optionChipTextActive: { color: colors.accentInk, fontWeight: '700' },
+  optionChipTextActive: { color: colors.accentInk, fontFamily: fontFamily.bold },
   flagRow: {
     flexDirection: 'row',
     alignItems: 'center',

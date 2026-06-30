@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { GlassSurface } from '@/components/GlassSurface';
 import { useAuth } from '@/auth/AuthContext';
 import { colors, typography } from '@/theme';
+import { fontFamily } from '@/theme/fonts';
 import { formatUserInitials } from '@/lib/format';
 
 export function AccountButton() {
@@ -45,7 +46,7 @@ const styles = StyleSheet.create({
   },
   initials: {
     ...typography.caption,
+    fontFamily: fontFamily.bold,
     color: colors.brand,
-    fontWeight: '700',
   },
 });

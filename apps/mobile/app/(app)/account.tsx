@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { leaveOverlayScreen } from '@/lib/appNavigation';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { Card } from '@/components/Card';
-import { StatusBadge } from '@/components/StatusBadge';
 import { useAuth } from '@/auth/AuthContext';
 import { API_BASE_URL, readApiError } from '@/api/client';
 import { appConfig } from '@/config/appEnv';
-import { colors, radius, spacing, typography } from '@/theme';
+import { colors, radius, shadows, spacing, typography } from '@/theme';
 import { formatRole, formatUserInitials, formatUserName } from '@/lib/format';
 
 export default function AccountScreen() {
@@ -80,19 +80,26 @@ export default function AccountScreen() {
 
       <Text style={styles.title}>Account</Text>
 
-      <Card variant="hero" style={styles.profileCard}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{user ? formatUserInitials(user) : '?'}</Text>
-        </View>
-        <Text style={styles.name}>{user ? formatUserName(user) : 'Circuit user'}</Text>
-        {user?.phone ? <Text style={styles.meta}>{user.phone}</Text> : null}
-        {user?.email ? <Text style={styles.meta}>{user.email}</Text> : null}
-        {user?.defaultRole ? (
-          <View style={styles.roleWrap}>
-            <StatusBadge label={formatRole(user.defaultRole)} tone="accent" />
+      <View style={styles.profileGlow}>
+        <LinearGradient
+          colors={[colors.amberLight, colors.brand, colors.brandStrong]}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 1 }}
+          style={styles.profileCard}
+        >
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{user ? formatUserInitials(user) : '?'}</Text>
           </View>
-        ) : null}
-      </Card>
+          <Text style={styles.name}>{user ? formatUserName(user) : 'Circuit user'}</Text>
+          {user?.phone ? <Text style={styles.meta}>{user.phone}</Text> : null}
+          {user?.email ? <Text style={styles.meta}>{user.email}</Text> : null}
+          {user?.defaultRole ? (
+            <View style={styles.rolePill}>
+              <Text style={styles.rolePillText}>{formatRole(user.defaultRole)}</Text>
+            </View>
+          ) : null}
+        </LinearGradient>
+      </View>
 
       <Text style={styles.sectionLabel}>Session</Text>
       <Card variant="glass">
@@ -171,22 +178,42 @@ const styles = StyleSheet.create({
   header: { marginBottom: spacing.md },
   back: { ...typography.bodyStrong, color: colors.accent },
   title: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.lg },
-  profileCard: { alignItems: 'center', paddingVertical: spacing.xl, marginBottom: spacing.lg },
+  profileGlow: {
+    borderRadius: radius.card,
+    marginBottom: spacing.lg,
+    ...shadows.glow,
+  },
+  profileCard: {
+    borderRadius: radius.card,
+    overflow: 'hidden',
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.lg,
+  },
   avatar: {
     width: 72,
     height: 72,
     borderRadius: radius.pill,
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: 'rgba(255,255,255,0.32)',
     borderWidth: 2,
-    borderColor: colors.accent,
+    borderColor: 'rgba(255,255,255,0.6)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,
   },
-  avatarText: { ...typography.heading, color: colors.accent, fontSize: 24 },
-  name: { ...typography.heading, color: colors.textPrimary, marginBottom: spacing.xs },
-  meta: { ...typography.body, color: colors.textSecondary, marginBottom: 2 },
-  roleWrap: { marginTop: spacing.sm },
+  avatarText: { ...typography.heading, color: colors.onBrand, fontSize: 24, fontWeight: '700' },
+  name: { ...typography.heading, color: colors.onBrand, marginBottom: spacing.xs },
+  meta: { ...typography.body, color: 'rgba(18,18,18,0.72)', marginBottom: 2 },
+  rolePill: {
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.42)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.65)',
+  },
+  rolePillText: { ...typography.micro, color: colors.onBrand },
   sectionLabel: {
     ...typography.micro,
     color: colors.textSecondary,

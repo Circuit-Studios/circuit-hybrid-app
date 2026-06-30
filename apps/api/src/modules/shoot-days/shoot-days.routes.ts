@@ -26,6 +26,8 @@ const createShootDaySchema = z.object({
   dayNumber: z.number().int().min(1),
   date: z.coerce.date(),
   location: z.string().trim().max(160).optional(),
+  timeOfDay: z.enum(['DAY', 'NIGHT']).optional(),
+  personsRequired: z.number().int().min(0).max(100000).optional(),
   notes: z.string().trim().max(2000).optional(),
   callTimeUserId: z.string().uuid().optional(),
   sceneIds: z.array(z.string().uuid()).max(40).optional(),
@@ -58,6 +60,8 @@ router.post(
         dayNumber: input.dayNumber,
         date: input.date,
         location: input.location,
+        timeOfDay: input.timeOfDay,
+        personsRequired: input.personsRequired,
         notes: input.notes,
         callTimeUserId: input.callTimeUserId,
         scenes: input.sceneIds
@@ -76,6 +80,8 @@ router.post(
 const patchShootDaySchema = z.object({
   date: z.coerce.date().optional(),
   location: z.string().trim().max(160).nullable().optional(),
+  timeOfDay: z.enum(['DAY', 'NIGHT']).nullable().optional(),
+  personsRequired: z.number().int().min(0).max(100000).nullable().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
   callTimeUserId: z.string().uuid().nullable().optional(),
   // Replace-on-patch semantics for scenes — sending the field replaces the
@@ -122,6 +128,8 @@ router.patch(
         data: {
           ...(input.date && { date: input.date }),
           ...(input.location !== undefined && { location: input.location }),
+          ...(input.timeOfDay !== undefined && { timeOfDay: input.timeOfDay }),
+          ...(input.personsRequired !== undefined && { personsRequired: input.personsRequired }),
           ...(input.notes !== undefined && { notes: input.notes }),
           ...(input.callTimeUserId !== undefined && { callTimeUserId: input.callTimeUserId }),
         },

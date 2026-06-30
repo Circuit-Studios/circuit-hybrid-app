@@ -442,12 +442,19 @@ model Task {
 
 // ---------------- Schedule ----------------
 
+enum ShootTimeOfDay {
+  DAY
+  NIGHT
+}
+
 model ShootDay {
   id              String   @id @default(uuid())
   projectId       String
   dayNumber       Int       // 1-based shoot day
   date            DateTime
   location        String?
+  timeOfDay       ShootTimeOfDay?   // day or night shoot
+  personsRequired Int?              // crew/cast headcount needed on set
   callTimeUserId  String?   // primary AD on call (optional)
   notes           String?
 
@@ -594,7 +601,6 @@ enum BackgroundJobStatus {
 }
 
 enum BackgroundJobKind {
-  SCRIPT_ANALYSIS
   SHOOTING_PLAN
 }
 

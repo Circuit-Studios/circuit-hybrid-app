@@ -8,7 +8,6 @@ export const qk = {
 
   tasks: (projectId: string, departmentId = 'all') => ['tasks', projectId, departmentId] as const,
   tasksRoot: (projectId: string) => ['tasks', projectId] as const,
-  myTasks: () => ['my-tasks'] as const,
 
   schedule: (projectId: string) => ['schedule', projectId] as const,
   conflicts: (projectId: string) => ['conflicts', projectId] as const,

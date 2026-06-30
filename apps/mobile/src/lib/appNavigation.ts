@@ -19,20 +19,11 @@ export function leaveProjectsScreen(appRouter: AppRouter) {
   appRouter.replace(HOME_TABS);
 }
 
-/** Leave a project workspace screen — pop when possible instead of pushing another /projects route. */
-export function leaveProjectWorkspace(appRouter: AppRouter) {
+/** Leave upload-script — pop to prior screen or fall back to the home tabs. */
+export function leaveUploadScript(appRouter: AppRouter) {
   if (appRouter.canGoBack()) {
     appRouter.back();
     return;
   }
-  appRouter.replace('/(app)/projects');
-}
-
-/** Leave upload-script — pop to prior screen (workspace or projects) or open workspace. */
-export function leaveUploadScript(appRouter: AppRouter, projectId: string) {
-  if (appRouter.canGoBack()) {
-    appRouter.back();
-    return;
-  }
-  appRouter.replace(`/(app)/project/${projectId}`);
+  appRouter.replace(HOME_TABS);
 }

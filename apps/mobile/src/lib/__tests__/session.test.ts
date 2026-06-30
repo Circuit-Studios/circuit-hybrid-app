@@ -1,5 +1,4 @@
 import {
-  formatRemainingSession,
   IDLE_TIMEOUT_MS,
   isIdleSessionExpired,
   isScriptAnalysisInProgress,
@@ -48,10 +47,5 @@ describe('session expiry', () => {
 
     const exp = Math.floor(Date.now() / 1000) + 90;
     expect(resolveSessionExpiresAtMs(undefined, makeToken(exp))).toBe(exp * 1000);
-  });
-
-  it('formats remaining time', () => {
-    expect(formatRemainingSession(305)).toBe('5:05');
-    expect(formatRemainingSession(42)).toBe('42s');
   });
 });

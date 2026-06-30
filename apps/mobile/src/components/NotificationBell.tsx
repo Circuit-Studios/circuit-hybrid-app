@@ -7,6 +7,7 @@ import { GlassIconButton } from '@/components/GlassIconButton';
 import { getUnreadCount } from '@/api/notifications';
 import { qk } from '@/api/queryKeys';
 import { colors } from '@/theme';
+import { fontFamily } from '@/theme/fonts';
 
 interface Props {
   onPress?: () => void;
@@ -56,8 +57,9 @@ const styles = StyleSheet.create({
     borderColor: colors.surface,
   },
   badgeText: {
-    color: colors.onBrand,
+    fontFamily: fontFamily.bold,
+    color: '#FFFFFF',
     fontSize: 10,
-    fontWeight: '700',
+    lineHeight: 12,
   },
 });

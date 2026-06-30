@@ -2,6 +2,7 @@ import { StyleSheet } from 'react-native';
 import { authPalette } from './authPalette';
 import { authLayout } from './authLayout';
 import { typography } from './tokens';
+import { fontFamily } from './fonts';
 
 /** Shared layout styles for login, signup, and related auth screens. */
 export const authFormStyles = StyleSheet.create({
@@ -22,7 +23,7 @@ export const authFormStyles = StyleSheet.create({
     gap: 4,
   },
   footerText: { ...typography.caption, color: authPalette.muted },
-  footerLink: { ...typography.caption, color: authPalette.footerLink, fontWeight: '700' },
+  footerLink: { ...typography.caption, fontFamily: fontFamily.bold, color: authPalette.footerLink },
   error: {
     ...typography.caption,
     color: authPalette.error,
