@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from '@/components/Card';
@@ -10,14 +9,13 @@ import type { Project } from '@/api/types';
 interface ProjectCardProps {
   project: Project;
   nextShootDay?: { dayNumber: number; date: string } | null;
+  onPress: () => void;
 }
 
-export function ProjectCard({ project, nextShootDay }: ProjectCardProps) {
-  const router = useRouter();
-
+export function ProjectCard({ project, nextShootDay, onPress }: ProjectCardProps) {
   return (
     <Pressable
-      onPress={() => router.push(`/(app)/project/${project.id}`)}
+      onPress={onPress}
       accessibilityRole="button"
       style={({ pressed }) => [pressed && styles.rowPressed]}
     >

@@ -1,14 +1,19 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { AppHeaderActions } from '@/components/AppHeaderActions';
-import { MyTasksContent } from '@/features/tasks/MyTasksContent';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ProjectTasksContent } from '@/features/tasks/ProjectTasksContent';
+import { useActiveProject } from '@/context/ActiveProjectContext';
+import { useProjectRoom } from '@/realtime/useProjectRoom';
 import { colors, spacing, typography } from '@/theme';
 
-/**
- * Global Tasks tab — every task assigned to you across all productions.
- * The project-scoped department board lives inside each project's workspace.
- */
+/** Tasks tab — the active film's department board. */
 export default function TasksTabScreen() {
+  const { projectId } = useActiveProject();
+  const { dept } = useLocalSearchParams<{ dept?: string }>();
+  useProjectRoom(projectId ?? '');
+
   return (
     <ScreenContainer scroll topAligned edges={['top', 'left', 'right']}>
       <View style={styles.header}>
@@ -16,12 +21,19 @@ export default function TasksTabScreen() {
           <Text style={styles.wordmark}>
             CIRCU<Text style={styles.wordmarkAccent}>IT</Text>
           </Text>
-          <Text style={styles.title}>My tasks</Text>
+          <Text style={styles.title}>Tasks</Text>
         </View>
         <AppHeaderActions />
       </View>
 
-      <MyTasksContent />
+      {projectId ? (
+        <ProjectTasksContent projectId={projectId} initialDept={dept ?? null} />
+      ) : (
+        <EmptyState
+          title="No project yet"
+          body="Create or join a film to start tracking pre-production tasks."
+        />
+      )}
     </ScreenContainer>
   );
 }

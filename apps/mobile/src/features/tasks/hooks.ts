@@ -3,7 +3,6 @@ import {
   createTask,
   deleteTask,
   getProjectHealth,
-  listMyTasks,
   listTasks,
   updateTask,
   type CreateTaskInput,
@@ -15,14 +14,6 @@ import type { TaskStatus } from '@/api/types';
 function invalidateTaskCaches(qc: QueryClient, projectId: string): void {
   void qc.invalidateQueries({ queryKey: qk.tasksRoot(projectId) });
   void qc.invalidateQueries({ queryKey: qk.health(projectId) });
-  void qc.invalidateQueries({ queryKey: qk.myTasks() });
-}
-
-export function useMyTasks() {
-  return useQuery({
-    queryKey: qk.myTasks(),
-    queryFn: () => listMyTasks(),
-  });
 }
 
 export function useProjectHealth(projectId: string) {

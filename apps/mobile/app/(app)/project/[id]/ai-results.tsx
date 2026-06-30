@@ -170,7 +170,7 @@ export default function AIResultsScreen() {
 
   return (
     <ScreenContainer scroll>
-      <Pressable onPress={() => router.replace(`/(app)/project/${projectId}`)} hitSlop={12}>
+      <Pressable onPress={() => router.replace('/(app)/(tabs)/home')} hitSlop={12}>
         <Text style={styles.back}>‹ Project</Text>
       </Pressable>
 
@@ -342,7 +342,7 @@ export default function AIResultsScreen() {
       <View style={styles.actions}>
         <PrimaryButton
           title="Open project workspace"
-          onPress={() => router.replace(`/(app)/project/${projectId}`)}
+          onPress={() => router.replace('/(app)/(tabs)/home')}
         />
       </View>
 

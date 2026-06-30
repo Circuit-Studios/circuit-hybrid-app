@@ -35,7 +35,7 @@ export function AuthHeader({ column = false }: AuthHeaderProps) {
           },
         ]}
       >
-        CIRCUI<Text style={styles.wordmarkAccent}>IT</Text>
+        CIRCU<Text style={styles.wordmarkAccent}>IT</Text>
       </Text>
       {!metrics.hideSubtitle ? (
         <Text

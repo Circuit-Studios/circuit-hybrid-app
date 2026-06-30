@@ -75,7 +75,7 @@ export default function DirectorReviewScreen() {
         [
           {
             text: 'View schedule',
-            onPress: () => router.replace(`/(app)/project/${projectId}/schedule`),
+            onPress: () => router.replace('/(app)/(tabs)/schedule'),
           },
           { text: 'OK' },
         ],
@@ -122,11 +122,21 @@ export default function DirectorReviewScreen() {
             <View style={styles.block}>
               <Text style={styles.subheading}>Shoot days</Text>
               {days.slice(0, 8).map((day) => (
-                <Text key={day.dayNumber} style={styles.body}>
-                  Day {day.dayNumber}
-                  {day.location ? ` — ${day.location}` : ''}
-                  {day.sceneNumbers.length ? ` (Scenes ${day.sceneNumbers.join(', ')})` : ''}
-                </Text>
+                <View key={day.dayNumber} style={styles.dayBlock}>
+                  <Text style={styles.dayTitle}>
+                    Day {day.dayNumber}
+                    {day.location ? ` · ${day.location}` : ''}
+                  </Text>
+                  {day.sceneNumbers.length ? (
+                    <Text style={styles.dayMeta}>Scenes {day.sceneNumbers.join(', ')}</Text>
+                  ) : null}
+                  {day.keyCast?.length ? (
+                    <Text style={styles.dayMeta}>Artists: {day.keyCast.join(', ')}</Text>
+                  ) : null}
+                  {day.sceneSummary ? (
+                    <Text style={styles.daySummary}>{day.sceneSummary}</Text>
+                  ) : null}
+                </View>
               ))}
               {days.length > 8 ? (
                 <Text style={styles.meta}>+ {days.length - 8} more days</Text>
@@ -194,6 +204,15 @@ const styles = StyleSheet.create({
   body: { ...typography.body, color: colors.textPrimary, marginBottom: spacing.xs },
   meta: { ...typography.caption, color: colors.textMuted, marginBottom: spacing.sm },
   block: { marginTop: spacing.sm },
+  dayBlock: {
+    marginBottom: spacing.sm,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  dayTitle: { ...typography.bodyStrong, color: colors.textPrimary },
+  dayMeta: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+  daySummary: { ...typography.body, color: colors.textPrimary, marginTop: spacing.xs },
   row: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   approve: {
     paddingVertical: spacing.sm,

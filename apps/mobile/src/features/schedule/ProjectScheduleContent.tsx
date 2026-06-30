@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '@/components/PrimaryButton';
@@ -7,16 +6,13 @@ import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { StatusBadge } from '@/components/StatusBadge';
 import { SegmentedControl, type SegmentOption } from '@/components/SegmentedControl';
-import {
-  ProjectHeaderAction,
-  ProjectScreenScaffold,
-  projectScreenStyles,
-} from '@/components/project/ProjectScreenScaffold';
+import { ProjectHeaderAction, projectScreenStyles } from '@/components/project/ProjectScreenScaffold';
 import { ShootDaySheet } from '@/features/schedule/ShootDaySheet';
 import { listShootDays, deleteShootDay, listConflicts } from '@/api/workspace';
 import { getShootingPlan, applyShootingPlanToSchedule } from '@/api/taskSuggestions';
 import { qk } from '@/api/queryKeys';
 import { readApiError } from '@/api/client';
+import { useProjectRoom } from '@/realtime/useProjectRoom';
 import { colors, conflictSeverityMeta, radius, spacing, typography } from '@/theme';
 import type { ConflictSeverity, ShootDay } from '@/api/types';
 
@@ -29,10 +25,15 @@ const VIEWS: SegmentOption<ScheduleView>[] = [
 
 const SEVERITY_RANK: Record<ConflictSeverity, number> = { INFO: 0, WARNING: 1, CRITICAL: 2 };
 
-export default function ScheduleScreen() {
-  const { id: projectId } = useLocalSearchParams<{ id: string }>();
+export interface ProjectScheduleContentProps {
+  projectId: string;
+}
+
+/** Shoot schedule body for the active project (board/agenda + conflict scan). */
+export function ProjectScheduleContent({ projectId }: ProjectScheduleContentProps) {
   const qc = useQueryClient();
-  const pid = projectId ?? '';
+  const pid = projectId;
+  useProjectRoom(pid);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [view, setView] = useState<ScheduleView>('board');
@@ -107,27 +108,15 @@ export default function ScheduleScreen() {
   const planExists = Boolean(planQ.data?.plan);
 
   return (
-    <ProjectScreenScaffold
-      projectId={pid}
-      activeTab="schedule"
-      title="Schedule"
-      scroll
-      trailing={<ProjectHeaderAction label="+ Day" onPress={() => setSheetOpen(true)} />}
-      subtitle={
+    <>
+      <View style={styles.toolbar}>
         <Text style={styles.body}>
           Add shoot days here — the conflict scanner watches for cross-project clashes and missing
           stunt/VFX prep automatically.
         </Text>
-      }
-      footer={
-        <ShootDaySheet
-          visible={sheetOpen}
-          onClose={() => setSheetOpen(false)}
-          projectId={pid}
-          existingDays={days.map((d) => d.dayNumber)}
-        />
-      }
-    >
+        <ProjectHeaderAction label="+ Day" onPress={() => setSheetOpen(true)} />
+      </View>
+
       {topSeverity ? (
         <View
           style={[
@@ -203,7 +192,14 @@ export default function ScheduleScreen() {
           ))}
         </View>
       )}
-    </ProjectScreenScaffold>
+
+      <ShootDaySheet
+        visible={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        projectId={pid}
+        existingDays={days.map((d) => d.dayNumber)}
+      />
+    </>
   );
 }
 
@@ -282,7 +278,13 @@ function AgendaRow({ day, onRemove }: { day: ShootDay; onRemove: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  body: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
+  body: { ...typography.body, color: colors.textSecondary, flex: 1, marginRight: spacing.md },
+  toolbar: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
   segment: { marginBottom: spacing.md },
   conflictBanner: {
     flexDirection: 'row',
@@ -298,7 +300,6 @@ const styles = StyleSheet.create({
   emptyActions: { gap: spacing.sm, alignItems: 'center' },
   secondaryLink: { ...typography.bodyStrong, color: colors.textSecondary },
   rowPressed: { opacity: 0.85 },
-  // Board (timeline)
   timeline: { marginTop: spacing.xs, paddingBottom: spacing.xxl },
   timelineRow: { flexDirection: 'row', alignItems: 'flex-start' },
   timelineGutter: { width: 36, alignItems: 'center' },
@@ -321,7 +322,6 @@ const styles = StyleSheet.create({
   daySceneCount: { ...typography.caption, color: colors.textMuted },
   dayNotes: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
   dayDelete: { ...typography.caption, color: colors.danger, marginTop: spacing.xs },
-  // Agenda (compact)
   agenda: { gap: spacing.sm, paddingBottom: spacing.xxl },
   agendaCard: {
     flexDirection: 'row',

@@ -16,7 +16,8 @@ export const shootingPlanDaySchema = z.object({
   keyCast: tolerantStringList(40, 120),
   departmentsNeeded: tolerantStringList(30, 80),
   estimatedComplexity: estimatedComplexitySchema.catch('MEDIUM'),
-  directorNotes: tolerantNullableText(800),
+  // Neutral factual summary of what the scenes contain — NOT directorial/how-to-shoot guidance.
+  sceneSummary: tolerantNullableText(800),
   risks: tolerantStringList(15, 400),
   prepTasks: tolerantStringList(20, 400),
 });
