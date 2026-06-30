@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   forgotText: {
-    ...typography.bodyStrong,
+    ...typography.body,
     color: authPalette.ink,
     textDecorationLine: 'underline',
   },

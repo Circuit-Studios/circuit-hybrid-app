@@ -5,6 +5,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ProjectScheduleContent } from '@/features/schedule/ProjectScheduleContent';
 import { useActiveProject } from '@/context/ActiveProjectContext';
 import { colors, spacing, typography } from '@/theme';
+import { fontFamily } from '@/theme/fonts';
 
 /** Schedule tab — the active film's shoot calendar. */
 export default function ScheduleTabScreen() {
@@ -41,7 +42,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: spacing.lg,
   },
-  wordmark: { fontSize: 18, fontWeight: '800', color: colors.textPrimary },
+  wordmark: { fontFamily: fontFamily.extrabold, fontSize: 18, color: colors.textPrimary },
   wordmarkAccent: { color: colors.brand },
   title: { ...typography.title, color: colors.textPrimary, marginTop: spacing.sm },
 });

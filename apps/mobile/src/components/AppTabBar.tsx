@@ -7,6 +7,7 @@ import {
   floatingTabIconSize,
   type FloatingTabItem,
 } from '@/components/ui/FloatingTabBar';
+import { useChromeInsets } from '@/hooks/useChromeInsets';
 
 type AppTabKey = 'home' | 'activity' | 'schedule' | 'team';
 
@@ -63,6 +64,7 @@ function resolveActiveTab(pathname: string): AppTabKey | null {
 export function AppTabBar() {
   const router = useRouter();
   const pathname = usePathname();
+  const { compactTabBar } = useChromeInsets();
   const activeKey = resolveActiveTab(pathname);
   const onTabRoute = activeKey !== null;
 
@@ -92,5 +94,12 @@ export function AppTabBar() {
     });
   }, [activeKey, onTabRoute, router]);
 
-  return <FloatingTabBar items={items} activeKey={activeKey ?? ''} showLabels />;
+  return (
+    <FloatingTabBar
+      items={items}
+      activeKey={activeKey ?? ''}
+      showLabels
+      compact={compactTabBar}
+    />
+  );
 }

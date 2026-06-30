@@ -33,6 +33,14 @@ export function isTabletWidth(width: number): boolean {
   return width >= TABLET_BREAKPOINT;
 }
 
+/**
+ * True tablet/iPad-class device, based on the shortest screen edge so a phone
+ * rotated to landscape (logical width >= 768) is NOT mistaken for a tablet.
+ */
+export function isTabletDevice(width: number, height: number): boolean {
+  return Math.min(width, height) >= TABLET_BREAKPOINT;
+}
+
 export function isLandscapeOrientation(width: number, height: number): boolean {
   return width > height;
 }

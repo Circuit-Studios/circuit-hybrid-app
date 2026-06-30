@@ -3,6 +3,7 @@ import { useAuthMetrics } from '@/features/auth/AuthMetricsContext';
 import { authPalette } from '@/theme/authPalette';
 import { authTypography } from '@/theme/authTypography';
 import { typography } from '@/theme';
+import { fontFamily } from '@/theme/fonts';
 
 export type AuthTab = 'signup' | 'signin';
 
@@ -99,6 +100,6 @@ const styles = StyleSheet.create({
   },
   labelActive: {
     color: authPalette.segmentActiveText,
-    fontWeight: '700',
+    fontFamily: fontFamily.bold,
   },
 });

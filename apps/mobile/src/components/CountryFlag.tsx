@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Image, Platform, StyleSheet, Text, View } from 'react-native';
 import type { CountryCode } from 'libphonenumber-js';
 import { colors, radius, typography } from '@/theme';
+import { fontFamily } from '@/theme/fonts';
 
 /**
  * iOS ships color emoji including regional-indicator flags, so emoji is the
@@ -76,9 +77,9 @@ const styles = StyleSheet.create({
   },
   fallbackText: {
     ...typography.micro,
+    fontFamily: fontFamily.bold,
     color: colors.textSecondary,
     letterSpacing: 0,
     textTransform: 'none',
-    fontWeight: '700',
   },
 });

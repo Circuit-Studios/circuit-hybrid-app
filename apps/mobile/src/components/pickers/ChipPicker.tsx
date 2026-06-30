@@ -1,6 +1,7 @@
 import { ScrollView, Text, View, Pressable, StyleSheet } from 'react-native';
 import { authPalette } from '@/theme/authPalette';
 import { colors, spacing, typography } from '@/theme';
+import { fontFamily } from '@/theme/fonts';
 import { pickerStyles as styles } from './pickerStyles';
 import type { PickerOption } from './DropdownPicker';
 
@@ -72,5 +73,5 @@ const authStyles = StyleSheet.create({
     borderColor: authPalette.brand,
   },
   chipText: { color: authPalette.chipText },
-  chipTextActive: { color: authPalette.brand, fontWeight: '700' },
+  chipTextActive: { color: authPalette.brand, fontFamily: fontFamily.bold },
 });

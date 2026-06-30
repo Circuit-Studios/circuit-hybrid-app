@@ -12,12 +12,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GlassSurface } from '@/components/GlassSurface';
 import {
   FLOATING_TAB_BAR_ACTIVE_CIRCLE_SIZE,
+  FLOATING_TAB_BAR_COMPACT_HEIGHT,
   FLOATING_TAB_BAR_HEIGHT,
   FLOATING_TAB_BAR_MAX_WIDTH,
   FLOATING_TAB_BAR_WIDTH_RATIO,
   FLOATING_TAB_ITEM_MIN,
 } from '@/components/ui/floatingTabBarMetrics';
 import { radius, spacing, tabBar, typography } from '@/theme';
+import { fontFamily } from '@/theme/fonts';
 
 export type FloatingTabItem = {
   key: string;
@@ -34,6 +36,8 @@ export type FloatingTabBarProps = {
   activeKey: string;
   bottomOffset?: number;
   showLabels?: boolean;
+  /** Icon-only shorter capsule for landscape phones / short viewports. */
+  compact?: boolean;
   style?: StyleProp<ViewStyle>;
   /** Override computed bar width (defaults to ~86% of screen, max 430). */
   barWidth?: number;
@@ -48,12 +52,15 @@ export function FloatingTabBar({
   activeKey,
   bottomOffset,
   showLabels = true,
+  compact = false,
   style,
   barWidth: barWidthProp,
 }: FloatingTabBarProps) {
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
   const bottomPad = bottomOffset ?? Math.max(insets.bottom, spacing.sm);
+  const barHeight = compact ? FLOATING_TAB_BAR_COMPACT_HEIGHT : FLOATING_TAB_BAR_HEIGHT;
+  const labelsVisible = showLabels && !compact;
   const barWidth =
     barWidthProp ??
     Math.min(FLOATING_TAB_BAR_MAX_WIDTH, screenWidth * FLOATING_TAB_BAR_WIDTH_RATIO);
@@ -64,9 +71,9 @@ export function FloatingTabBar({
         variant="tabBar"
         borderRadius={radius.pill}
         intensity={tabBar.blurIntensity}
-        style={{ width: barWidth, height: FLOATING_TAB_BAR_HEIGHT, alignSelf: 'center' }}
+        style={{ width: barWidth, height: barHeight, alignSelf: 'center' }}
       >
-        <View style={styles.row}>
+        <View style={[styles.row, { height: barHeight }]}>
           {items.map((item) => {
             const active = item.key === activeKey;
             const icon = active && item.activeIcon != null ? item.activeIcon : item.icon;
@@ -84,7 +91,7 @@ export function FloatingTabBar({
                   {active ? <View style={styles.activeCircle} /> : null}
                   <View style={styles.iconWell}>{icon}</View>
                 </View>
-                {showLabels && item.label ? (
+                {labelsVisible && item.label ? (
                   <Text style={[styles.label, active && styles.labelActive]} numberOfLines={1}>
                     {item.label}
                   </Text>
@@ -151,13 +158,14 @@ const styles = StyleSheet.create({
   },
   label: {
     ...typography.caption,
+    fontFamily: fontFamily.medium,
     fontSize: 11,
-    fontWeight: '500',
+    letterSpacing: 0.1,
     color: tabBar.labelInactive,
     marginTop: 4,
   },
   labelActive: {
+    fontFamily: fontFamily.bold,
     color: tabBar.labelActive,
-    fontWeight: '700',
   },
 });

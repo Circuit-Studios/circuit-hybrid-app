@@ -15,6 +15,7 @@ import { useActiveProject } from '@/context/ActiveProjectContext';
 import { leaveProjectsScreen } from '@/lib/appNavigation';
 import { useFloatingTabBarReserve } from '@/hooks/useFloatingTabBarReserve';
 import { colors, radius, spacing, typography } from '@/theme';
+import { fontFamily } from '@/theme/fonts';
 import { formatRole } from '@/lib/format';
 import type { ProjectInvite } from '@/api/types';
 import { ProjectCard } from './ProjectCard';
@@ -200,10 +201,10 @@ const styles = StyleSheet.create({
   },
   inviteHeader: {
     ...typography.micro,
+    fontFamily: fontFamily.bold,
     color: colors.warning,
     textTransform: 'uppercase',
     marginBottom: spacing.md,
-    fontWeight: '700',
   },
   inviteCard: {
     overflow: 'hidden',

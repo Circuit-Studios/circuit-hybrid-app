@@ -21,6 +21,7 @@ export const authTypography = {
 
 /** Uppercase auth field labels without wide letter-spacing. */
 export const authFieldLabelStyle = {
+  fontFamily: typography.micro.fontFamily,
   fontSize: authTypography.labelFontSize,
   fontWeight: typography.micro.fontWeight,
   letterSpacing: authTypography.labelLetterSpacing,

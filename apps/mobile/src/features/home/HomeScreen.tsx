@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenContainer } from '@/components/ScreenContainer';
 import { AppHeaderActions } from '@/components/AppHeaderActions';
@@ -13,6 +13,7 @@ import { useActiveProject } from '@/context/ActiveProjectContext';
 import { useAuth } from '@/auth/AuthContext';
 import { formatStatus } from '@/lib/format';
 import { colors, radius, spacing, typography } from '@/theme';
+import { fontFamily } from '@/theme/fonts';
 
 function greetingForHour(): string {
   const h = new Date().getHours();
@@ -67,7 +68,11 @@ export default function HomeScreen() {
   }
 
   return (
-    <ScreenContainer scroll edges={['top', 'left', 'right']}>
+    <ScreenContainer
+      scroll
+      edges={['top', 'left', 'right']}
+      bottomInsetForFloatingTab={spacing.xl}
+    >
       <View style={styles.headerRow}>
         <CircuitWordmark />
         <AppHeaderActions />
@@ -77,31 +82,6 @@ export default function HomeScreen() {
         {greetingForHour()}
         {user?.firstName ? `, ${user.firstName}` : ''}
       </Text>
-      <Text style={styles.title}>Film command centre</Text>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.actionsScroll}>
-        <QuickAction
-          icon="document-text-outline"
-          label="New film"
-          onPress={() => router.push('/(app)/create-project')}
-        />
-        <QuickAction
-          icon="person-add-outline"
-          label="Invite team"
-          onPress={() => router.push('/(app)/(tabs)/team')}
-        />
-        <QuickAction
-          icon="calendar-outline"
-          label="Add shoot day"
-          onPress={() => router.push('/(app)/(tabs)/schedule')}
-        />
-        <QuickAction
-          icon="add"
-          label="Add task"
-          accent
-          onPress={() => router.push('/(app)/(tabs)/activity')}
-        />
-      </ScrollView>
 
       <ProjectOverviewContent projectId={projectId} />
 
@@ -142,27 +122,6 @@ function CircuitWordmark() {
   );
 }
 
-function QuickAction({
-  icon,
-  label,
-  accent,
-  onPress,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  accent?: boolean;
-  onPress(): void;
-}) {
-  return (
-    <Pressable onPress={onPress} style={styles.quickAction}>
-      <View style={[styles.quickIcon, accent && styles.quickIconAccent]}>
-        <Ionicons name={icon} size={20} color={accent ? colors.onBrand : colors.textPrimary} />
-      </View>
-      <Text style={styles.quickLabel}>{label}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
@@ -170,25 +129,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing.lg,
   },
-  wordmark: { fontSize: 22, fontWeight: '800', color: colors.textPrimary },
+  wordmark: { fontFamily: fontFamily.extrabold, fontSize: 22, color: colors.textPrimary },
   wordmarkAccent: { color: colors.brand },
-  greeting: { ...typography.body, color: colors.textSecondary },
-  title: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.lg },
-  actionsScroll: { marginBottom: spacing.xl },
-  quickAction: { alignItems: 'center', marginRight: spacing.lg, width: 72 },
-  quickIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xs,
-  },
-  quickIconAccent: { backgroundColor: colors.brand, borderColor: colors.brand },
-  quickLabel: { ...typography.caption, color: colors.textSecondary, textAlign: 'center' },
+  greeting: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg },
   sectionHead: {
     flexDirection: 'row',
     alignItems: 'center',

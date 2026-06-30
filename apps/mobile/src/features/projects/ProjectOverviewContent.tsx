@@ -16,7 +16,8 @@ import { readApiError } from '@/api/client';
 import { useAppConfig } from '@/config/AppConfigContext';
 import { useContentFrame } from '@/hooks/useContentFrame';
 import { useProjectRoom } from '@/realtime/useProjectRoom';
-import { getHealthRingSize, colors, radius, shadows, spacing, typography } from '@/theme';
+import { getHealthRingSize, colors, radius, spacing, typography } from '@/theme';
+import { fontFamily } from '@/theme/fonts';
 import { formatProjectLanguages, formatRole, formatStatus, relativeTimeFrom } from '@/lib/format';
 import type { ConflictAlert, DepartmentSummary } from '@/api/types';
 
@@ -153,12 +154,18 @@ export function ProjectOverviewContent({ projectId }: ProjectOverviewContentProp
     }))
     .sort(departmentSort);
   const readyCount = departments.filter((d) => departmentReadiness(d) === 'ready').length;
+  const nextShootLabel = health.nextShootDay
+    ? new Date(health.nextShootDay.date).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+      })
+    : '—';
 
   return (
     <>
       <View style={styles.heroGlow}>
         <LinearGradient
-          colors={[colors.amberLight, colors.brand, colors.brandStrong]}
+          colors={['#F8E8B4', '#F2C75D', '#E7B63E']}
           start={{ x: 0.1, y: 0 }}
           end={{ x: 0.9, y: 1 }}
           style={styles.heroCard}
@@ -174,29 +181,16 @@ export function ProjectOverviewContent({ projectId }: ProjectOverviewContentProp
       </View>
 
       <View style={styles.statsRow}>
-        <Stat big={`${health.overallProgress}%`} label="Overall ready" />
+        <Stat big={`${health.overallProgress}%`} label="Ready" />
         <Stat
           big={String(health.openConflicts)}
-          label="Open conflicts"
+          label="Conflicts"
           tone={health.openConflicts > 0 ? 'danger' : 'success'}
         />
-        <Stat
-          big={
-            health.nextShootDay
-              ? new Date(health.nextShootDay.date).toLocaleDateString(undefined, {
-                  month: 'short',
-                  day: 'numeric',
-                })
-              : '—'
-          }
-          label="Next shoot day"
-        />
+        <Stat big={nextShootLabel} label="Next shoot" />
       </View>
 
-      <SectionHeader
-        title="Project health"
-        sub="See which departments need attention before the next shoot day."
-      />
+      <SectionHeader title="Readiness" sub="Departments that need attention before the next shoot." />
       <Card variant="glass" style={styles.healthCard}>
         {departments.length === 0 ? (
           <View style={styles.healthEmpty}>
@@ -215,12 +209,12 @@ export function ProjectOverviewContent({ projectId }: ProjectOverviewContentProp
           <View style={styles.readinessConsole}>
             <View style={styles.readinessHeader}>
               <View style={styles.readinessCopy}>
-                <Text style={styles.readinessEyebrow}>Project readiness</Text>
+                <Text style={styles.readinessEyebrow}>Readiness</Text>
                 <Text style={styles.readinessTitle}>
-                  {readyCount} of {departments.length} departments ready
+                  {readyCount}/{departments.length} departments ready
                 </Text>
                 <Text style={styles.readinessSub}>
-                  Focus on the open departments before moving the shoot forward.
+                  Prioritize open departments before the next shoot.
                 </Text>
               </View>
               <HealthRing
@@ -281,7 +275,7 @@ export function ProjectOverviewContent({ projectId }: ProjectOverviewContentProp
         </>
       ) : null}
 
-      <View style={{ height: spacing.lg }} />
+      <View style={{ height: spacing.xxxl }} />
     </>
   );
 }
@@ -386,34 +380,48 @@ const styles = StyleSheet.create({
   heroGlow: {
     alignSelf: 'stretch',
     borderRadius: radius.card,
-    marginBottom: spacing.lg,
-    ...shadows.glow,
+    marginBottom: spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
   },
   heroCard: {
     borderRadius: radius.card,
     overflow: 'hidden',
-    padding: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md + 2,
   },
   heroEyebrow: {
-    ...typography.micro,
-    color: 'rgba(255,255,255,0.9)',
-    marginBottom: spacing.sm,
+    ...typography.caption,
+    fontFamily: fontFamily.bold,
+    color: 'rgba(18,18,18,0.72)',
+    letterSpacing: 0.3,
+    marginBottom: 6,
   },
   title: {
-    ...typography.title,
+    ...typography.heading,
     color: colors.onBrand,
-    marginBottom: spacing.md,
+    fontSize: 28,
+    lineHeight: 32,
+    letterSpacing: -0.4,
+    marginBottom: spacing.sm,
   },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   heroPill: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 5,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(255,255,255,0.42)',
+    backgroundColor: 'rgba(255,255,255,0.58)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.65)',
+    borderColor: 'rgba(255,255,255,0.78)',
   },
-  heroPillText: { ...typography.micro, color: colors.onBrand },
+  heroPillText: {
+    ...typography.caption,
+    fontFamily: fontFamily.semibold,
+    color: colors.onBrand,
+    letterSpacing: 0.1,
+  },
   statsRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   statTile: {
     flex: 1,
@@ -421,7 +429,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.glassBorder,
-    padding: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.sm + 2,
     alignItems: 'center',
     ...StyleSheet.flatten({
       shadowColor: '#000',
@@ -431,15 +440,17 @@ const styles = StyleSheet.create({
     }),
   },
   statBig: {
-    ...typography.title,
-    fontSize: 22,
+    ...typography.heading,
+    fontSize: 28,
+    lineHeight: 32,
+    letterSpacing: -0.4,
     color: colors.brand,
   },
   statLabel: {
     ...typography.caption,
+    fontFamily: fontFamily.semibold,
     color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    letterSpacing: 0.2,
     textAlign: 'center',
   },
   healthCard: { marginBottom: spacing.sm },
@@ -450,24 +461,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.md,
   },
-  readinessCopy: { flex: 1, gap: 3 },
-  readinessEyebrow: { ...typography.micro, color: colors.brandStrong },
-  readinessTitle: { ...typography.heading, color: colors.textPrimary },
-  readinessSub: { ...typography.caption, color: colors.textSecondary },
+  readinessCopy: { flex: 1, gap: 4 },
+  readinessEyebrow: {
+    ...typography.caption,
+    fontFamily: fontFamily.bold,
+    color: colors.brandStrong,
+    letterSpacing: 0.2,
+  },
+  readinessTitle: { ...typography.heading, color: colors.textPrimary, fontSize: 22, lineHeight: 28 },
+  readinessSub: { ...typography.body, color: colors.textSecondary, lineHeight: 22 },
   departmentList: { gap: spacing.sm },
   departmentListTablet: { flexDirection: 'row', flexWrap: 'wrap' },
   deptRow: {
-    gap: 6,
-    paddingVertical: spacing.sm,
+    gap: spacing.xs,
+    paddingVertical: spacing.xs + 6,
     paddingHorizontal: spacing.sm,
     borderRadius: radius.md,
-    backgroundColor: 'rgba(255,255,255,0.38)',
+    backgroundColor: 'rgba(255,255,255,0.55)',
   },
-  deptRowPressed: { backgroundColor: colors.accentSoft },
+  deptRowPressed: { backgroundColor: 'rgba(245,179,1,0.18)' },
   deptHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   statusDot: { width: 10, height: 10, borderRadius: 999 },
-  deptLabel: { ...typography.body, color: colors.textPrimary, flex: 1 },
-  deptValue: { ...typography.bodyStrong, color: colors.textSecondary },
+  deptLabel: { ...typography.bodyStrong, color: colors.textPrimary, flex: 1, letterSpacing: 0.2 },
+  deptValue: { ...typography.body, fontFamily: fontFamily.bold, color: colors.textSecondary },
   deptChevron: { ...typography.bodyStrong, color: colors.textMuted },
   statusPill: {
     borderRadius: radius.pill,
@@ -477,7 +493,7 @@ const styles = StyleSheet.create({
   statusPillReady: { backgroundColor: colors.successSoft },
   statusPillInProgress: { backgroundColor: colors.accentSoft },
   statusPillNotStarted: { backgroundColor: colors.surfaceMuted },
-  statusPillText: { ...typography.micro, letterSpacing: 0.4 },
+  statusPillText: { ...typography.caption, fontFamily: fontFamily.bold },
   statusPillTextReady: { color: colors.success },
   statusPillTextInProgress: { color: colors.brandStrong },
   statusPillTextNotStarted: { color: colors.textSecondary },

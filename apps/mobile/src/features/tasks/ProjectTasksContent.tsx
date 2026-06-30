@@ -19,6 +19,7 @@ import {
 import { GlassFilterChip } from '@/components/GlassFilterChip';
 import { useContentFrame } from '@/hooks/useContentFrame';
 import { colors, radius, spacing, taskStatusMeta, typography } from '@/theme';
+import { fontFamily } from '@/theme/fonts';
 import type { DepartmentSummary, Task, TaskStatus } from '@/api/types';
 
 export interface ProjectTasksContentProps {
@@ -263,7 +264,7 @@ const styles = StyleSheet.create({
   deptHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   deptName: { ...typography.micro, color: colors.textSecondary },
   deptNameFocused: { color: colors.brandStrong },
-  deptCount: { ...typography.caption, color: colors.textMuted, fontWeight: '600' },
+  deptCount: { ...typography.caption, fontFamily: fontFamily.semibold, color: colors.textMuted },
   progressTrack: {
     height: 4,
     borderRadius: radius.pill,

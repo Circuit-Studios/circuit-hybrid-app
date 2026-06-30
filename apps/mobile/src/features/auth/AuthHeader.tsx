@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { CircuitLogo } from '@/components/CircuitLogo';
 import { useAuthMetrics } from '@/features/auth/AuthMetricsContext';
 import { authPalette } from '@/theme/authPalette';
+import { fontFamily } from '@/theme/fonts';
 
 interface AuthHeaderProps {
   /** Landscape two-column: brand block aligned left in column. */
@@ -37,19 +38,6 @@ export function AuthHeader({ column = false }: AuthHeaderProps) {
       >
         CIRCU<Text style={styles.wordmarkAccent}>IT</Text>
       </Text>
-      {!metrics.hideSubtitle ? (
-        <Text
-          style={[
-            styles.tagline,
-            {
-              fontSize: metrics.subtitleFontSize,
-              letterSpacing: metrics.subtitleLetterSpacing,
-            },
-          ]}
-        >
-          FOR FILMMAKERS
-        </Text>
-      ) : null}
     </View>
   );
 }
@@ -64,17 +52,11 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   wordmark: {
-    fontWeight: '800',
+    fontFamily: fontFamily.extrabold,
     letterSpacing: 1,
     color: authPalette.ink,
   },
   wordmarkAccent: {
     color: authPalette.brand,
-  },
-  tagline: {
-    color: authPalette.muted,
-    marginTop: 6,
-    fontWeight: '600',
-    textTransform: 'uppercase',
   },
 });

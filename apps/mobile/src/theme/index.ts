@@ -26,6 +26,7 @@ export {
   getOtpBoxSize,
   isCompactHeight,
   isLandscapeOrientation,
+  isTabletDevice,
   isTabletWidth,
   isWideLayout,
 } from './layout';

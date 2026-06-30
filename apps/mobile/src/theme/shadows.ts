@@ -1,24 +1,27 @@
 import { Platform, type ViewStyle } from 'react-native';
 import { colors } from './tokens';
 
-/** Cross-platform elevation presets for the light glass theme. */
+/**
+ * Cross-platform elevation presets for the light glass theme. Tuned for a
+ * premium "soft floating glass" feel: larger radii, lower opacity, gentle lift.
+ */
 export const shadows = {
   sm: Platform.select<ViewStyle>({
     ios: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.06,
-      shadowRadius: 8,
+      shadowColor: '#1A140A',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.05,
+      shadowRadius: 12,
     },
     android: { elevation: 2 },
     default: {},
   }),
   md: Platform.select<ViewStyle>({
     ios: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.08,
-      shadowRadius: 20,
+      shadowColor: '#1A140A',
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: 0.07,
+      shadowRadius: 28,
     },
     android: { elevation: 4 },
     default: {},
@@ -26,9 +29,9 @@ export const shadows = {
   accent: Platform.select<ViewStyle>({
     ios: {
       shadowColor: colors.brand,
-      shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.35,
-      shadowRadius: 14,
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.26,
+      shadowRadius: 18,
     },
     android: { elevation: 6 },
     default: {},
@@ -36,9 +39,9 @@ export const shadows = {
   glow: Platform.select<ViewStyle>({
     ios: {
       shadowColor: colors.amber,
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.45,
-      shadowRadius: 20,
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.34,
+      shadowRadius: 24,
     },
     android: { elevation: 8 },
     default: {},

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useContentFrame } from '@/hooks/useContentFrame';
-import { getAppTabBarReserve, getProjectTabBarReserve, isTabletWidth } from '@/theme/layout';
+import { getAppTabBarReserve, getProjectTabBarReserve, isTabletDevice } from '@/theme/layout';
 import { spacing } from '@/theme';
 
 /**
@@ -13,8 +13,12 @@ export function useChromeInsets() {
   const frame = useContentFrame('auto');
 
   return useMemo(() => {
+    // Phones in landscape (and any short viewport) get an icon-only tab bar so
+    // the capsule and its scroll reserve don't eat scarce vertical space. Real
+    // tablets keep the full labeled bar even in landscape.
     const compactTabBar =
-      frame.isCompactHeight || (frame.isLandscape && !isTabletWidth(frame.width));
+      frame.isCompactHeight ||
+      (frame.isLandscape && !isTabletDevice(frame.width, frame.height));
 
     return {
       ...frame,

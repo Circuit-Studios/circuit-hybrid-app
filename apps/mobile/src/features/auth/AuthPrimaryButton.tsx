@@ -2,6 +2,7 @@ import { Platform, Pressable, StyleSheet, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthMetrics } from '@/features/auth/AuthMetricsContext';
 import { authPalette } from '@/theme/authPalette';
+import { fontFamily } from '@/theme/fonts';
 
 interface AuthPrimaryButtonProps {
   title: string;
@@ -82,7 +83,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   label: {
-    fontWeight: '800',
+    fontFamily: fontFamily.extrabold,
     color: authPalette.ctaText,
     letterSpacing: 0.2,
   },

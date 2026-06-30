@@ -7,6 +7,7 @@ import { ProjectTasksContent } from '@/features/tasks/ProjectTasksContent';
 import { useActiveProject } from '@/context/ActiveProjectContext';
 import { useProjectRoom } from '@/realtime/useProjectRoom';
 import { colors, spacing, typography } from '@/theme';
+import { fontFamily } from '@/theme/fonts';
 
 /** Tasks tab — the active film's department board. */
 export default function TasksTabScreen() {
@@ -45,7 +46,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: spacing.lg,
   },
-  wordmark: { fontSize: 18, fontWeight: '800', color: colors.textPrimary },
+  wordmark: { fontFamily: fontFamily.extrabold, fontSize: 18, color: colors.textPrimary },
   wordmarkAccent: { color: colors.brand },
   title: { ...typography.title, color: colors.textPrimary, marginTop: spacing.sm },
 });

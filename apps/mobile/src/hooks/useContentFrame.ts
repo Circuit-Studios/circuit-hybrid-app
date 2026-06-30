@@ -6,7 +6,7 @@ import {
   getHorizontalPadding,
   isCompactHeight,
   isLandscapeOrientation,
-  isTabletWidth,
+  isTabletDevice,
   isWideLayout,
   resolveContentMaxWidth,
 } from '@/theme/layout';
@@ -19,7 +19,7 @@ export function useContentFrame(constrained: ContentConstraint = 'auto') {
     const maxWidth = resolveContentMaxWidth(width, constrained);
     const contentWidth = getContentWidth(width, horizontalPadding, maxWidth);
     const isLandscape = isLandscapeOrientation(width, height);
-    const isTablet = isTabletWidth(width);
+    const isTablet = isTabletDevice(width, height);
     const isWide = isWideLayout(width, height);
 
     return {

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '@/theme';
+import { fontFamily } from '@/theme/fonts';
 
 interface CalendarMonthPickerProps {
   value: Date | null;
@@ -210,7 +211,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: spacing.xs,
   },
-  todayButtonText: { ...typography.caption, color: colors.brandStrong, fontWeight: '700' },
+  todayButtonText: {
+    ...typography.caption,
+    fontFamily: fontFamily.bold,
+    color: colors.brandStrong,
+  },
   monthButton: {
     width: 34,
     height: 34,
@@ -220,7 +225,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   buttonPressed: { opacity: 0.75 },
-  monthButtonText: { color: colors.textPrimary, fontSize: 22, fontWeight: '700', lineHeight: 24 },
+  monthButtonText: {
+    fontFamily: fontFamily.bold,
+    color: colors.textPrimary,
+    fontSize: 22,
+    lineHeight: 24,
+  },
   weekdayHeader: { flexDirection: 'row' },
   weekdayCell: { flex: 1, alignItems: 'center', paddingBottom: spacing.xs },
   weekdayLabel: { ...typography.micro, color: colors.textMuted, letterSpacing: 0 },
@@ -245,9 +255,9 @@ const styles = StyleSheet.create({
   },
   discToday: { borderColor: colors.brand },
   discSelected: { backgroundColor: colors.brand },
-  dateNumber: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
+  dateNumber: { fontFamily: fontFamily.semibold, color: colors.textPrimary, fontSize: 15 },
   dateMuted: { color: colors.textMuted, opacity: 0.6 },
-  dateToday: { color: colors.brandStrong, fontWeight: '800' },
-  dateSelected: { color: colors.accentInk, fontWeight: '800' },
+  dateToday: { fontFamily: fontFamily.extrabold, color: colors.brandStrong },
+  dateSelected: { fontFamily: fontFamily.extrabold, color: colors.accentInk },
   dateDisabled: { color: colors.textMuted, opacity: 0.35 },
 });

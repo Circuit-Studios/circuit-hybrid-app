@@ -24,6 +24,7 @@ import { qk } from '@/api/queryKeys';
 import { readApiError } from '@/api/client';
 import { useProjectRoom } from '@/realtime/useProjectRoom';
 import { colors, conflictSeverityMeta, radius, spacing, typography } from '@/theme';
+import { fontFamily } from '@/theme/fonts';
 import type { ConflictSeverity, ShootDay } from '@/api/types';
 
 type ScheduleView = 'board' | 'calendar';
@@ -397,6 +398,8 @@ function BoardDay({
 }) {
   const dateObj = new Date(day.date);
   const isPast = startOfDay(dateObj) < startOfDay(new Date());
+  const isToday = isSameDate(dateObj, new Date());
+  const statusLabel = isPast ? 'Past shoot day' : isToday ? 'Today' : 'Upcoming shoot day';
   return (
     <View style={styles.timelineRow}>
       <View style={styles.timelineGutter}>
@@ -441,7 +444,7 @@ function BoardDay({
         {day.notes ? <Text style={styles.dayNotes}>{day.notes}</Text> : null}
 
         <View style={styles.dayFooter}>
-          <Text style={styles.dayFooterText}>{isPast ? 'Past shoot day' : 'Upcoming shoot day'}</Text>
+          <Text style={styles.dayFooterText}>{statusLabel}</Text>
           <Pressable onPress={onEdit} hitSlop={8}>
             <Text style={styles.dayEdit}>Edit</Text>
           </Pressable>
@@ -871,8 +874,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dayBulletPast: { backgroundColor: colors.surfaceMuted },
-  dayBulletLabel: { color: colors.accentInk, fontSize: 8, fontWeight: '800', lineHeight: 9 },
-  dayBulletText: { color: colors.accentInk, fontSize: 13, fontWeight: '800', lineHeight: 15 },
+  dayBulletLabel: { fontFamily: fontFamily.extrabold, color: colors.accentInk, fontSize: 8, lineHeight: 9 },
+  dayBulletText: { fontFamily: fontFamily.extrabold, color: colors.accentInk, fontSize: 13, lineHeight: 15 },
   timelineLine: { width: 2, flex: 1, backgroundColor: colors.borderSubtle, marginTop: 6 },
   dayCard: { flex: 1, marginLeft: spacing.sm, marginBottom: spacing.lg, gap: spacing.md },
   dayHeader: {
@@ -901,7 +904,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xs,
   },
   dayFooterText: { ...typography.micro, color: colors.textMuted },
-  dayEdit: { ...typography.caption, color: colors.brand, fontWeight: '600' },
+  dayEdit: { ...typography.caption, fontFamily: fontFamily.semibold, color: colors.brand },
   dayTagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.sm },
   dayTag: {
     flexDirection: 'row',
@@ -935,7 +938,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: spacing.xs,
   },
-  todayButtonText: { ...typography.caption, color: colors.brandStrong, fontWeight: '700' },
+  todayButtonText: { ...typography.caption, fontFamily: fontFamily.bold, color: colors.brandStrong },
   monthButton: {
     width: 34,
     height: 34,
@@ -945,7 +948,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   monthButtonPressed: { opacity: 0.75 },
-  monthButtonText: { color: colors.textPrimary, fontSize: 22, fontWeight: '700', lineHeight: 24 },
+  monthButtonText: { fontFamily: fontFamily.bold, color: colors.textPrimary, fontSize: 22, lineHeight: 24 },
   weekdayHeader: { flexDirection: 'row' },
   weekdayCell: { flex: 1, alignItems: 'center', paddingBottom: spacing.xs },
   weekdayLabel: { ...typography.micro, color: colors.textMuted, letterSpacing: 0 },
@@ -971,10 +974,10 @@ const styles = StyleSheet.create({
   },
   gridDiscToday: { borderColor: colors.brand },
   gridDiscSelected: { backgroundColor: colors.brand },
-  gridDateNumber: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
+  gridDateNumber: { fontFamily: fontFamily.semibold, color: colors.textPrimary, fontSize: 15 },
   gridDateMuted: { color: colors.textMuted, opacity: 0.6 },
-  gridDateToday: { color: colors.brandStrong, fontWeight: '800' },
-  gridDateSelected: { color: colors.accentInk, fontWeight: '800' },
+  gridDateToday: { fontFamily: fontFamily.extrabold, color: colors.brandStrong },
+  gridDateSelected: { fontFamily: fontFamily.extrabold, color: colors.accentInk },
   gridEvent: {
     maxWidth: '92%',
     paddingHorizontal: 4,
@@ -984,8 +987,8 @@ const styles = StyleSheet.create({
   },
   gridEventSelected: { backgroundColor: colors.brandSoft },
   gridEventText: {
+    fontFamily: fontFamily.bold,
     fontSize: 9,
-    fontWeight: '700',
     color: colors.brandStrong,
     letterSpacing: 0,
   },
@@ -1002,7 +1005,7 @@ const styles = StyleSheet.create({
   agendaEmpty: { gap: spacing.xs },
   agendaEmptyDate: { ...typography.bodyStrong, color: colors.textPrimary, fontSize: 17 },
   agendaEmptyText: { ...typography.caption, color: colors.textSecondary },
-  agendaEmptyAdd: { ...typography.caption, color: colors.brand, fontWeight: '700', marginTop: 2 },
+  agendaEmptyAdd: { ...typography.caption, fontFamily: fontFamily.bold, color: colors.brand, marginTop: 2 },
   agendaList: { overflow: 'hidden' },
   agendaRow: { paddingHorizontal: spacing.sm },
   agendaRowDivider: {
@@ -1027,7 +1030,7 @@ const styles = StyleSheet.create({
   agendaDateBoxSelected: { backgroundColor: colors.brand },
   agendaDateTextSelected: { color: colors.accentInk },
   agendaDateMonth: { ...typography.micro, color: colors.textMuted, textTransform: 'uppercase' },
-  agendaDateDay: { color: colors.textPrimary, fontSize: 20, fontWeight: '900' },
+  agendaDateDay: { fontFamily: fontFamily.extrabold, color: colors.textPrimary, fontSize: 20 },
   agendaRowBody: { flex: 1, gap: 3 },
   agendaRowTop: {
     flexDirection: 'row',
@@ -1036,13 +1039,13 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   agendaRowTitle: { ...typography.bodyStrong, color: colors.textPrimary, flex: 1 },
-  agendaRowLoc: { ...typography.caption, color: colors.textSecondary, fontWeight: '700' },
+  agendaRowLoc: { ...typography.caption, fontFamily: fontFamily.bold, color: colors.textSecondary },
   agendaCall: { ...typography.micro, color: colors.textMuted },
   agendaCallReady: { color: colors.brandStrong },
   agendaChevron: {
+    fontFamily: fontFamily.bold,
     color: colors.textMuted,
     fontSize: 22,
-    fontWeight: '700',
     transform: [{ rotate: '90deg' }],
   },
   agendaChevronOpen: { transform: [{ rotate: '-90deg' }], color: colors.brandStrong },
@@ -1057,8 +1060,8 @@ const styles = StyleSheet.create({
     gap: spacing.xl,
     paddingTop: spacing.xs,
   },
-  agendaEdit: { ...typography.caption, color: colors.brand, fontWeight: '700' },
-  agendaRemove: { ...typography.caption, color: colors.danger, fontWeight: '700' },
+  agendaEdit: { ...typography.caption, fontFamily: fontFamily.bold, color: colors.brand },
+  agendaRemove: { ...typography.caption, fontFamily: fontFamily.bold, color: colors.danger },
   detailRow: { gap: 2 },
   detailLabel: { ...typography.micro, color: colors.textMuted, textTransform: 'uppercase' },
   detailValue: { ...typography.caption, color: colors.textPrimary, lineHeight: 20 },

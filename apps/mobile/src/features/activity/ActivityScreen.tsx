@@ -12,6 +12,7 @@ import { readApiError } from '@/api/client';
 import type { ActivityFilter } from '@/api/home';
 import { GlassFilterChip } from '@/components/GlassFilterChip';
 import { colors, radius, spacing, typography } from '@/theme';
+import { fontFamily } from '@/theme/fonts';
 import { useActivityQuery } from '@/features/home/hooks';
 
 const FILTERS: { id: ActivityFilter; label: string }[] = [
@@ -183,7 +184,7 @@ const styles = StyleSheet.create({
   pulseTitle: { ...typography.bodyStrong, color: colors.brand },
   pulseRow: { flexDirection: 'row', justifyContent: 'space-around' },
   pulseStat: { alignItems: 'center' },
-  pulseValue: { fontSize: 28, fontWeight: '800', color: colors.brand },
+  pulseValue: { fontFamily: fontFamily.extrabold, fontSize: 28, color: colors.brand },
   pulseLabel: { ...typography.caption, color: colors.textSecondary },
   list: { paddingBottom: spacing.xl },
   section: { marginBottom: spacing.lg },
@@ -198,12 +199,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarText: { ...typography.caption, fontWeight: '700', color: colors.brand },
+  avatarText: { ...typography.caption, fontFamily: fontFamily.bold, color: colors.brand },
   nameRow: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
   name: { ...typography.bodyStrong, color: colors.textPrimary },
   time: { ...typography.caption, color: colors.textMuted },
   actionText: { ...typography.body, color: colors.textSecondary },
-  actionBold: { fontWeight: '700', color: colors.textPrimary },
+  actionBold: { fontFamily: fontFamily.bold, color: colors.textPrimary },
   badge: {
     alignSelf: 'flex-start',
     backgroundColor: colors.brandSoft,
@@ -211,5 +212,5 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: radius.pill,
   },
-  badgeText: { ...typography.caption, color: colors.brand, fontWeight: '600' },
+  badgeText: { ...typography.caption, fontFamily: fontFamily.semibold, color: colors.brand },
 });

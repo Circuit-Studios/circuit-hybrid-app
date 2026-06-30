@@ -13,6 +13,7 @@ import { useAuthMetrics } from '@/features/auth/AuthMetricsContext';
 import { authPalette } from '@/theme/authPalette';
 import { authInputChrome } from '@/theme/authInputChrome';
 import { typography } from '@/theme';
+import { fontFamily } from '@/theme/fonts';
 import { authFieldLabelStyle } from '@/theme/authTypography';
 import { authFieldRowStyleFromMetrics, type AuthFieldVariant } from '@/theme/fields';
 
@@ -131,6 +132,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
+    fontFamily: fontFamily.regular,
     color: authPalette.inputText,
     paddingVertical: 0,
   },
