@@ -25,9 +25,12 @@ npm run mobile
 **Full local stack** — see [docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md).
 
 ```bash
-npm run api:dev # terminal 1
-npm run mobile  # terminal 2
+cd apps/api && docker compose up -d && npm run db:prepare:dev  # first time only
+npm run api:dev   # terminal 1
+npm run mobile    # terminal 2 — Metro only
 ```
+
+**First-time iOS simulator:** the `ios/` folder is not in git. From `apps/mobile`, run `npm run generate:brand` then `npx expo run:ios` once (see [apps/mobile/README.md](./apps/mobile/README.md)).
 
 Dev OTP when providers are `MOCK`: **`111111`**
 

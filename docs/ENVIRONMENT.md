@@ -67,8 +67,10 @@ EXPO_PUBLIC_API_BASE_URL=http://localhost:3009
 ```bash
 cd apps/api && docker compose up -d && npm run db:prepare:dev
 npm run api:dev # terminal 1
-npm run mobile  # terminal 2
+npm run mobile  # terminal 2 — Metro bundler
 ```
+
+**First-time iOS:** `ios/` is generated locally (not in git). See [apps/mobile/README.md](../apps/mobile/README.md) — run `npx expo run:ios` once from `apps/mobile` before expecting `ios/Circuit.xcworkspace` to exist.
 
 Dev OTP: **`111111`** when OTP providers are `MOCK`.
 
