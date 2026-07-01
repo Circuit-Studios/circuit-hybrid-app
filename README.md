@@ -1,62 +1,116 @@
 # Circuit
 
-Film production planning — Expo mobile + Node.js API monorepo.
+Film production planning — Expo mobile app + Node.js API (monorepo).
 
-| App    | Path          | Stack                                      |
-| ------ | ------------- | ------------------------------------------ |
-| Mobile | `apps/mobile` | Expo · React Native · expo-router          |
-| API    | `apps/api`    | Express · Prisma · PostgreSQL · NVIDIA NIM |
+| App    | Path          | Stack                              |
+| ------ | ------------- | ---------------------------------- |
+| Mobile | `apps/mobile` | Expo · React Native · expo-router  |
+| API    | `apps/api`    | Express · Prisma · PostgreSQL · LLM |
 
-## Quick start
+## Prerequisites
+
+- **Node 22**
+- **macOS + Xcode** (for iOS simulator)
+- **Docker** (only if running the API locally)
+
+## Choose your setup
+
+### Option A — Mobile only (API on Render)
+
+Use this if you only run the app and connect to a hosted API.
 
 ```bash
 npm install
 npm run setup:env
 ```
 
-**Mobile → Render (default)** — edit `apps/mobile/.env`:
+Edit `apps/mobile/.env`:
 
 ```bash
 EXPO_PUBLIC_APP_ENV=development
 EXPO_PUBLIC_API_BASE_URL=https://your-api.onrender.com
-npm run mobile
 ```
 
-**Full local stack** — see [docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md).
+**First time (iOS):** see [apps/mobile/README.md](./apps/mobile/README.md) — run `npx expo run:ios` once.
+
+**Every day:**
 
 ```bash
-cd apps/api && docker compose up -d && npm run db:prepare:dev  # first time only
-npm run api:dev   # terminal 1
-npm run mobile    # terminal 2 — Metro only
+cd apps/mobile
+npx expo start --dev-client --localhost
 ```
 
-**First-time iOS simulator:** the `ios/` folder is not in git. From `apps/mobile`, run `npm run generate:brand` then `npx expo run:ios` once (see [apps/mobile/README.md](./apps/mobile/README.md)).
+---
 
-Dev OTP when providers are `MOCK`: **`111111`**
+### Option B — Full local stack (mobile + API on your Mac)
 
-## Scripts
+Use this if you run the API and Postgres locally.
 
-| Command             | Purpose                |
-| ------------------- | ---------------------- |
-| `npm run mobile`    | Start Expo             |
-| `npm run api:dev`   | Start API (hot reload) |
-| `npm run typecheck` | Typecheck both         |
-| `npm run test`      | Run all tests          |
-| `npm run format`    | Prettier write         |
+**First time only:**
 
-## Deploy
+```bash
+npm install
+npm run setup:env
 
-- **API:** Render — [apps/api/docs/DEPLOYMENT.md](./apps/api/docs/DEPLOYMENT.md)
-- **Env vars:** [docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md)
-- **Migrations:** `cd apps/api && npm run prisma:deploy` (not in Render build)
+# API database
+cd apps/api
+docker compose up -d
+npm run db:prepare:dev
 
-## Docs
+# iOS native build (generates ios/ folder — not in git)
+cd ../mobile
+npm run generate:brand
+npx expo run:ios
+```
 
-| Doc                                                          | Contents                              |
-| ------------------------------------------------------------ | ------------------------------------- |
-| [docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md)                 | Env files, NVIDIA LLM, Render secrets |
-| [apps/api/docs/DEPLOYMENT.md](./apps/api/docs/DEPLOYMENT.md) | Render build/start commands           |
-| [apps/api/README.md](./apps/api/README.md)                   | API local dev                         |
-| [apps/mobile/README.md](./apps/mobile/README.md)             | Mobile dev client setup               |
+Edit env files — see [docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md):
 
-Schema source of truth: `apps/api/prisma/schema.prisma`
+- `apps/api/.env.development` — database, secrets, LLM keys
+- `apps/mobile/.env` — `EXPO_PUBLIC_API_BASE_URL=http://localhost:3009`
+
+**Every day:**
+
+```bash
+# Terminal 1 — API
+npm run api:dev
+
+# Terminal 2 — Metro bundler
+cd apps/mobile
+npx expo start --dev-client --localhost
+```
+
+The simulator app is already installed from the first `expo run:ios`. Re-run that command only when native dependencies change.
+
+Dev login OTP (when providers are `MOCK`): **`111111`**
+
+---
+
+## Common commands
+
+| Command             | What it does                    |
+| ------------------- | ------------------------------- |
+| `npm run api:dev`   | Start API with hot reload       |
+| `npm run mobile`    | Start Metro (without dev-client flag) |
+| `npm run typecheck` | Typecheck mobile + API          |
+| `npm run test`      | Run all tests                   |
+
+## Database migrations
+
+| When                         | Command                                      |
+| ---------------------------- | -------------------------------------------- |
+| First local API setup        | `cd apps/api && npm run db:prepare:dev`      |
+| After pulling new migrations | `cd apps/api && npm run db:prepare:dev`      |
+| Deployed API (Render)        | `cd apps/api && npm run prisma:deploy`       |
+
+`npm install` runs `prisma generate` automatically. It does **not** create database tables — use `db:prepare:dev` for that.
+
+## More docs
+
+| Doc | Contents |
+| --- | -------- |
+| [apps/mobile/README.md](./apps/mobile/README.md) | iOS simulator, Metro, troubleshooting |
+| [apps/api/README.md](./apps/api/README.md) | API local dev, Prisma |
+| [docs/ENVIRONMENT.md](./docs/ENVIRONMENT.md) | All env vars, LLM keys, Render |
+| [apps/api/docs/DEPLOYMENT.md](./apps/api/docs/DEPLOYMENT.md) | Deploy API to Render |
+
+Schema: `apps/api/prisma/schema.prisma`

@@ -17,7 +17,9 @@ npm run setup:env # creates both env files from examples
 
 ---
 
-## Workflow A — Mobile → Render (default)
+## Workflow A — Mobile only (API on Render)
+
+No local API or database needed.
 
 **`apps/mobile/.env`**
 
@@ -26,15 +28,39 @@ EXPO_PUBLIC_APP_ENV=development
 EXPO_PUBLIC_API_BASE_URL=https://circuit-api-dev.onrender.com
 ```
 
+**First time (iOS):**
+
 ```bash
-npm run mobile
+cd apps/mobile
+npm run generate:brand
+npx expo run:ios
 ```
 
-No local API env needed.
+**Every day:**
+
+```bash
+cd apps/mobile
+npx expo start --dev-client --localhost
+```
 
 ---
 
-## Workflow B — Full local stack
+## Workflow B — Full local stack (mobile + API)
+
+**First time only:**
+
+```bash
+npm install
+npm run setup:env
+
+cd apps/api
+docker compose up -d
+npm run db:prepare:dev
+
+cd ../mobile
+npm run generate:brand
+npx expo run:ios
+```
 
 **`apps/api/.env.development`** — copy from `apps/api/.env.example`, then edit:
 
@@ -64,13 +90,14 @@ EXPO_PUBLIC_APP_ENV=local
 EXPO_PUBLIC_API_BASE_URL=http://localhost:3009
 ```
 
+**Every day:**
+
 ```bash
-cd apps/api && docker compose up -d && npm run db:prepare:dev
-npm run api:dev # terminal 1
-npm run mobile  # terminal 2 — Metro bundler
+npm run api:dev                              # terminal 1 — API
+cd apps/mobile && npx expo start --dev-client --localhost   # terminal 2 — Metro
 ```
 
-**First-time iOS:** `ios/` is generated locally (not in git). See [apps/mobile/README.md](../apps/mobile/README.md) — run `npx expo run:ios` once from `apps/mobile` before expecting `ios/Circuit.xcworkspace` to exist.
+Re-run `npx expo run:ios` only when native dependencies change.
 
 Dev OTP: **`111111`** when OTP providers are `MOCK`.
 
