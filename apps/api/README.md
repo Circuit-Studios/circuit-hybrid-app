@@ -4,13 +4,17 @@ Express + Prisma + PostgreSQL. Script analysis uses **NVIDIA NIM** (`LLM_PROVIDE
 
 ## Local dev
 
+First-time setup applies database migrations once (not on every `npm run dev`):
+
 ```bash
 npm run setup:env # from repo root — creates .env.development
 cd apps/api
 docker compose up -d
-npm run db:prepare:dev
-npm run dev # http://localhost:3009
+npm run db:prepare:dev   # prisma migrate deploy + generate
+npm run dev              # http://localhost:3009
 ```
+
+After pulling new migrations: run `npm run db:prepare:dev` again.
 
 From repo root: `npm run api:dev`
 
